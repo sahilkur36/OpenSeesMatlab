@@ -114,8 +114,8 @@ classdef PlotFrameResp < handle
             fprintf('                   Which extreme values to annotate.\n');
             fprintf('  labelFontSize    double   Label font size (default 9).\n');
             fprintf('  labelGap         double   Extra gap beyond tip as fraction of\n');
-            fprintf('                   diagram height (default 0.1 = 10%% extra).\n');
-            fprintf('                   0 = label at tip; 0.5 = half diagram height beyond.\n');
+            fprintf('                   diagram height (default 0.15 = 15%% extra).\n');
+            fprintf('                   0 = at tip; 0.5 = half diagram height beyond.\n');
             fprintf('\n');
             fprintf('── Layout ────────────────────────────────────────────────────\n');
             fprintf('  general.view      ''auto''|''xy''|''xz''|''iso''  Camera view.\n');
@@ -151,7 +151,7 @@ classdef PlotFrameResp < handle
             opts.component  = 'MZ';
             opts.style      = 'surface';   % 'surface' | 'wireframe'
             opts.scale      = 1.0;
-            opts.heightFrac = 0.05;
+            opts.heightFrac = 0.1;
             opts.scaleMode  = 'current';   % 'current' | 'global'
 
             opts.color = struct( ...
@@ -175,7 +175,7 @@ classdef PlotFrameResp < handle
 
             opts.showMaxMinLabel = 'global';
             opts.labelFontSize   = 9;
-            opts.labelGap        = 0.1;   % extra fraction beyond tip (0 = at tip, 0.1 = 10% beyond)
+            opts.labelGap        = 0.15;  % extra fraction of diagram height beyond tip
 
             opts.cbar = struct('show',true, 'label','');
 
@@ -224,8 +224,8 @@ classdef PlotFrameResp < handle
                 '                   Which extreme values to annotate.'
                 '  labelFontSize    double   Label font size (default 9).'
                 '  labelGap         double   Extra gap beyond tip as fraction of'
-                '                   diagram height at that point (default 0.1).'
-                '                   0 = label at tip; 0.2 = 20% beyond tip.'
+                '                   diagram height (default 0.15).'
+                '                   0 = at tip; 0.5 = half diagram height beyond.'
                 ''
                 '-- Layout -------------------------------------------------------'
                 '  general.view       ''auto''|''xy''|''xz''|''iso''  Camera view.'
@@ -699,15 +699,15 @@ classdef PlotFrameResp < handle
             %   offset_vec = tipPts(k) - basePts(k)   (already scaled by diagScale)
             %   labelPt    = tipPts(k) + gap * offset_vec
             %
-            % This reuses vectors already computed by buildDiagram — no
-            % redundant distance computation.  opts.labelGap (default 0.1)
-            % controls how far beyond the tip the label sits.
+            % Label is placed beyond the tip by a fraction of diagram height:
+            %   fixedGap = labelGap * diagramHeight
+            % This ensures label is always outside the response diagram.
             %
             % Text is rotated to be parallel to the local beam direction.
             if isempty(vals), return; end
             mode = obj.resolveLabelMode();
             gap  = obj.Opts.labelGap;
-            if ~isnumeric(gap)||~isscalar(gap)||~isfinite(gap), gap = 0.1; end
+            if ~isnumeric(gap)||~isscalar(gap)||~isfinite(gap), gap = 0.15; end
 
             nEle = numel(eleStart);
 
@@ -772,7 +772,16 @@ classdef PlotFrameResp < handle
                 bp  = basePts(ti,:);
                 % offset vector already contains the scaled diagram height
                 ov  = tp - bp;                      % base -> tip
-                lp  = tp + gap * ov;                % beyond tip by gap fraction
+                ovNorm = norm(ov);
+                if ovNorm > 1e-14
+                    ovDir = ov / ovNorm;            % unit direction of diagram
+                else
+                    ovDir = [0 0 0];
+                end
+                % Place label outside the diagram: gap fraction of diagram height
+                diagramHeight = norm(ov);
+                fixedGap = gap * diagramHeight;
+                lp  = tp + fixedGap * ovDir;        % beyond tip by gap fraction
                 % beam rotation in XY plane
                 e   = eleOfPt(ti);
                 rot = 0;
@@ -782,12 +791,20 @@ classdef PlotFrameResp < handle
                         rot = rad2deg(atan2(d(2), d(1)));
                     end
                 end
+                % Choose vertical alignment so text grows away from diagram
+                if ovDir(2) > 0      % diagram points upward  → text above lp
+                    vAlign = 'bottom';
+                elseif ovDir(2) < 0  % diagram points downward → text below lp
+                    vAlign = 'top';
+                else                 % horizontal
+                    vAlign = 'bottom';
+                end
                 text(obj.Ax, lp(1), lp(2), lp(3), lbls{k}, ...
                     'FontSize',            obj.Opts.labelFontSize, ...
                     'Color',               [0.1 0.1 0.1], ...
                     'Rotation',            rot, ...
                     'HorizontalAlignment', 'center', ...
-                    'VerticalAlignment',   'bottom', ...
+                    'VerticalAlignment',   vAlign, ...
                     'Interpreter',         'none', ...
                     'Tag',                 'FrameRespLabel');
             end

@@ -403,9 +403,10 @@ classdef PlotFrameResp < handle
             end
 
             if ~isempty(info.conn)
-                sc = obj.diagScale(segIdx, localStep);
+                valPerEle = obj.respPerEle(segIdx, localStep, info);
+                sc = obj.diagScale(segIdx, localStep, valPerEle);
                 [basePts, tipPts, vals, eleStart, eleEnd] = ...
-                    obj.buildDiagram(P, info, segIdx, localStep, sc);
+                    obj.buildDiagram(P, info, segIdx, localStep, sc, valPerEle);
 
                 if ~isempty(basePts)
                     if strcmpi(obj.Opts.style,'surface')
@@ -489,10 +490,12 @@ classdef PlotFrameResp < handle
         % =================================================================
 
         function [basePts, tipPts, vals, eleStart, eleEnd] = ...
-                buildDiagram(obj, P, info, segIdx, localStep, sc)
+                buildDiagram(obj, P, info, segIdx, localStep, sc, valPerEle)
 
-            valPerEle = obj.respPerEle(segIdx, localStep);
-            locPerEle = obj.secLocs(segIdx, localStep);
+            if nargin < 7 || isempty(valPerEle)
+                valPerEle = obj.respPerEle(segIdx, localStep, info);
+            end
+            locPerEle = obj.secLocs(segIdx, localStep, info, valPerEle);
             nEle      = size(info.conn,1);
 
             nPerEle  = zeros(nEle,1);
@@ -889,8 +892,10 @@ classdef PlotFrameResp < handle
             v = vertcat(perEle{:});
         end
 
-        function perEle = respPerEle(obj, segIdx, localStep)
-            info  = obj.beamInfo(segIdx, localStep);
+        function perEle = respPerEle(obj, segIdx, localStep, info)
+            if nargin < 4 || isempty(info)
+                info = obj.beamInfo(segIdx, localStep);
+            end
             nEle  = size(info.conn,1);
             perEle = cell(nEle,1);
             rt    = obj.normalizeRespType(segIdx, obj.Opts.respType);
@@ -947,15 +952,17 @@ classdef PlotFrameResp < handle
             end
         end
 
-        function perEle = secLocs(obj, segIdx, localStep)
-            info   = obj.beamInfo(segIdx, localStep);
+        function perEle = secLocs(obj, segIdx, localStep, info, valPerEle)
+            if nargin < 4 || isempty(info)
+                info = obj.beamInfo(segIdx, localStep);
+            end
             nEle   = size(info.conn,1);
             perEle = cell(nEle,1);
-            respCache = [];
+            if nargin < 5, valPerEle = []; end
 
             function locs = uniform(e_)
-                if isempty(respCache), respCache = obj.respPerEle(segIdx, localStep); end
-                n_ = max(numel(respCache{e_}),2);
+                if isempty(valPerEle), valPerEle = obj.respPerEle(segIdx, localStep, info); end
+                n_ = max(numel(valPerEle{e_}),2);
                 locs = linspace(0,1,n_).';
             end
 
@@ -989,8 +996,8 @@ classdef PlotFrameResp < handle
                 r = respRows(e);
                 if r<=0||r>size(D,1), continue; end
                 vv=squeeze(D(r,:)).'; vv=vv(isfinite(vv));
-                if isempty(respCache), respCache = obj.respPerEle(segIdx, localStep); end
-                if numel(respCache{e}) ~= numel(vv)
+                if isempty(valPerEle), valPerEle = obj.respPerEle(segIdx, localStep, info); end
+                if numel(valPerEle{e}) ~= numel(vv)
                     perEle{e}=uniform(e);
                     continue;
                 end
@@ -1102,7 +1109,8 @@ classdef PlotFrameResp < handle
         % Diagram scale
         % =================================================================
 
-        function sc = diagScale(obj, segIdx, localStep)
+        function sc = diagScale(obj, segIdx, localStep, valPerEle)
+            if nargin < 4, valPerEle = []; end
             scaleMode = lower(strtrim(char(string(obj.Opts.scaleMode))));
             if strcmpi(scaleMode,'current')
                 % Cache keyed by (segIdx, localStep) encoded as single number
@@ -1110,7 +1118,12 @@ classdef PlotFrameResp < handle
                 if isfinite(obj.DiagScaleCache) && obj.DiagScaleStep==key
                     sc=obj.DiagScaleCache; return;
                 end
-                v=obj.respFlat(segIdx, localStep); v=v(isfinite(v));
+                if isempty(valPerEle)
+                    v=obj.respFlat(segIdx, localStep);
+                else
+                    v=vertcat(valPerEle{:});
+                end
+                v=v(isfinite(v));
                 maxAbs=max(abs(v),[],'omitnan');
                 if isempty(maxAbs)||~isfinite(maxAbs)||maxAbs<=0, maxAbs=1; end
                 sc=(obj.Opts.heightFrac*obj.CachedModelSize/maxAbs)*obj.Opts.scale;

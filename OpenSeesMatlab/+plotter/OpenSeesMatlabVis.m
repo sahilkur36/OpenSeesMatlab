@@ -493,14 +493,48 @@ classdef OpenSeesMatlabVis < handle
             % respType : string, optional  (default "SecForceAtGP")
             %     - "SecForceAtGP" | "SecDefoAtGP" | "SecForceAtNode" | "SecDefoAtNode"
             %     - "StressAtGP" | "StrainAtGP" | "StressAtNode" | "StrainAtNode"
+            %     - Any custom EleResp field name. Names containing "AtNode"
+            %       are node-based; all other custom names are element-based.
             %
             % respComponent : string, optional  (default "mxx")
             %     - Section responses : "fxx" "fyy" "fxy" "mxx" "myy" "mxy" "vxz" "vyz"
             %     - Stress / Strain   : "sxx" "syy" "sxy" "syz" "sxz" | "exx" "eyy" "exy" "eyz" "exz"
+            %     - For custom fields, a name listed in EleResp.(respType).dofs
+            %       or a numeric subfield EleResp.(respType).(respComponent).
             %
             % fiberPoint : string or integer, optional  (default "top")
             %     Through-thickness location for stress/strain responses.
             %     "top" | "bottom" | "middle"  or 1-based integer fiber index.
+            %     Also applies to custom data with a fiber dimension:
+            %       EleResp.MyVector.data = [nStep x nEle x nGP x nFiber x nComp]
+            %       EleResp.MyVectorAtNode.data = [nStep x nNode x nFiber x nComp]
+            %       EleResp.MyLayoutC.c1 = [nStep x nEle x nGP x nFiber]
+            %       EleResp.MyLayoutCAtNode.c1 = [nStep x nNode x nFiber]
+            %
+            % Custom EleResp field layouts
+            % ----------------------------
+            %     Element scalar:
+            %       EleResp.MyScalar = [nStep x nEle]
+            %
+            %     Node scalar:
+            %       EleResp.MyScalarAtNode = [nStep x nNode]
+            %
+            %     Element vector:
+            %       EleResp.MyVector.data = [nStep x nEle x nComp]
+            %       EleResp.MyVector.dofs = {'c1','c2',...}
+            %
+            %     Node vector:
+            %       EleResp.MyVectorAtNode.data = [nStep x nNode x nComp]
+            %       EleResp.MyVectorAtNode.dofs = {'c1','c2',...}
+            %
+            %     Element Layout-C:
+            %       EleResp.MyLayoutC.c1 = [nStep x nEle]
+            %       EleResp.MyLayoutC.c1 = [nStep x nEle x nGP]
+            %       EleResp.MyLayoutC.c1 = [nStep x nEle x nGP x nFiber]
+            %
+            %     Node Layout-C:
+            %       EleResp.MyLayoutCAtNode.c1 = [nStep x nNode]
+            %       EleResp.MyLayoutCAtNode.c1 = [nStep x nNode x nFiber]
             %
             % stepIdx : integer or string, optional  (default "absMax")
             %     "absMax" | "absMin" | "Max" | "Min" | integer step index.
@@ -516,7 +550,7 @@ classdef OpenSeesMatlabVis < handle
                 obj     (1,1) plotter.OpenSeesMatlabVis
                 respData struct
 
-                options.respType {mustBeTextScalar, mustBeMember(options.respType, ["SecForceAtGP", "SecDefoAtGP", "SecForceAtNode", "SecDefoAtNode", "StressAtGP", "StrainAtGP", "StressAtNode", "StrainAtNode"])} = "SecForceAtGP"
+                options.respType {mustBeTextScalar} = "SecForceAtGP"
                 options.respComponent {mustBeTextScalar} = "mxx"
                 options.fiberPoint = "top"
                 options.stepIdx    = "absMax"
@@ -558,6 +592,9 @@ classdef OpenSeesMatlabVis < handle
             % respType : string, optional  (default "StressAtGP")
             %     - "StressAtGP" | "StressAtNode" | "StrainAtGP" | "StrainAtNode"
             %     - "StressMeasureAtGP" | "StressMeasureAtNode"
+            %     - Any custom EleResp field name. Element-based custom fields
+            %       should normally use a name without "AtNode"; node-based
+            %       custom fields should include "AtNode" in the field name.
             %
             % respComponent : string, optional  (default "sxx")
             %     - Plane stress  : "sxx" "syy" "sxy" "szz"
@@ -566,6 +603,38 @@ classdef OpenSeesMatlabVis < handle
             %     - Solid strain  : "exx" "eyy" "ezz" "exy" "eyz" "exz"
             %     - Measures      : "sigmaOct" "tauOct" "tauMax" "vonMises"
             %                       "p1" "p2" "p3"
+            %     - For custom fields, a name listed in EleResp.(respType).dofs
+            %       or a numeric subfield EleResp.(respType).(respComponent).
+            %       Scalar custom fields may use any label for the colorbar.
+            %     - Layout-C custom fields use subfield names as components, so
+            %       respComponent="c1" reads EleResp.(respType).c1.
+            %
+            % Custom EleResp field layouts
+            % ----------------------------
+            %     The field name decides whether custom data is element- or
+            %     node-based. Names containing "AtNode" are node-based; all other
+            %     custom names are element-based.
+            %
+            %     Element scalar:
+            %       EleResp.MyScalar = [nStep x nEle]
+            %
+            %     Node scalar:
+            %       EleResp.MyScalarAtNode = [nStep x nNode]
+            %
+            %     Element vector with component list:
+            %       EleResp.MyVector.data = [nStep x nEle x nComp]
+            %       EleResp.MyVector.dofs = {'c1','c2',...}
+            %
+            %     Node vector with component list:
+            %       EleResp.MyVectorAtNode.data = [nStep x nNode x nComp]
+            %       EleResp.MyVectorAtNode.dofs = {'c1','c2',...}
+            %
+            %     Element Layout-C:
+            %       EleResp.MyLayoutC.c1 = [nStep x nEle]
+            %       EleResp.MyLayoutC.c1 = [nStep x nEle x nGP]
+            %
+            %     Node Layout-C:
+            %       EleResp.MyLayoutCAtNode.c1 = [nStep x nNode]
             %
             % stepIdx : integer or string, optional  (default "absMax")
             %     "absmax" | "absmin" | "max" | "min" | 0-based integer step index.
@@ -579,13 +648,13 @@ classdef OpenSeesMatlabVis < handle
             arguments
                 obj      (1,1) plotter.OpenSeesMatlabVis
                 respData struct
-                options.respType {mustBeTextScalar, mustBeMember(options.respType, ["StressAtGP", "StressAtNode", "StrainAtGP", "StrainAtNode", "StressMeasureAtGP", "StressMeasureAtNode"])} = "StressAtGP"
+                options.respType {mustBeTextScalar} = "StressAtGP"
                 options.respComponent {mustBeTextScalar} = "sxx"
                 options.stepIdx   = "absmax"
                 options.opts          (1,1) struct = struct()
                 options.ax            {plotter.OpenSeesMatlabVis.mustBeAxesOrEmpty} = []
             end
-            eleType = respData.eleType;
+            eleType = respData(1).eleType;
             switch lower(char(string(eleType)))
                 case 'plane'
                     eleType = 'Plane';

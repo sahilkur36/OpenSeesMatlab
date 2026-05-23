@@ -102,9 +102,18 @@ classdef PlotUnstruResponse < handle
                 '-- Response ----------------------------------------------------'
                 '  (set via setResponse, not opts)'
                 '  eleType    ''solid'' | ''shell'' | ''planestress'' | ...'
-                '  respType   field name in EleResp (e.g. ''stress'', ''strain'')'
-                '  component  ''vonMises'' | ''hydrostatic'' | ''tauMax'''
-                '             | ''p1'' | ''p2'' | ''p3'' (principal stresses)'
+                '  respType   built-in response name or custom field name in EleResp'
+                '  component  built-in component or custom component name'
+                '             Custom EleResp fields are accepted when respType'
+                '             matches a field and component matches a dof/subfield.'
+                '             Names containing ''AtNode'' are treated as node fields;'
+                '             other custom fields are treated as element fields.'
+                '             Layout-C examples:'
+                '               EleResp.MyLayoutC.c1       = [nStep x nEle]'
+                '               EleResp.MyLayoutC.c1       = [nStep x nEle x nGP]'
+                '               EleResp.MyLayoutCAtNode.c1 = [nStep x nNode]'
+                '             Shell custom fields may also include nFiber as the'
+                '             next-to-last response dimension and use fiberPoint.'
                 ''
                 '-- Deformation -------------------------------------------------'
                 '  deform.show            logical  Draw deformed shape (default true).'
@@ -232,16 +241,62 @@ classdef PlotUnstruResponse < handle
             switch lower(obj.EleType)
                 case 'shell'
                     obj.EleType = 'Shell';
-                    [obj.RespType, obj.Component, obj.FiberPoint] = ...
-                        unstru_check_shell(respType, component, obj.FiberPoint);
-                    obj.cbarTitle = sprintf('%s (fiber-%s)', obj.Component, obj.FiberPoint);
+                    if obj.isCustomResponseRequest(respType, component)
+                        [obj.RespType, obj.Component] = obj.normalizeCustomResponse(respType, component);
+                        if obj.responseUsesFiberPoint(obj.RespType, obj.Component)
+                            obj.cbarTitle = sprintf('%s (fiber-%s)', obj.Component, obj.FiberPoint);
+                        else
+                            obj.cbarTitle = obj.Component;
+                        end
+                    else
+                        try
+                            [obj.RespType, obj.Component, obj.FiberPoint] = ...
+                                unstru_check_shell(respType, component, obj.FiberPoint);
+                            obj.cbarTitle = sprintf('%s (fiber-%s)', obj.Component, obj.FiberPoint);
+                        catch ME
+                            if obj.hasEleRespField(respType)
+                                [obj.RespType, obj.Component] = obj.normalizeCustomResponse(respType, component);
+                                if obj.responseUsesFiberPoint(obj.RespType, obj.Component)
+                                    obj.cbarTitle = sprintf('%s (fiber-%s)', obj.Component, obj.FiberPoint);
+                                else
+                                    obj.cbarTitle = obj.Component;
+                                end
+                            else
+                                rethrow(ME);
+                            end
+                        end
+                    end
                 case 'plane'
                     obj.EleType = 'Plane';
-                    [obj.RespType, obj.Component] = unstru_check_plane(respType, component);
+                    if obj.isCustomResponseRequest(respType, component)
+                        [obj.RespType, obj.Component] = obj.normalizeCustomResponse(respType, component);
+                    else
+                        try
+                            [obj.RespType, obj.Component] = unstru_check_plane(respType, component);
+                        catch ME
+                            if obj.hasEleRespField(respType)
+                                [obj.RespType, obj.Component] = obj.normalizeCustomResponse(respType, component);
+                            else
+                                rethrow(ME);
+                            end
+                        end
+                    end
                     obj.cbarTitle = obj.Component;
                 case {'solid','brick'}
                     obj.EleType = 'Solid';
-                    [obj.RespType, obj.Component] = unstru_check_solid(respType, component);
+                    if obj.isCustomResponseRequest(respType, component)
+                        [obj.RespType, obj.Component] = obj.normalizeCustomResponse(respType, component);
+                    else
+                        try
+                            [obj.RespType, obj.Component] = unstru_check_solid(respType, component);
+                        catch ME
+                            if obj.hasEleRespField(respType)
+                                [obj.RespType, obj.Component] = obj.normalizeCustomResponse(respType, component);
+                            else
+                                rethrow(ME);
+                            end
+                        end
+                    end
                     obj.cbarTitle = obj.Component;
                 otherwise
                     error('PlotUnstruResponse:BadEleType', 'Unknown ele type "%s".', obj.EleType);
@@ -1035,10 +1090,10 @@ classdef PlotUnstruResponse < handle
 
             isLayoutC = isstruct(fld) && ~isfield(fld,'data');
             isPlain   = isnumeric(fld);
-            isNodeBased = unstru_is_node_based(rt) || isPlain;
 
             [~, modelTags] = obj.getNodeStepData(segIdx);
             nModelNode = numel(modelTags);
+            isNodeBased = unstru_is_node_based(rt);
 
             if isNodeBased
                 if isPlain
@@ -1073,6 +1128,10 @@ classdef PlotUnstruResponse < handle
 
             if isLayoutC
                 scalarEleRaw = obj.extractElementScalarLayoutC(segIdx, fld, localStep);
+            elseif isPlain
+                raw = double(fld);
+                si  = min(localStep, size(raw,1));
+                scalarEleRaw = double(raw(si,:).');
             else
                 data  = double(fld.data);
                 dofs_ = {};
@@ -1133,6 +1192,8 @@ classdef PlotUnstruResponse < handle
             nd = ndims(data);
             si = min(localStep, size(data,1));
             switch nd
+                case 2
+                    scalarNode = double(data(si,:).');
                 case 3
                     slice = reshape(data(si,:,:), size(data,2), size(data,3));
                     if isvector(slice), slice = slice(:); end
@@ -1153,6 +1214,8 @@ classdef PlotUnstruResponse < handle
             nd = ndims(data);
             si = min(localStep, size(data,1));
             switch nd
+                case 2
+                    scalarEle = double(data(si,:).');
                 case 3
                     slice = reshape(data(si,:,:), size(data,2), size(data,3));
                     if isvector(slice), slice = slice(:); end
@@ -1201,7 +1264,27 @@ classdef PlotUnstruResponse < handle
             end
             raw    = double(entry.(fn{idx}));
             si     = min(localStep, size(raw,1));
-            scalarNode = double(raw(si,:).');
+            nd     = ndims(raw);
+            if nd == 2
+                scalarNode = double(raw(si,:).');
+            elseif nd == 3 && strcmpi(obj.EleType, 'Shell')
+                slice = reshape(raw(si,:,:), size(raw,2), size(raw,3));
+                fibIdx = unstru_fiber_idx(obj.FiberPoint, size(slice,2));
+                scalarNode = double(slice(:,fibIdx));
+            else
+                sz = size(raw);
+                tail = sz(3:end);
+                if isempty(tail) || prod(tail) == 1
+                    scalarNode = double(reshape(raw(si,:,:), sz(2), 1));
+                else
+                    error('PlotUnstruResponse:UnsupportedNodeDataShape', ...
+                        ['Layout-C node component "%s" must be [nStep x nNode]. ', ...
+                         'Shell also accepts [nStep x nNode x nFiber]. ', ...
+                         'Got %s. For element GP data, use a field name without AtNode.'], ...
+                        obj.Component, mat2str(sz));
+                end
+            end
+            scalarNode = double(scalarNode(:));
         end
 
         function scalar = extractElementScalarLayoutC(obj, segIdx, entry, localStep)
@@ -1647,6 +1730,188 @@ classdef PlotUnstruResponse < handle
             if ~isempty(m), rt = m{1}; end
         end
 
+        function tf = hasEleRespField(obj, rt)
+            tf = false;
+            if isempty(rt), return; end
+            rt = char(string(rt));
+            for s = 1:obj.SegCount
+                er = obj.safeGetSeg(obj.EleResp, s);
+                if ~isstruct(er), continue; end
+                fn = fieldnames(er);
+                if any(strcmpi(fn, rt))
+                    tf = true;
+                    return;
+                end
+            end
+        end
+
+        function tf = isCustomResponseRequest(obj, rt, comp)
+            tf = false;
+            if isempty(rt) || ~obj.hasEleRespField(rt), return; end
+            builtin = {'SecForceAtGP','SecDefoAtGP','SecForceAtNode','SecDefoAtNode', ...
+                       'StressAtGP','StrainAtGP','StressAtNode','StrainAtNode', ...
+                       'StressMeasureAtGP','StressMeasureAtNode'};
+            if any(strcmpi(char(string(rt)), builtin))
+                tf = obj.hasRespComponent(rt, comp);
+            else
+                tf = true;
+            end
+        end
+
+        function [rt, comp] = normalizeCustomResponse(obj, rt, comp)
+            rt = char(string(rt));
+            comp = lower(strtrim(char(string(comp))));
+
+            for s = 1:obj.SegCount
+                er = obj.safeGetSeg(obj.EleResp, s);
+                if ~isstruct(er), continue; end
+                fn = fieldnames(er);
+                idx = find(strcmpi(fn, rt), 1);
+                if ~isempty(idx)
+                    rt = fn{idx};
+                    break;
+                end
+            end
+
+            if isempty(comp)
+                comp = obj.defaultRespComponent(rt);
+            end
+
+            if ~isempty(comp) && ~obj.hasRespComponent(rt, comp)
+                % Plain scalar fields and .data arrays without dofs have no
+                % named components; any component label is only used for titles.
+                if ~obj.isScalarRespField(rt)
+                    error('PlotUnstruResponse:ComponentNotFound', ...
+                        'Component "%s" not found in custom EleResp.%s.', comp, rt);
+                end
+            end
+        end
+
+        function comp = defaultRespComponent(obj, rt)
+            comp = '';
+            for s = 1:obj.SegCount
+                er = obj.safeGetSeg(obj.EleResp, s);
+                if ~isstruct(er), continue; end
+                rt2 = obj.normalizeRespType(min(s,numel(obj.EleResp)), rt);
+                if ~isfield(er, rt2), continue; end
+                entry = er.(rt2);
+                if isstruct(entry)
+                    if isfield(entry,'dofs') && ~isempty(entry.dofs)
+                        dofs = unstru_normalize_dofs(entry.dofs);
+                        if ~isempty(dofs)
+                            comp = lower(strtrim(char(string(dofs{1}))));
+                            return;
+                        end
+                    elseif ~isfield(entry,'data')
+                        fn = fieldnames(entry);
+                        fn = fn(~ismember(lower(fn), {'nodetags','eletags','dofs'}));
+                        if ~isempty(fn)
+                            comp = lower(fn{1});
+                            return;
+                        end
+                    end
+                end
+            end
+        end
+
+        function tf = hasRespComponent(obj, rt, comp)
+            tf = false;
+            if isempty(comp), return; end
+            comp = lower(strtrim(char(string(comp))));
+            for s = 1:obj.SegCount
+                er = obj.safeGetSeg(obj.EleResp, s);
+                if ~isstruct(er), continue; end
+                rt2 = obj.normalizeRespType(min(s,numel(obj.EleResp)), rt);
+                if ~isfield(er, rt2), continue; end
+                entry = er.(rt2);
+                if ~isstruct(entry), continue; end
+                if isfield(entry,'dofs') && ~isempty(entry.dofs)
+                    dofs = unstru_normalize_dofs(entry.dofs);
+                    names = cellfun(@(x) lower(strtrim(char(string(x)))), dofs(:), 'UniformOutput', false);
+                    if any(strcmp(names, comp)), tf = true; return; end
+                elseif ~isfield(entry,'data')
+                    if obj.hasLayoutCComponent(entry, comp), tf = true; return; end
+                end
+            end
+        end
+
+        function tf = hasLayoutCComponent(obj, entry, comp)
+            tf = false;
+            fn = fieldnames(entry);
+            if any(strcmpi(fn, comp)), tf = true; return; end
+            for i = 1:numel(fn)
+                if isstruct(entry.(fn{i})) && obj.hasLayoutCComponent(entry.(fn{i}), comp)
+                    tf = true;
+                    return;
+                end
+            end
+        end
+
+        function tf = isScalarRespField(obj, rt)
+            tf = false;
+            for s = 1:obj.SegCount
+                er = obj.safeGetSeg(obj.EleResp, s);
+                if ~isstruct(er), continue; end
+                rt2 = obj.normalizeRespType(min(s,numel(obj.EleResp)), rt);
+                if ~isfield(er, rt2), continue; end
+                entry = er.(rt2);
+                if isnumeric(entry)
+                    tf = true;
+                    return;
+                end
+                if isstruct(entry) && isfield(entry,'data') && ...
+                        isnumeric(entry.data) && ndims(entry.data) == 2
+                    tf = true;
+                    return;
+                end
+            end
+        end
+
+        function tf = responseUsesFiberPoint(obj, rt, comp)
+            tf = false;
+            for s = 1:obj.SegCount
+                er = obj.safeGetSeg(obj.EleResp, s);
+                if ~isstruct(er), continue; end
+                rt2 = obj.normalizeRespType(min(s,numel(obj.EleResp)), rt);
+                if ~isfield(er, rt2), continue; end
+                entry = er.(rt2);
+                if isstruct(entry) && isfield(entry,'data') && isnumeric(entry.data)
+                    if unstru_is_node_based(rt2)
+                        tf = ndims(entry.data) >= 4;
+                    else
+                        tf = ndims(entry.data) >= 5;
+                    end
+                    if tf, return; end
+                elseif isstruct(entry) && ~isfield(entry,'data') && ~isempty(comp)
+                    raw = obj.findLayoutCComponentData(entry, comp);
+                    if isnumeric(raw)
+                        if unstru_is_node_based(rt2)
+                            tf = strcmpi(obj.EleType, 'Shell') && ndims(raw) >= 3;
+                        else
+                            tf = ndims(raw) >= 4;
+                        end
+                        if tf, return; end
+                    end
+                end
+            end
+        end
+
+        function raw = findLayoutCComponentData(obj, entry, comp)
+            raw = [];
+            fn = fieldnames(entry);
+            idx = find(strcmpi(fn, comp), 1);
+            if ~isempty(idx)
+                raw = entry.(fn{idx});
+                return;
+            end
+            for i = 1:numel(fn)
+                if isstruct(entry.(fn{i}))
+                    raw = obj.findLayoutCComponentData(entry.(fn{i}), comp);
+                    if ~isempty(raw), return; end
+                end
+            end
+        end
+
         function values = trimVectorLength(~, values, nRow)
             values = values(:);
             if numel(values)<nRow, values(end+1:nRow,1)=NaN;
@@ -1774,7 +2039,7 @@ function scalar = unstru_dof_scalar(mat, dofs, component)
     if isempty(mat), scalar=zeros(0,1); return; end
     if isvector(mat), mat=mat(:); end
     comp=strtrim(char(string(component)));
-    if iscell(dofs)&&isscalar(dofs)&&iscell(dofs{1}), dofs=dofs{1}; end
+    dofs = unstru_normalize_dofs(dofs);
     for d=1:numel(dofs)
         name=strtrim(char(string(dofs{d})));
         if strcmpi(name,comp)
@@ -1784,6 +2049,22 @@ function scalar = unstru_dof_scalar(mat, dofs, component)
         end
     end
     error('PlotUnstruResponse:DofNotFound','Component "%s" not found in dofs.',component);
+end
+
+function dofs = unstru_normalize_dofs(dofs)
+    if isempty(dofs)
+        dofs = {};
+    elseif iscell(dofs) && isscalar(dofs) && iscell(dofs{1})
+        dofs = dofs{1};
+    elseif iscell(dofs)
+        dofs = dofs(:).';
+    elseif isstring(dofs)
+        dofs = cellstr(dofs(:).');
+    elseif ischar(dofs)
+        dofs = {dofs};
+    else
+        dofs = cellstr(string(dofs(:).'));
+    end
 end
 
 function idx = unstru_fiber_idx(fp, nFib)

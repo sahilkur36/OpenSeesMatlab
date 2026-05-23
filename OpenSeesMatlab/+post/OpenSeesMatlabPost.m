@@ -340,7 +340,7 @@ classdef OpenSeesMatlabPost < handle
             % ----------
             % odbTag : char | string | numeric
             %     A unique identifier for the ODB.
-            % flushEvery : integer, optional
+            % flushEvery : integer, optional, default 10
             %     If provided, specifies the frequency (in steps) at which to save data to disk.
             % elasticFrameSecPoints : integer, optional, default 9
             %     Number of points to use for elastic frame section integration.
@@ -406,7 +406,7 @@ classdef OpenSeesMatlabPost < handle
                 obj (1,1) post.OpenSeesMatlabPost
                 odbTag  = ""
 
-                options.flushEvery                       = 20
+                options.flushEvery                       = 10
 
                 options.saveNodalResp           logical = true
                 options.saveFrameResp           logical = true
@@ -533,9 +533,9 @@ classdef OpenSeesMatlabPost < handle
             end
 
             data = post.ODB.readNodeResponse(obj.parent.opensees, odbTag, nodeTags=options.nodeTags, respType=options.respType);
-         end
+        end
 
-         function data = getElementResponse(obj, odbTag, options)
+        function data = getElementResponse(obj, odbTag, options)
             % Get element response data from an ODB.
             %
             % Example
@@ -574,8 +574,8 @@ classdef OpenSeesMatlabPost < handle
                     'An odbTag must be provided.');
             end
             data = post.ODB.readElementResponse(obj.parent.opensees, ...
-                    odbTag, eleType=options.eleType, eleTags=options.eleTags, respType=options.respType);
-         end
+                odbTag, eleType=options.eleType, eleTags=options.eleTags, respType=options.respType);
+        end
 
         function results = writeResponsePVD(obj, odbTag, outDir, baseName, options)
             % Write nodal and Shell, Plane, Solid element responses to ParaView-readable VTU/PVD files.
@@ -609,10 +609,10 @@ classdef OpenSeesMatlabPost < handle
             end
 
             results = post.ODB.writePVD(obj.parent.opensees, odbTag, outDir, baseName, ...
-                                includeNodal=options.includeNodal, ...
-                                includeShell=options.includeShell, ...
-                                includePlane=options.includePlane, ...
-                                includeSolid=options.includeSolid);
+                includeNodal=options.includeNodal, ...
+                includeShell=options.includeShell, ...
+                includePlane=options.includePlane, ...
+                includeSolid=options.includeSolid);
         end
     end
 

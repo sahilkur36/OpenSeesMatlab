@@ -95,6 +95,7 @@ classdef PlotUnstruResponse < handle
                 'edgeColor','#000000', 'color','#8c000f');
 
             opts.cbar = struct('show',true, 'label','');
+            opts.responseLocation = '';  % ''/'auto' | 'node' | 'gp' | 'element'
 
             opts.help = strjoin({
                 '====== PlotUnstruResponse Options =================================='
@@ -109,11 +110,20 @@ classdef PlotUnstruResponse < handle
                 '             Names containing ''AtNode'' are treated as node fields;'
                 '             other custom fields are treated as element fields.'
                 '             Layout-C examples:'
-                '               EleResp.MyLayoutC.c1       = [nStep x nEle]'
-                '               EleResp.MyLayoutC.c1       = [nStep x nEle x nGP]'
-                '               EleResp.MyLayoutCAtNode.c1 = [nStep x nNode]'
+                '               EleResp.MyLayoutC.c1       = [nStep x nEle]       responseLocation=''element'''
+                '               EleResp.MyLayoutC.c1       = [nStep x nEle x nGP] responseLocation=''gp'''
+                '               EleResp.MyLayoutCAtNode.c1 = [nStep x nNode]      responseLocation=''node'''
                 '             Shell custom fields may also include nFiber as the'
                 '             next-to-last response dimension and use fiberPoint.'
+                '  responseLocation '''' | ''auto'' | ''node'' | ''gp'' | ''element'''
+                '             empty/auto infers from respType: AtNode -> node,'
+                '             AtGP -> gp, otherwise element for custom fields.'
+                '             node    : data rows are model/response nodes.'
+                '             gp      : data rows are elements with GP dimension;'
+                '                       GP values are averaged per element.'
+                '             element : data rows are already element-level values;'
+                '                       existing gpReduce is still used if the'
+                '                       data itself has a GP dimension.'
                 ''
                 '-- Deformation -------------------------------------------------'
                 '  deform.show            logical  Draw deformed shape (default true).'
@@ -211,12 +221,14 @@ classdef PlotUnstruResponse < handle
             prevDefScale = obj.Opts.deform.scale;
             prevGpReduce = obj.Opts.surf.gpReduce;
             prevGpIndex  = obj.Opts.surf.gpIndex;
+            prevRespLoc  = obj.Opts.responseLocation;
 
             obj.Opts = obj.mergeStruct(obj.Opts, opts);
 
             if ~strcmp(prevRespKey, obj.makeRespKey()) || ...
                ~strcmpi(prevGpReduce, obj.Opts.surf.gpReduce) || ...
-               prevGpIndex ~= obj.Opts.surf.gpIndex
+               prevGpIndex ~= obj.Opts.surf.gpIndex || ...
+               ~strcmpi(char(string(prevRespLoc)), char(string(obj.Opts.responseLocation)))
                 if ~isempty(obj.RespNodeScalar) || ~isempty(obj.RespEleScalar)
                     [obj.RespNodeScalar, obj.RespEleScalar] = obj.buildRespFields();
                 end
@@ -1093,7 +1105,7 @@ classdef PlotUnstruResponse < handle
 
             [~, modelTags] = obj.getNodeStepData(segIdx);
             nModelNode = numel(modelTags);
-            isNodeBased = unstru_is_node_based(rt);
+            isNodeBased = obj.resolveResponseIsNodeBased(rt);
 
             if isNodeBased
                 if isPlain
@@ -1334,7 +1346,11 @@ classdef PlotUnstruResponse < handle
 
         function out = reduceGaussBlock(obj, blk)
             if isempty(blk), out = blk; return; end
-            mode = lower(strtrim(char(string(obj.Opts.surf.gpReduce))));
+            if obj.forceGpAverage()
+                mode = 'mean';
+            else
+                mode = lower(strtrim(char(string(obj.Opts.surf.gpReduce))));
+            end
             if isempty(mode), mode = 'mean'; end
             switch mode
                 case 'mean',   out = mean(blk,2,'omitnan');
@@ -1728,6 +1744,30 @@ classdef PlotUnstruResponse < handle
             fn = fieldnames(er);
             m  = fn(strcmpi(fn,rt));
             if ~isempty(m), rt = m{1}; end
+        end
+
+        function tf = resolveResponseIsNodeBased(obj, rt)
+            loc = lower(strtrim(char(string(obj.Opts.responseLocation))));
+            switch loc
+                case {'node','nodes','nodal','atnode'}
+                    tf = true;
+                    return;
+                case {'gp','gauss','gausspoint','gausspoints','element','elements','ele','atgp'}
+                    tf = false;
+                    return;
+                case {'','auto'}
+                    tf = unstru_is_node_based(rt);
+                    return;
+                otherwise
+                    warning('PlotUnstruResponse:BadResponseLocation', ...
+                        'Unknown responseLocation "%s"; using auto.', loc);
+                    tf = unstru_is_node_based(rt);
+            end
+        end
+
+        function tf = forceGpAverage(obj)
+            loc = lower(strtrim(char(string(obj.Opts.responseLocation))));
+            tf = ismember(loc, {'gp','gauss','gausspoint','gausspoints','atgp'});
         end
 
         function tf = hasEleRespField(obj, rt)

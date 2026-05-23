@@ -67,80 +67,6 @@ classdef PlotFrameResp < handle
     % =====================================================================
     methods (Static)
 
-        function describeOptions()
-            % Print a formatted description of all available options.
-            % Call:  plotter.PlotFrameResp.describeOptions()
-            fprintf('\n');
-            fprintf('PlotFrameResp options (pass as struct to plotStep or constructor)\n');
-            fprintf('=================================================================\n');
-            fprintf('\n');
-            fprintf('── Response selection ────────────────────────────────────────\n');
-            fprintf('  respType   string  Response field name.\n');
-            fprintf('             ''sectionForces'' | ''sectionDeformations''\n');
-            fprintf('             ''basicForces''   | ''basicDeformations''\n');
-            fprintf('             ''localForces''   | ''plasticDeformation''\n');
-            fprintf('  component  string  DOF component to plot.\n');
-            fprintf('             sectionForces/Deformations: ''N'' ''MZ'' ''VY'' ''MY'' ''VZ'' ''T''\n');
-            fprintf('             basicForces/Deformations:   ''N'' ''MZ'' ''MY'' ''T''\n');
-            fprintf('\n');
-            fprintf('── Diagram style ─────────────────────────────────────────────\n');
-            fprintf('  style      ''surface'' | ''wireframe''   Fill or outline only.\n');
-            fprintf('  scale      double  Manual scale multiplier (default 1.0).\n');
-            fprintf('  heightFrac double  Diagram height as fraction of model size\n');
-            fprintf('                     at peak value (default 0.05 = 5%%).\n');
-            fprintf('  scaleMode  ''current'' | ''global''\n');
-            fprintf('             current = scale per step; global = fixed across all steps.\n');
-            fprintf('\n');
-            fprintf('── Color ─────────────────────────────────────────────────────\n');
-            fprintf('  color.useColormap  logical  Color by value (true) or solid (false).\n');
-            fprintf('  color.colormap     N×3      Colormap matrix (default jet(256)).\n');
-            fprintf('  color.clim         [lo hi]  Fixed color limits; [] = auto.\n');
-            fprintf('  color.climMode     ''current'' | ''global''\n');
-            fprintf('  color.solidColor   color    Fill color when useColormap=false.\n');
-            fprintf('  color.faceAlpha    double   Surface opacity 0–1 (default 1.0).\n');
-            fprintf('  color.wireColor    color    Wireframe color.\n');
-            fprintf('  color.wireWidth    double   Wireframe line width.\n');
-            fprintf('  color.modelColor   color    Beam model line color.\n');
-            fprintf('  color.modelWidth   double   Beam model line width.\n');
-            fprintf('\n');
-            fprintf('── Visibility ────────────────────────────────────────────────\n');
-            fprintf('  showModel      logical  Draw beam centreline (default true).\n');
-            fprintf('  showBeamModel  logical  Draw beam connectivity (default true).\n');
-            fprintf('  showZeroLine   logical  Draw zero-value baseline (default true).\n');
-            fprintf('  surf.show      logical  Draw unstructured mesh wireframe.\n');
-            fprintf('\n');
-            fprintf('── Labels ────────────────────────────────────────────────────\n');
-            fprintf('  showMaxMinLabel  ''global'' | ''element'' | ''all'' | ''none''\n');
-            fprintf('                   Which extreme values to annotate.\n');
-            fprintf('  labelFontSize    double   Label font size (default 9).\n');
-            fprintf('  labelGap         double   Extra gap beyond tip as fraction of\n');
-            fprintf('                   diagram height (default 0.15 = 15%% extra).\n');
-            fprintf('                   0 = at tip; 0.5 = half diagram height beyond.\n');
-            fprintf('\n');
-            fprintf('── Layout ────────────────────────────────────────────────────\n');
-            fprintf('  general.view      ''auto''|''xy''|''xz''|''iso''  Camera view.\n');
-            fprintf('  general.padRatio  double  Axis padding fraction (default 0.25).\n');
-            fprintf('  general.figureSize [w h]  Figure size in pixels.\n');
-            fprintf('  general.title     ''auto'' | string  Plot title.\n');
-            fprintf('\n');
-            fprintf('── Performance ───────────────────────────────────────────────\n');
-            fprintf('  performance.fastMode            logical  Skip slow extras.\n');
-            fprintf('  performance.maxElementLabels    int     Max elements labelled.\n');
-            fprintf('  performance.maxSectionsPerElement int   Max section points drawn.\n');
-            fprintf('\n');
-            fprintf('── Colorbar ──────────────────────────────────────────────────\n');
-            fprintf('  cbar.show   logical  Show colorbar (default true).\n');
-            fprintf('  cbar.label  string   Extra colorbar label suffix.\n');
-            fprintf('\n');
-            fprintf('Example:\n');
-            fprintf('  opts = plotter.PlotFrameResp.defaultOptions();\n');
-            fprintf('  opts.component  = ''VY'';\n');
-            fprintf('  opts.scaleMode  = ''global'';\n');
-            fprintf('  opts.labelGap   = 0.2;\n');
-            fprintf('  pfr.plotStep(''absmax'', opts);\n');
-            fprintf('\n');
-        end
-
         function opts = defaultOptions()
             opts.general = struct( ...
                 'clearAxes',true, 'holdOn',true, 'axisEqual',true, ...
@@ -149,6 +75,7 @@ classdef PlotFrameResp < handle
 
             opts.respType   = 'sectionForces';
             opts.component  = 'MZ';
+            opts.responseLocation = '';    % ''/'auto' | 'section' | 'element'
             opts.style      = 'surface';   % 'surface' | 'wireframe'
             opts.scale      = 1.0;
             opts.heightFrac = 0.1;
@@ -187,9 +114,32 @@ classdef PlotFrameResp < handle
                 '               ''sectionForces'' | ''sectionDeformations'''
                 '               ''basicForces''   | ''basicDeformations'''
                 '               ''localForces''   | ''plasticDeformation'''
+                '               or any custom field in frameResp.'
                 '  component   string   DOF component to plot.'
                 '               sectionForces/Deformations : N  MZ  VY  MY  VZ  T'
                 '               basicForces/Deformations   : N  MZ  MY  T'
+                '               custom fields: dof label or Layout-C subfield.'
+                '  responseLocation  '''' | ''auto'' | ''section'' | ''element'''
+                '               empty/auto uses explicit built-in rules:'
+                '                 sectionForces/sectionDeformations -> section'
+                '                 basicForces/basicDeformations/localForces/'
+                '                 plasticDeformation -> element'
+                '               section : values are located by recorded sectionLocs.'
+                '               element : values are placed uniformly along each'
+                '                         element; two values are placed at [0,1].'
+                '  Custom field layouts:'
+                '    frameResp.MyScalar = [nStep x nEle]                 responseLocation=''element'''
+                '    frameResp.MyVector.data = [nStep x nEle x nComp]'
+                '    frameResp.MyVector.dofs = {''c1'',''c2'',...}'
+                '                                                   responseLocation=''element'''
+                '    End-pair dofs such as {''c1I'',''c1J''} or {''c11'',''c12''}'
+                '    can be selected with component=''c1'' and are drawn at [0,1].'
+                '    A single matching dof/subfield is drawn as an element constant.'
+                '    Use responseLocation=''section'' for [nStep x nEle x nSec]'
+                '    custom fields that should use recorded sectionLocs; use'
+                '    responseLocation=''element'' for end values or constants.'
+                '    frameResp.MyLayoutC.c1 = [nStep x nEle]             responseLocation=''element'''
+                '    frameResp.MyLayoutC.c1 = [nStep x nEle x nSec]      responseLocation=''section'''
                 ''
                 '-- Diagram style ------------------------------------------------'
                 '  style       ''surface'' | ''wireframe''   Fill or outline only.'
@@ -893,11 +843,16 @@ classdef PlotFrameResp < handle
             entry = fr.(fieldName);
             if ~isstruct(entry), return; end
             if isfield(entry,'dofs')
-                dofs = entry.dofs;  return;   % Layout B explicit labels
+                dofs = plotter.PlotFrameResp.normalizeDofs(entry.dofs);
+                return;   % Layout B explicit labels
             end
             if isfield(entry,'data'), return; end
             % Layout C: re-order to canonical sequence by matching uppercase
-            present   = fieldnames(entry).';
+            meta = {'time','odbtag','eletype','nodetags','eletags','dofs', ...
+                    'interpolatepoints','interpolatedisp','interpolatecells', ...
+                    'interpolatecoords','sectionlocs'};
+            present = fieldnames(entry).';
+            present = present(~ismember(lower(present), meta));
             presentUC = upper(present);
             % Canonical sequences per response type (uppercase)
             rt = upper(fieldName);
@@ -906,7 +861,10 @@ classdef PlotFrameResp < handle
             elseif contains(rt,'BASICFORCE') || contains(rt,'BASICDEFORM') || contains(rt,'PLASTIC')
                 canonical = {'N','MZ','MY','T'};
             elseif contains(rt,'LOCALFORCE')
-                canonical = {'FX1','FY1','FZ1','MX1','MY1','MZ1','FX2','FY2','FZ2','MX2','MY2','MZ2'};
+                canonical = {'FXI','FYI','FZI','MXI','MYI','MZI', ...
+                             'FXJ','FYJ','FZJ','MXJ','MYJ','MZJ', ...
+                             'FX1','FY1','FZ1','MX1','MY1','MZ1', ...
+                             'FX2','FY2','FZ2','MX2','MY2','MZ2'};
             else
                 canonical = {};
             end
@@ -932,8 +890,8 @@ classdef PlotFrameResp < handle
         end
 
         function perEle = respPerEle(obj, segIdx, localStep)
-            fr    = obj.FrameResp(segIdx);
-            nEle  = obj.nEles(segIdx);
+            info  = obj.beamInfo(segIdx, localStep);
+            nEle  = size(info.conn,1);
             perEle = cell(nEle,1);
             rt    = obj.normalizeRespType(segIdx, obj.Opts.respType);
             comp  = char(string(obj.Opts.component));
@@ -944,24 +902,39 @@ classdef PlotFrameResp < handle
             end
 
             si = min(localStep, size(A,1));
-            ci = obj.compIdx(rt, comp, obj.getRespDofs(segIdx, rt));
+            dofs = obj.getRespDofs(segIdx, rt);
+            ci = obj.compIdx(rt, comp, dofs);
             nd = ndims(A);
+            respRows = obj.respRowsForBeamInfo(segIdx, rt, localStep, info, size(A,2));
 
-            if nd == 3
+            if nd == 2
+                % Scalar custom field: [nStep x nEle]
+                D = double(A(si,:)).';
+                for e=1:nEle
+                    r = respRows(e);
+                    if r<=0||r>numel(D), perEle{e}=0; continue; end
+                    perEle{e}=D(r);
+                end
+            elseif nd == 3
                 % [nStep x nEle x nComp]
                 D = squeeze(double(A(si,:,:)));
                 if isvector(D), D=D(:).'; end
+                pair = obj.compEndPairIdx(rt, comp, dofs, size(D,2));
                 for e=1:nEle
-                    if e>size(D,1), perEle{e}=0; continue; end
-                    if ci>0&&ci<=size(D,2), perEle{e}=D(e,ci);
+                    r = respRows(e);
+                    if r<=0||r>size(D,1), perEle{e}=0; continue; end
+                    if numel(pair)==2 && all(pair>0) && all(pair<=size(D,2))
+                        perEle{e}=D(r,pair(:)).';
+                    elseif ci>0&&ci<=size(D,2), perEle{e}=D(r,ci);
                     else, perEle{e}=0; end
                 end
             elseif nd == 4
                 % [nStep x nEle x nSec x nComp]
                 D = squeeze(double(A(si,:,:,:)));
                 for e=1:nEle
-                    if e>size(D,1), perEle{e}=zeros(0,1); continue; end
-                    sec = squeeze(D(e,:,:));
+                    r = respRows(e);
+                    if r<=0||r>size(D,1), perEle{e}=zeros(0,1); continue; end
+                    sec = squeeze(D(r,:,:));
                     if isvector(sec), sec=sec(:); end
                     if ci>0&&ci<=size(sec,2)
                         vv=sec(:,ci); perEle{e}=vv(isfinite(vv));
@@ -975,7 +948,8 @@ classdef PlotFrameResp < handle
         end
 
         function perEle = secLocs(obj, segIdx, localStep)
-            nEle   = obj.nEles(segIdx);
+            info   = obj.beamInfo(segIdx, localStep);
+            nEle   = size(info.conn,1);
             perEle = cell(nEle,1);
             respCache = [];
 
@@ -983,6 +957,12 @@ classdef PlotFrameResp < handle
                 if isempty(respCache), respCache = obj.respPerEle(segIdx, localStep); end
                 n_ = max(numel(respCache{e_}),2);
                 locs = linspace(0,1,n_).';
+            end
+
+            rt = obj.normalizeRespType(segIdx, obj.Opts.respType);
+            if ~obj.usesRecordedSectionLocs(rt)
+                for e=1:nEle, perEle{e}=uniform(e); end
+                return;
             end
 
             L  = obj.getRespData(segIdx, 'sectionLocs');
@@ -1004,9 +984,16 @@ classdef PlotFrameResp < handle
             end
             if isvector(D), D=D(:).'; end
 
+            respRows = obj.respRowsForBeamInfo(segIdx, 'sectionLocs', localStep, info, size(D,1));
             for e=1:nEle
-                if e>size(D,1), continue; end
-                vv=squeeze(D(e,:)).'; vv=vv(isfinite(vv));
+                r = respRows(e);
+                if r<=0||r>size(D,1), continue; end
+                vv=squeeze(D(r,:)).'; vv=vv(isfinite(vv));
+                if isempty(respCache), respCache = obj.respPerEle(segIdx, localStep); end
+                if numel(respCache{e}) ~= numel(vv)
+                    perEle{e}=uniform(e);
+                    continue;
+                end
                 perEle{e}=vv;
             end
             for e=1:nEle
@@ -1033,7 +1020,82 @@ classdef PlotFrameResp < handle
                 if ~isempty(idx), ci=idx; return; end
             end
             n=str2double(comp);
-            ci=max(1,round(double(~isnan(n))*n+isnan(n)));
+            if ~isnan(n)
+                ci=max(1,round(n));
+            elseif numel(dofs)==1
+                ci=1;
+            else
+                ci=0;
+            end
+        end
+
+        function pair = compEndPairIdx(~, respType, comp, dofs, nComp)
+            pair = [];
+            if nargin<4, dofs={}; end
+            if nargin<5 || isempty(nComp), nComp = Inf; end
+            base = upper(strtrim(char(comp)));
+
+            names = cellfun(@(x) upper(strtrim(char(string(x)))), ...
+                dofs(:), 'UniformOutput', false);
+            i1 = find(strcmp(names, [base '1']), 1);
+            i2 = find(strcmp(names, [base '2']), 1);
+            if isempty(i1) || isempty(i2)
+                i1 = find(strcmp(names, [base 'I']), 1);
+                i2 = find(strcmp(names, [base 'J']), 1);
+            end
+            if ~isempty(i1) && ~isempty(i2)
+                pair = [i1 i2];
+                return;
+            end
+
+            rt = lower(strtrim(char(string(respType))));
+            if ismember(rt, {'localforces','localforce'})
+                validBase = {'FX','FY','FZ','MX','MY','MZ'};
+                if ~ismember(base, validBase), return; end
+                if nComp <= 6
+                    map = struct('FX',[1 4], 'FY',[2 5], 'MZ',[3 6]);
+                else
+                    map = struct( ...
+                        'FX',[1 7], 'FY',[2 8], 'FZ',[3 9], ...
+                        'MX',[4 10], 'MY',[5 11], 'MZ',[6 12]);
+                end
+                if isfield(map, base), pair = map.(base); end
+            end
+        end
+
+        function tf = usesRecordedSectionLocs(obj, rt)
+            loc = lower(strtrim(char(string(obj.Opts.responseLocation))));
+            switch loc
+                case {'section','sections','sec'}
+                    tf = true;
+                    return;
+                case {'element','ele','member','end','ends'}
+                    tf = false;
+                    return;
+                case {'','auto'}
+                    % Fall through to response-name inference.
+                otherwise
+                    warning('PlotFrameResp:BadResponseLocation', ...
+                        'Unknown responseLocation "%s"; using auto.', loc);
+            end
+            rt = lower(strtrim(char(string(rt))));
+            tf = strcmp(obj.inferBuiltinResponseLocation(rt), 'section');
+        end
+
+        function loc = inferBuiltinResponseLocation(~, rt)
+            rt = lower(strtrim(char(string(rt))));
+            switch rt
+                case {'sectionforces','sectionforce', ...
+                      'sectiondeformations','sectiondeformation'}
+                    loc = 'section';
+                case {'localforces','localforce', ...
+                      'basicforces','basicforce', ...
+                      'basicdeformations','basicdeformation', ...
+                      'plasticdeformation','plasticdeformations'}
+                    loc = 'element';
+                otherwise
+                    loc = 'auto';
+            end
         end
 
         % =================================================================
@@ -1282,6 +1344,76 @@ classdef PlotFrameResp < handle
             n=0;
         end
 
+        function rows = respRowsForBeamInfo(obj, segIdx, rt, localStep, info, nRespRows)
+            nEle = size(info.conn,1);
+            rows = zeros(nEle,1);
+            if nEle == 0 || nRespRows <= 0, return; end
+
+            [respTags, respTagRows] = obj.getRespEleTagsAtStep(segIdx, rt, localStep, nRespRows);
+            if ~isempty(respTags) && isfield(info,'tags') && ~isempty(info.tags)
+                valid = isfinite(respTags) & respTagRows >= 1 & respTagRows <= nRespRows;
+                respTags = respTags(valid);
+                respRows = respTagRows(valid);
+                [tf, loc] = ismember(double(info.tags(:)), respTags);
+                use = tf & loc > 0 & loc <= numel(respRows);
+                rows(use) = respRows(loc(use));
+                if ~any(rows > 0) && nRespRows == nEle
+                    rows(:) = (1:nEle).';
+                end
+                return;
+            end
+
+            n = min(nEle, nRespRows);
+            rows(1:n) = 1:n;
+        end
+
+        function [tags, rows] = getRespEleTagsAtStep(obj, segIdx, rt, localStep, nRespRows)
+            tags = [];
+            rows = [];
+            fr = obj.FrameResp(segIdx);
+            rt = obj.normalizeRespType(segIdx, rt);
+
+            raw = [];
+            if isfield(fr, rt)
+                entry = fr.(rt);
+                if isstruct(entry) && isfield(entry,'eleTags') && ~isempty(entry.eleTags)
+                    raw = entry.eleTags;
+                end
+            end
+            if isempty(raw) && isfield(fr,'eleTags') && ~isempty(fr.eleTags)
+                raw = fr.eleTags;
+            end
+            if isempty(raw), return; end
+
+            raw = double(raw);
+            if isvector(raw)
+                tags = raw(:);
+                rows = (1:numel(tags)).';
+            elseif ndims(raw) == 2
+                if size(raw,2) == nRespRows
+                    si = min(localStep, size(raw,1));
+                    tags = raw(si,:).';
+                    rows = (1:numel(tags)).';
+                elseif size(raw,1) == nRespRows
+                    si = min(localStep, size(raw,2));
+                    tags = raw(:,si);
+                    rows = (1:numel(tags)).';
+                else
+                    tags = raw(:);
+                    rows = (1:numel(tags)).';
+                end
+            else
+                si = min(localStep, size(raw,1));
+                tags = squeeze(raw(si,:,:));
+                tags = tags(:);
+                rows = (1:numel(tags)).';
+            end
+
+            n = min(numel(tags), numel(rows));
+            tags = tags(1:n);
+            rows = rows(1:n);
+        end
+
         function [cells, modelRowsUsed, keepRows] = remapCellsToModelRows(obj, cells, segIdx)
             modelRowsUsed=zeros(0,1); keepRows=false(size(cells,1),1);
             if isempty(cells), return; end
@@ -1355,9 +1487,17 @@ classdef PlotFrameResp < handle
 
         function D = selectRespComponentAllSteps(obj, segIdx, A, rt, comp)
             D  = [];
-            ci = obj.compIdx(rt, comp, obj.getRespDofs(segIdx, rt));
+            dofs = obj.getRespDofs(segIdx, rt);
+            ci = obj.compIdx(rt, comp, dofs);
             nd = ndims(A);
-            if nd==3&&ci>0&&ci<=size(A,3),       D=A(:,:,ci);
+            if nd==2,                            D=A;
+            elseif nd==3
+                pair = obj.compEndPairIdx(rt, comp, dofs, size(A,3));
+                if numel(pair)==2&&all(pair>0)&&all(pair<=size(A,3))
+                    D=A(:,:,pair);
+                elseif ci>0&&ci<=size(A,3)
+                    D=A(:,:,ci);
+                end
             elseif nd==4&&ci>0&&ci<=size(A,4),   D=A(:,:,:,ci);
             end
         end
@@ -1576,4 +1716,22 @@ classdef PlotFrameResp < handle
         end
 
     end % private methods
+
+    methods (Static, Access = private)
+        function dofs = normalizeDofs(dofs)
+            if isempty(dofs)
+                dofs = {};
+            elseif iscell(dofs) && isscalar(dofs) && iscell(dofs{1})
+                dofs = dofs{1};
+            elseif iscell(dofs)
+                dofs = dofs(:).';
+            elseif isstring(dofs)
+                dofs = cellstr(dofs(:).');
+            elseif ischar(dofs)
+                dofs = {dofs};
+            else
+                dofs = cellstr(string(dofs(:).'));
+            end
+        end
+    end
 end % classdef

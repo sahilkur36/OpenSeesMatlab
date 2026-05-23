@@ -235,31 +235,51 @@ classdef OpenSeesMatlabVis < handle
             % Parameters
             % ----------
             % nodeRespData : struct
-            %     Nodal response data, typically obtained from
-            %     opsmat.post.getNodalResponse(odbTag). The struct must include an
-            %     odbTag field so the corresponding model information can be
-            %     loaded.
+            %   Nodal response data, typically obtained from
+            %   ``opsmat.post.getNodalResponse(odbTag)``. The struct must include an
+            %   odbTag field so the corresponding model information can be
+            %   loaded.
             % respType : string, optional
-            %     Response type to visualize. Default is "disp". Common values
-            %     include "disp", "vel", "accel", "reaction",
-            %     "reactionIncInertia", "rayleighForces", and "pressure".
+            %   Response type to visualize. Default is "disp". Common values
+            %   include "disp", "vel", "accel", "reaction",
+            %   "reactionIncInertia", "rayleighForces", and "pressure".
+            %   Custom fields in nodeRespData are also accepted.
             % respComponent : string, optional
-            %     Response component to visualize. Default is "magnitude". For
-            %     vector responses, common values include "ux", "uy", "uz", "rx",
-            %     "ry", "rz", and "magnitude".
+            %   Response component to visualize. Default is "magnitude". For
+            %   vector responses, common values include "ux", "uy", "uz", "rx",
+            %   "ry", "rz", and "magnitude". For custom fields, use a name in
+            %   nodeRespData.(respType).dofs or a Layout-C subfield name.
+            %   Scalar custom fields may use any label for the colorbar.
             % stepIdx : integer or string, optional
-            %     Analysis step selector. Default is "absMax".
+            %   Analysis step selector. Default is "absMax".
             %
-            %     - "absMax": step with the maximum absolute response.
-            %     - "absMin": step with the minimum absolute response.
-            %     - "Max": step with the maximum response.
-            %     - "Min": step with the minimum response.
-            %     - integer: explicit step index.
+            %   - "absMax": step with the maximum absolute response.
+            %   - "absMin": step with the minimum absolute response.
+            %   - "Max": step with the maximum response.
+            %   - "Min": step with the minimum response.
+            %   - integer: explicit step index.
             % opts : struct, optional
-            %     Visualization options passed to plotter.PlotNodalResp. Start
-            %     from vis.defaultPlotNodalResponseOptions for customization.
+            %   Visualization options passed to plotter.PlotNodalResp. Start
+            %   from vis.defaultPlotNodalResponseOptions for customization.
             % ax : matlab.graphics.axis.Axes, optional
-            %     Target axes. If omitted or empty, a new figure/axes is created.
+            %   Target axes. If omitted or empty, a new figure/axes is created.
+            %
+            % Custom node response field layouts
+            % ----------------------------------
+            %     % Scalar:
+            %     nodeRespData.MyScalar = [nStep x nNode]
+            %
+            %     % Vector with component list:
+            %     nodeRespData.MyVector.data = [nStep x nNode x nComp]
+            %     nodeRespData.MyVector.dofs = {'c1','c2',...}
+            %
+            %     % Layout-C:
+            %     nodeRespData.MyLayoutC.c1 = [nStep x nNode]
+            %     nodeRespData.MyLayoutC.c2 = [nStep x nNode]
+            %
+            %     % Optional node tags:
+            %     nodeRespData.nodeTags = [nNode x 1]
+            %     nodeRespData.MyVector.nodeTags = [nNode x 1]
             %
             % Example
             % -------
@@ -273,8 +293,8 @@ classdef OpenSeesMatlabVis < handle
             arguments
                 obj (1,1) plotter.OpenSeesMatlabVis
                 nodeRespData struct
-                options.respType {mustBeTextScalar, mustBeMember(options.respType, ["disp", "vel", "accel", "reaction","reactionIncInertia", "rayleighForces", "pressure"])} = "disp"
-                options.respComponent {mustBeTextScalar, mustBeMember(options.respComponent, ["ux", "uy", "uz", "rx", "ry", "rz", "magnitude", "UX", "UY", "UZ", "RX", "RY", "RZ"])} = "magnitude"
+                options.respType {mustBeTextScalar} = "disp"
+                options.respComponent {mustBeTextScalar} = "magnitude"
                 options.stepIdx = "absMax"
                 options.opts (1,1) struct = struct()
                 options.ax {plotter.OpenSeesMatlabVis.mustBeAxesOrEmpty} = []
@@ -300,9 +320,6 @@ classdef OpenSeesMatlabVis < handle
             % Syntax
             % ------
             %     vis.plotDeformation(nodeRespData)
-            %     vis.plotDeformation(nodeRespData, stepIdx=stepIdx)
-            %     vis.plotDeformation(nodeRespData, color=color)
-            %     vis.plotDeformation(nodeRespData, useInterpolation=tf)
             %     vis.plotDeformation(nodeRespData, scaleFactor=scale)
             %     vis.plotDeformation(nodeRespData, showUndeformed=tf)
             %     vis.plotDeformation(nodeRespData, ax=ax)
@@ -375,29 +392,46 @@ classdef OpenSeesMatlabVis < handle
             %
             % Syntax
             % ------
-            %     vis.plotFrameResponse(respData)
-            %     vis.plotFrameResponse(respData, respType=respType)
-            %     vis.plotFrameResponse(respData, respComponent=component)
-            %     vis.plotFrameResponse(respData, stepIdx=stepIdx)
-            %     vis.plotFrameResponse(respData, opts=opts, ax=ax)
+            %     vis.plotFrameResponse(respData, respType=respType, respComponent=component, stepIdx=stepIdx, opts=opts, ax=ax)
             %
             % Parameters
             % ----------
             % respData : struct
-            %     Frame response data containing element response information,
-            %     typically obtained from
-            %     opsmat.post.getElementResponse(odbTag, eleType="Frame").
+            %   Frame response data containing element response information,
+            %   typically obtained from
+            %   ``opsmat.post.getElementResponse(odbTag, eleType="Frame")``.
             % respType : string, optional. The type of response to visualize. Default is "sectionForces". Common options include
-            %     - 'sectionForces'
-            %     - 'sectionDeformations'
-            %     - 'basicForces'
-            %     - 'basicDeformations'
-            %     - 'localForces'
-            %     - 'plasticDeformation'
+            %   - 'sectionForces'
+            %   - 'sectionDeformations'
+            %   - 'basicForces'
+            %   - 'basicDeformations'
+            %   - 'localForces'
+            %   - 'plasticDeformation'
+            %   - Any custom field in respData.
             % respComponent : string, optional. The component of the response to visualize. Default is "MZ". Common options include
-            %     - For 'sectionForces' and 'sectionDeformations', components include 'N','MZ','VY','MY','VZ','T'.
-            %     - For 'basicForces', 'basicDeformations' and 'plasticDeformation', components include 'N','MZ','MY','T'.
-            %     - For 'localForces', components include 'FX','FY','FZ','MX','MY','MZ'.
+            %   - For 'sectionForces' and 'sectionDeformations', components include 'N','MZ','VY','MY','VZ','T'.
+            %   - For 'basicForces', 'basicDeformations' and 'plasticDeformation', components include 'N','MZ','MY','T'.
+            %   - For 'localForces', components include 'FX','FY','MZ' in 2D
+            %       and 'FX','FY','FZ','MX','MY','MZ' in 3D.
+            %   - For custom fields, use a name listed in respData.(respType).dofs or a Layout-C subfield name. Scalar custom fields may use any label for the colorbar.
+            %
+            % responseLocation : string, optional
+            %     Controls where values are placed along each frame element.
+            %
+            %     - "" or "auto":
+            %       Built-in responses use fixed rules:
+            %       - sectionForces, sectionDeformations -> "section"
+            %       - basicForces, basicDeformations, localForces,
+            %         plasticDeformation -> "element"
+            %     - "section":
+            %       Values are interpreted as section/sample-point values and are
+            %       placed using recorded sectionLocs. Use this for arrays such as
+            %       [nStep x nEle x nSec] or [nStep x nEle x nSec x nComp].
+            %     - "element":
+            %       Values are placed uniformly along each element. A scalar is
+            %       drawn as an element-constant diagram; two values are placed at
+            %       element locations [0,1]. Use this for local/basic/end values.
+            %
             % stepIdx : integer or "absMax", optional
             %     - The index of the analysis step to visualize. Default is "absMax".
             %     - If "absMax", the step with the maximum absolute response will be visualized.
@@ -410,34 +444,42 @@ classdef OpenSeesMatlabVis < handle
             %     faster than using "absMax", "absMin", "Max", or "Min", because
             %     those string selectors scan all analysis steps to find the
             %     requested peak step.
+            %
             % opts : struct, optional
             %     Visualization options. Use ``vis.defaultPlotFrameResponseOptions`` to get default options.
-            %     For large frame models, the following options can significantly
-            %     reduce plotting time:
-            %
-            %     - opts.showMaxMinLabel = "none" or "global" to avoid creating
-            %       one or more text labels per element.
-            %     - opts.performance.fastMode = true to skip expensive auxiliary
-            %       geometry such as unstructured wireframes and element/all labels.
-            %       In fast mode, color limits also use the current step unless
-            %       opts.color.clim is explicitly specified.
-            %     - opts.performance.maxElementLabels = N to automatically skip
-            %       element/all labels when the number of beam elements exceeds N.
-            %       Use Inf to disable this automatic limit.
-            %     - opts.performance.maxSectionsPerElement = N to downsample
-            %       section-point diagrams for each beam element. Use Inf to keep
-            %       all recorded section points.
-            %     - opts.surf.show = false to skip non-frame surface wireframes.
-            %     - opts.color.climMode = "current" to compute color limits from
-            %       only the plotted step. Use "global" only when consistent color
-            %       limits across all steps are required.
-            %     - opts.color.clim = [cmin cmax] to use fixed color limits and
-            %       avoid scanning response data for color limits.
-            %     - opts.cbar.show = false to skip colorbar creation/update.
-            %     - opts.color.useColormap = false to use a solid color diagram.
             %
             % ax : matlab.graphics.axis.Axes, optional
             %     Target axes. If omitted, a new figure/axes will be created.
+            %
+            % Custom frame response field layouts
+            % -----------------------------------
+            %     % Element scalar, element-constant diagram:
+            %     respData.MyScalar = [nStep x nEle]
+            %     responseLocation="element"
+            %
+            %     % Element vector with component list:
+            %     respData.MyVector.data = [nStep x nEle x nComp]
+            %     respData.MyVector.dofs = {'c1','c2',...}
+            %     responseLocation="element"
+            %     
+            %     % End-pair labels such as {'c1I','c1J'} or {'c11','c12'} 
+            %     % can be plotted by passing respComponent="c1"; the two end values
+            %     % are drawn at element locations [0,1]. A single matching
+            %     % component is drawn as an element constant.
+            %
+            %     % Section-style vector, section/sample-point diagram:
+            %     respData.MySection.data = [nStep x nEle x nSec x nComp]
+            %     respData.MySection.dofs = {'c1','c2',...}
+            %     responseLocation="section"
+            %
+            %     % Layout-C:
+            %     respData.MyLayoutC.c1 = [nStep x nEle]
+            %     responseLocation="element"
+            %     respData.MyLayoutC.c1 = [nStep x nEle x nSec]
+            %     responseLocation="section"
+            %
+            %     % For custom fields, set responseLocation explicitly when the
+            %     % same data shape could mean either element or section values.
             %
             % Large-model example
             % -------------------
@@ -458,8 +500,9 @@ classdef OpenSeesMatlabVis < handle
             arguments
                 obj (1,1) plotter.OpenSeesMatlabVis
                 respData struct
-                options.respType {mustBeTextScalar, mustBeMember(options.respType, ["sectionForces", "sectionDeformations", "basicDeformations", "basicForces", "localForces", "plasticDeformation"])} = "sectionForces"
+                options.respType {mustBeTextScalar} = "sectionForces"
                 options.respComponent {mustBeTextScalar} = "MZ"
+                options.responseLocation {mustBeTextScalar} = ""
                 options.stepIdx = "absMax"
                 options.opts (1,1) struct = struct()
                 options.ax {plotter.OpenSeesMatlabVis.mustBeAxesOrEmpty} = []
@@ -469,6 +512,7 @@ classdef OpenSeesMatlabVis < handle
 
             options.opts.respType = options.respType;
             options.opts.component = options.respComponent;
+            options.opts.responseLocation = options.responseLocation;
 
             pf = plotter.PlotFrameResp(modelInfo, respData, options.ax, options.opts);
             pf.plotStep(options.stepIdx);
@@ -502,39 +546,37 @@ classdef OpenSeesMatlabVis < handle
             %     - For custom fields, a name listed in EleResp.(respType).dofs
             %       or a numeric subfield EleResp.(respType).(respComponent).
             %
+            % responseLocation : string, optional
+            %     Controls how the response rows are interpreted.
+            %
+            %     - "" or "auto":
+            %       Infer from respType. Names containing "AtNode" are nodal;
+            %       names containing "AtGP" are Gauss-point/element responses.
+            %       Custom names without either token are treated as element data.
+            %
+            %     - "node":
+            %       Response rows are nodes. Use [nStep x nNode] scalar data or
+            %       [nStep x nNode x nComp] vector data.
+            %
+            %     - "gp":
+            %       Response rows are elements with a Gauss-point dimension.
+            %       Gauss-point values are averaged per element before plotting.
+            %
+            %     - "element":
+            %       Response rows are already element-level values. If the data
+            %       still contains a GP dimension, opts.surf.gpReduce controls
+            %       the reduction.
+            %
             % fiberPoint : string or integer, optional  (default "top")
             %     Through-thickness location for stress/strain responses.
             %     "top" | "bottom" | "middle"  or 1-based integer fiber index.
             %     Also applies to custom data with a fiber dimension:
-            %       EleResp.MyVector.data = [nStep x nEle x nGP x nFiber x nComp]
-            %       EleResp.MyVectorAtNode.data = [nStep x nNode x nFiber x nComp]
-            %       EleResp.MyLayoutC.c1 = [nStep x nEle x nGP x nFiber]
-            %       EleResp.MyLayoutCAtNode.c1 = [nStep x nNode x nFiber]
-            %
-            % Custom EleResp field layouts
-            % ----------------------------
-            %     Element scalar:
-            %       EleResp.MyScalar = [nStep x nEle]
-            %
-            %     Node scalar:
-            %       EleResp.MyScalarAtNode = [nStep x nNode]
-            %
-            %     Element vector:
-            %       EleResp.MyVector.data = [nStep x nEle x nComp]
-            %       EleResp.MyVector.dofs = {'c1','c2',...}
-            %
-            %     Node vector:
-            %       EleResp.MyVectorAtNode.data = [nStep x nNode x nComp]
-            %       EleResp.MyVectorAtNode.dofs = {'c1','c2',...}
-            %
-            %     Element Layout-C:
-            %       EleResp.MyLayoutC.c1 = [nStep x nEle]
-            %       EleResp.MyLayoutC.c1 = [nStep x nEle x nGP]
-            %       EleResp.MyLayoutC.c1 = [nStep x nEle x nGP x nFiber]
-            %
-            %     Node Layout-C:
-            %       EleResp.MyLayoutCAtNode.c1 = [nStep x nNode]
-            %       EleResp.MyLayoutCAtNode.c1 = [nStep x nNode x nFiber]
+            %     ```matlab
+            %     EleResp.MyVector.data = [nStep x nEle x nGP x nFiber x nComp]
+            %     EleResp.MyVectorAtNode.data = [nStep x nNode x nFiber x nComp]
+            %     EleResp.MyLayoutC.c1 = [nStep x nEle x nGP x nFiber]
+            %     EleResp.MyLayoutCAtNode.c1 = [nStep x nNode x nFiber]
+            %     ```
             %
             % stepIdx : integer or string, optional  (default "absMax")
             %     "absMax" | "absMin" | "Max" | "Min" | integer step index.
@@ -545,6 +587,40 @@ classdef OpenSeesMatlabVis < handle
             %
             % ax : matlab.graphics.axis.Axes, optional
             %     Target axes. A new figure is created when omitted.
+            %
+            % Custom EleResp field layouts
+            % ----------------------------
+            %     % Element scalar:
+            %     EleResp.MyScalar = [nStep x nEle]
+            %     responseLocation="element"
+            %
+            %     % Node scalar:
+            %     EleResp.MyScalarAtNode = [nStep x nNode]
+            %     responseLocation="node"
+            %
+            %     % Element vector:
+            %     EleResp.MyVector.data = [nStep x nEle x nComp]
+            %     EleResp.MyVector.dofs = {'c1','c2',...}
+            %     responseLocation="element"
+            %
+            %     % Node vector:
+            %     EleResp.MyVectorAtNode.data = [nStep x nNode x nComp]
+            %     EleResp.MyVectorAtNode.dofs = {'c1','c2',...}
+            %     responseLocation="node"
+            %
+            %     % Element Layout-C:
+            %     EleResp.MyLayoutC.c1 = [nStep x nEle]
+            %     responseLocation="element"
+            %     EleResp.MyLayoutC.c1 = [nStep x nEle x nGP]
+            %     responseLocation="gp"
+            %     EleResp.MyLayoutC.c1 = [nStep x nEle x nGP x nFiber]
+            %     responseLocation="gp"
+            %
+            %     % Node Layout-C:
+            %     EleResp.MyLayoutCAtNode.c1 = [nStep x nNode]
+            %     responseLocation="node"
+            %     EleResp.MyLayoutCAtNode.c1 = [nStep x nNode x nFiber]
+            %     responseLocation="node"
 
             arguments
                 obj     (1,1) plotter.OpenSeesMatlabVis
@@ -553,6 +629,7 @@ classdef OpenSeesMatlabVis < handle
                 options.respType {mustBeTextScalar} = "SecForceAtGP"
                 options.respComponent {mustBeTextScalar} = "mxx"
                 options.fiberPoint = "top"
+                options.responseLocation {mustBeTextScalar} = ""
                 options.stepIdx    = "absMax"
                 options.opts          (1,1) struct = struct()
                 options.ax            {plotter.OpenSeesMatlabVis.mustBeAxesOrEmpty} = []
@@ -562,6 +639,7 @@ classdef OpenSeesMatlabVis < handle
 
             modelInfo = post.ODB.readModelInfo(obj.parent.opensees, odbTag);
             nodalResp = obj.parent.post.getNodalResponse(odbTag, respType="disp");
+            options.opts.responseLocation = options.responseLocation;
 
             pu = plotter.PlotUnstruResponse( ...
                 modelInfo, nodalResp, respData, options.ax, options.opts);
@@ -577,7 +655,6 @@ classdef OpenSeesMatlabVis < handle
             %
             % Example
             % -------
-            %     plotContinuumResponse(respData)
             %     plotContinuumResponse(respData, eleType="Solid", ...
             %         respType="StressAtGP", respComponent="sigmavm", ...
             %         stepIdx="absMax", ax=ax, opts=opts)
@@ -608,34 +685,26 @@ classdef OpenSeesMatlabVis < handle
             %       Scalar custom fields may use any label for the colorbar.
             %     - Layout-C custom fields use subfield names as components, so
             %       respComponent="c1" reads EleResp.(respType).c1.
+            % responseLocation : string, optional
+            %     Controls how the response rows are interpreted.
             %
-            % Custom EleResp field layouts
-            % ----------------------------
-            %     The field name decides whether custom data is element- or
-            %     node-based. Names containing "AtNode" are node-based; all other
-            %     custom names are element-based.
+            %     - "" or "auto":
+            %       Infer from respType. Names containing "AtNode" are nodal;
+            %       names containing "AtGP" are Gauss-point/element responses.
+            %       Custom names without either token are treated as element data.
             %
-            %     Element scalar:
-            %       EleResp.MyScalar = [nStep x nEle]
+            %     - "node":
+            %       Response rows are nodes. Use [nStep x nNode] scalar data or
+            %       [nStep x nNode x nComp] vector data.
             %
-            %     Node scalar:
-            %       EleResp.MyScalarAtNode = [nStep x nNode]
+            %     - "gp":
+            %       Response rows are elements with a Gauss-point dimension.
+            %       Gauss-point values are averaged per element before plotting.
             %
-            %     Element vector with component list:
-            %       EleResp.MyVector.data = [nStep x nEle x nComp]
-            %       EleResp.MyVector.dofs = {'c1','c2',...}
-            %
-            %     Node vector with component list:
-            %       EleResp.MyVectorAtNode.data = [nStep x nNode x nComp]
-            %       EleResp.MyVectorAtNode.dofs = {'c1','c2',...}
-            %
-            %     Element Layout-C:
-            %       EleResp.MyLayoutC.c1 = [nStep x nEle]
-            %       EleResp.MyLayoutC.c1 = [nStep x nEle x nGP]
-            %
-            %     Node Layout-C:
-            %       EleResp.MyLayoutCAtNode.c1 = [nStep x nNode]
-            %
+            %     - "element":
+            %       Response rows are already element-level values. If the data
+            %       still contains a GP dimension, opts.surf.gpReduce controls
+            %       the reduction.
             % stepIdx : integer or string, optional  (default "absMax")
             %     "absmax" | "absmin" | "max" | "min" | 0-based integer step index.
             %
@@ -645,11 +714,46 @@ classdef OpenSeesMatlabVis < handle
             %
             % ax : matlab.graphics.axis.Axes, optional
             %     Target axes. A new figure is created when omitted.
+            %
+            % Custom EleResp field layouts
+            % ----------------------------
+            %     % The field name decides whether custom data is element- or
+            %     % node-based. Names containing "AtNode" are node-based; all other
+            %     % custom names are element-based.
+            %
+            %     % Element scalar:
+            %     EleResp.MyScalar = [nStep x nEle]
+            %     responseLocation="element"
+            %
+            %     % Node scalar:
+            %     EleResp.MyScalarAtNode = [nStep x nNode]
+            %     responseLocation="node"
+            %
+            %     % Element vector with component list:
+            %     EleResp.MyVector.data = [nStep x nEle x nComp]
+            %     EleResp.MyVector.dofs = {'c1','c2',...}
+            %     responseLocation="element"
+            %
+            %     % Node vector with component list:
+            %     EleResp.MyVectorAtNode.data = [nStep x nNode x nComp]
+            %     EleResp.MyVectorAtNode.dofs = {'c1','c2',...}
+            %     responseLocation="node"
+            %
+            %     % Element Layout-C:
+            %     EleResp.MyLayoutC.c1 = [nStep x nEle]
+            %     responseLocation="element"
+            %     EleResp.MyLayoutC.c1 = [nStep x nEle x nGP]
+            %     responseLocation="gp"
+            %
+            %     % Node Layout-C:
+            %     EleResp.MyLayoutCAtNode.c1 = [nStep x nNode]
+            %     responseLocation="node"
             arguments
                 obj      (1,1) plotter.OpenSeesMatlabVis
                 respData struct
                 options.respType {mustBeTextScalar} = "StressAtGP"
                 options.respComponent {mustBeTextScalar} = "sxx"
+                options.responseLocation {mustBeTextScalar} = ""
                 options.stepIdx   = "absmax"
                 options.opts          (1,1) struct = struct()
                 options.ax            {plotter.OpenSeesMatlabVis.mustBeAxesOrEmpty} = []
@@ -667,6 +771,7 @@ classdef OpenSeesMatlabVis < handle
             odbTag = respData(1).odbTag;
             modelInfo = post.ODB.readModelInfo(obj.parent.opensees, odbTag);
             nodalResp = obj.parent.post.getNodalResponse(odbTag, respType="disp");
+            options.opts.responseLocation = options.responseLocation;
             pu = plotter.PlotUnstruResponse( ...
                 modelInfo, nodalResp, respData, options.ax, options.opts);
             pu.setResponse(eleType, options.respType, options.respComponent);

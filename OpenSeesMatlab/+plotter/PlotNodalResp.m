@@ -104,10 +104,17 @@ classdef PlotNodalResp < handle
                 '====== PlotNodalResp Options ======================================='
                 ''
                 '-- Field display -----------------------------------------------'
-                '  field.type        ''disp'' | ''vel'' | ''accel'' | ''reaction'''
-                '                    Response type to colour-map onto mesh.'
+                '  field.type        built-in response type or custom field name.'
+                '                    Built-ins include ''disp'', ''vel'', ''accel'','
+                '                    ''reaction'', ''rayleighForces'', and ''pressure''.'
                 '  field.component   ''magnitude'' | ''x'' | ''y'' | ''z'' | ''rx'' | ''ry'' | ''rz'''
+                '                    or a custom dof/subfield name.'
                 '  field.show        logical   Show colour-mapped field (default true).'
+                '  Custom field layouts:'
+                '    nodalResp.MyScalar = [nStep x nNode]'
+                '    nodalResp.MyVector.data = [nStep x nNode x nComp]'
+                '    nodalResp.MyVector.dofs = {''c1'',''c2'',...}'
+                '    nodalResp.MyLayoutC.c1 = [nStep x nNode]'
                 ''
                 '-- Deformation -------------------------------------------------'
                 '  deform.show            logical  Draw deformed shape (default true).'
@@ -483,6 +490,11 @@ classdef PlotNodalResp < handle
                 A = [];
                 if isstruct(entry) && isfield(entry, 'data')
                     A = double(entry.data);                     % Layout B
+                    if ndims(A) == 2
+                        A = reshape(A, size(A,1), size(A,2), 1);
+                    end
+                elseif isnumeric(entry) && ndims(entry) == 2
+                    A = reshape(double(entry), size(entry,1), size(entry,2), 1);
                 elseif isnumeric(entry) && ndims(entry) == 3
                     A = double(entry);                          % Layout A
                 elseif isstruct(entry)
@@ -951,9 +963,13 @@ classdef PlotNodalResp < handle
             if isstruct(entry) && isfield(entry, 'data')
                 % Layout B
                 arr = entry.data;
-                if isempty(arr) || ndims(arr) < 3, return; end
+                if isempty(arr) || ndims(arr) < 2, return; end
                 si   = min(si, size(arr, 1));
-                Uraw = double(reshape(arr(si,:,:), size(arr,2), size(arr,3)));
+                if ndims(arr) == 2
+                    Uraw = double(arr(si,:).');
+                else
+                    Uraw = double(reshape(arr(si,:,:), size(arr,2), size(arr,3)));
+                end
             elseif isstruct(entry)
                 % Layout C: per-DOF struct — use canonical DOF order so
                 % column 1=ux, 2=uy, 3=uz, 4=rx, 5=ry, 6=rz.
@@ -980,11 +996,15 @@ classdef PlotNodalResp < handle
                     end
                 end
             else
-                % Layout A: raw 3-D array
+                % Layout A: raw [nStep x nNode] or [nStep x nNode x nDof] array
                 arr = entry;
-                if isempty(arr) || ndims(arr) < 3, return; end
+                if isempty(arr) || ndims(arr) < 2, return; end
                 si   = min(si, size(arr, 1));
-                Uraw = double(reshape(arr(si,:,:), size(arr,2), size(arr,3)));
+                if ndims(arr) == 2
+                    Uraw = double(arr(si,:).');
+                else
+                    Uraw = double(reshape(arr(si,:,:), size(arr,2), size(arr,3)));
+                end
             end
 
             respTags = obj.getRespNodeTags(segIdx, fieldType);
@@ -1223,7 +1243,7 @@ classdef PlotNodalResp < handle
             entry = nr.(fieldType);
             if ~isstruct(entry), return; end
             if isfield(entry, 'dofs')
-                dofs = entry.dofs;          % Layout B: explicit label list
+                dofs = plotter.PlotNodalResp.normalizeDofs(entry.dofs); % Layout B
             elseif ~isfield(entry, 'data')
                 % Layout C: sort to canonical sequence.
                 canonical = {'ux','uy','uz','rx','ry','rz'};
@@ -1236,6 +1256,7 @@ classdef PlotNodalResp < handle
 
         function S = computeScalarFieldWithComp(~, U, component, dofs)
             if nargin < 4, dofs = {}; end
+            dofs = plotter.PlotNodalResp.normalizeDofs(dofs);
             comp   = lower(string(component));
             dofMap = struct('x',1,'ux',1,'y',2,'uy',2,'z',3,'uz',3,'rx',4,'ry',5,'rz',6);
             switch comp
@@ -1258,6 +1279,8 @@ classdef PlotNodalResp < handle
                         S = U(:, col);
                     elseif col > 0
                         S = zeros(size(U,1), 1);
+                    elseif size(U,2) == 1 || all(all(~isfinite(U(:,2:end))))
+                        S = U(:, 1);
                     else
                         Uuse = U(:,1:min(3,size(U,2)));
                         S = sqrt(sum(Uuse.^2, 2, 'omitnan'));
@@ -1758,6 +1781,22 @@ classdef PlotNodalResp < handle
 
     % =====================================================================
     methods (Static, Access = private)
+
+        function dofs = normalizeDofs(dofs)
+            if isempty(dofs)
+                dofs = {};
+            elseif iscell(dofs) && isscalar(dofs) && iscell(dofs{1})
+                dofs = dofs{1};
+            elseif iscell(dofs)
+                dofs = dofs(:).';
+            elseif isstring(dofs)
+                dofs = cellstr(dofs(:).');
+            elseif ischar(dofs)
+                dofs = {dofs};
+            else
+                dofs = cellstr(string(dofs(:).'));
+            end
+        end
 
         function idx = nearestNeighbourKnn(queryPts, refPts)
             nQ = size(queryPts,1);  nR = size(refPts,1);

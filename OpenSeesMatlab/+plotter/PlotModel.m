@@ -523,7 +523,7 @@ classdef PlotModel < handle
             wireColor = obj.Opts.style.wireframeColor;
             wireLW    = obj.Opts.elements.wireframeLineWidth;
 
-            if ~obj.Opts.elements.wireframeOnly
+            if ~obj.isWireframeOnly()
                 m = struct( ...
                     'nodes',     surfOut.Points, ...
                     'tris',      surfOut.Triangles, ...
@@ -1056,6 +1056,12 @@ classdef PlotModel < handle
         end
 
         function color = getStyleColor(obj, familyName, kind)
+            mode = char(string(obj.Opts.style.mode));
+            if strcmpi(mode, 'wireframe')
+                color = obj.Opts.style.wireframeColor;
+                return;
+            end
+
             if strcmpi(kind, 'surface')
                 fallback = obj.Opts.style.shellColor;
                 if ismember(lower(familyName), {'solid','unstructured'})
@@ -1068,7 +1074,8 @@ classdef PlotModel < handle
         end
 
         function color = getFamilyColor(obj, familyName, fallback)
-            if strcmpi(obj.Opts.style.mode, 'mono')
+            mode = lower(char(string(obj.Opts.style.mode)));
+            if ismember(mode, {'solid','mono'})
                 color = fallback;
                 return;
             end
@@ -1077,6 +1084,10 @@ classdef PlotModel < handle
             else
                 color = fallback;
             end
+        end
+
+        function tf = isWireframeOnly(obj)
+            tf = obj.Opts.elements.wireframeOnly || strcmpi(obj.Opts.style.mode, 'wireframe');
         end
 
         function addEntityLabels(obj, P, tags, prefix, offsetScale, color, fontSize, handleName)

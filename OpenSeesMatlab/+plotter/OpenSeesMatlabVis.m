@@ -162,6 +162,66 @@ classdef OpenSeesMatlabVis < handle
             h = pm.plot();
         end
 
+        function app = plotModelGUI(obj, options)
+            % Open an interactive GUI for the current OpenSees model.
+            %
+            %   plotModelGUI collects model information from the current
+            %   OpenSees model and opens a small control panel around
+            %   plotter.PlotModel. The GUI toggles common PlotModel options and
+            %   redraws the same axes.
+            %
+            % Syntax
+            % ------
+            %     app = vis.plotModelGUI()
+            %     app = vis.plotModelGUI(opts=opts)
+            %     app = vis.plotModelGUI(watchFile=true)
+            %     app = vis.plotModelGUI(watchFile="modelData_1.hdf5")
+            %
+            % Parameters
+            % ----------
+            % opts : struct, optional
+            %     Initial visualization options passed to plotter.PlotModelGUI.
+            % watchFile : char or string, optional
+            %     false disables watching. true watches the caller file. A text
+            %     value watches that path.
+            % reloadFcn : function handle, optional
+            %     Function returning a fresh modelInfo struct after watchFile
+            %     changes. If omitted, PlotModelGUI tries to read .hdf5/.h5,
+            %     .mat, or .json modelInfo files directly.
+            % pollInterval : double, optional
+            %     File polling interval in seconds. Default is 1.0.
+            %
+            % Returns
+            % -------
+            % app : struct
+            %     GUI handles and helper callbacks. Use app.getOptions() to read
+            %     the current PlotModel option struct.
+
+            arguments
+                obj (1,1) plotter.OpenSeesMatlabVis
+                options.opts (1,1) struct = struct()
+                options.watchFile = false
+                options.reloadFcn = []
+                options.pollInterval (1,1) double {mustBePositive} = 1.0
+                options.autoWatch (1,1) logical = true
+            end
+
+            modelInfo = obj.parent.post.getModelData();
+            reloadFcn = options.reloadFcn;
+            isBoolWatch = islogical(options.watchFile) || ...
+                (isnumeric(options.watchFile) && isscalar(options.watchFile));
+            if isempty(reloadFcn) && isBoolWatch && logical(options.watchFile)
+                reloadFcn = @() obj.parent.post.getModelData();
+            end
+
+            app = plotter.PlotModelGUI(modelInfo, ...
+                opts=options.opts, ...
+                watchFile=options.watchFile, ...
+                reloadFcn=reloadFcn, ...
+                pollInterval=options.pollInterval, ...
+                autoWatch=options.autoWatch);
+        end
+
         function h = plotEigen(obj, modeTag, eigenData, options)
             % Visualize one mode shape from eigenvalue analysis results.
             %
@@ -214,6 +274,42 @@ classdef OpenSeesMatlabVis < handle
             modelInfo = obj.parent.post.getModelData();
             pe = plotter.PlotEigen(modelInfo, eigenData, options.ax, options.opts);
             h = pe.plotMode(modeTag);
+        end
+
+        function app = plotEigenGUI(obj, eigenData, options)
+            % Open an interactive GUI for eigen mode visualization.
+            %
+            %   plotEigenGUI collects model information from the current
+            %   OpenSees model and opens a control panel around plotter.PlotEigen.
+            %   The GUI lets users switch mode tags and common PlotEigen options.
+            %
+            % Syntax
+            % ------
+            %     app = vis.plotEigenGUI(eigenData)
+            %     app = vis.plotEigenGUI(eigenData, opts=opts)
+            %
+            % Parameters
+            % ----------
+            % eigenData : struct
+            %     Eigenvalue analysis results, typically returned by
+            %     opsmat.post.getEigenData.
+            % opts : struct, optional
+            %     Initial visualization options passed to plotter.PlotEigenGUI.
+            %
+            % Returns
+            % -------
+            % app : struct
+            %     GUI handles and helper callbacks. Use app.getOptions() to read
+            %     the current PlotEigen option struct.
+
+            arguments
+                obj (1,1) plotter.OpenSeesMatlabVis
+                eigenData (1,1) struct
+                options.opts (1,1) struct = struct()
+            end
+
+            modelInfo = obj.parent.post.getModelData();
+            app = plotter.PlotEigenGUI(modelInfo, eigenData, opts=options.opts);
         end
 
         function plotNodalResponse(obj, nodeRespData, options)

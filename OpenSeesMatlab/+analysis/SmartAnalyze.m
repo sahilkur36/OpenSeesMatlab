@@ -249,7 +249,7 @@ classdef SmartAnalyze < handle
             %         tryRelaxStep=true, minStep=1e-6, debugMode=true);
             arguments
                 obj
-                opts.analysis         string  {mustBeMember(opts.analysis, ["Transient","Static"])} = string(missing)
+                opts.analysis         string  = string(missing)
                 opts.testType         string  = string(missing)
                 opts.testTol          double  = NaN
                 opts.testIterTimes    double  = NaN
@@ -274,41 +274,11 @@ classdef SmartAnalyze < handle
                 opts.printPer         double  = NaN
             end
 
-            c = obj.cfg;
-
-            if ~ismissing(opts.analysis),        c.analysis        = char(opts.analysis);        end
-            if ~ismissing(opts.testType),         c.testType        = char(opts.testType);         end
-            if ~isnan(opts.testTol),              c.testTol         = opts.testTol;                end
-            if ~isnan(opts.testIterTimes),        c.testIterTimes   = opts.testIterTimes;          end
-            if ~isnan(opts.testPrintFlag),        c.testPrintFlag   = opts.testPrintFlag;          end
-            if ~isempty(opts.tryAddTestTimes),    c.tryAddTestTimes = logical(opts.tryAddTestTimes); end
-            if ~isnan(opts.normTol),              c.normTol         = opts.normTol;                end
-            if ~all(isnan(opts.testIterTimesMore)), c.testIterTimesMore = opts.testIterTimesMore;  end
-            if ~isempty(opts.tryLooseTestTol),    c.tryLooseTestTol = logical(opts.tryLooseTestTol); end
-            if ~isnan(opts.looseTestTolTo),       c.looseTestTolTo  = opts.looseTestTolTo;         end
-            if ~isempty(opts.tryAlterTestTypes),  c.tryAlterTestTypes = logical(opts.tryAlterTestTypes); end
-            if ~isempty(opts.testTypesMore)
-                if isstring(opts.testTypesMore),  c.testTypesMore = cellstr(opts.testTypesMore);
-                elseif iscell(opts.testTypesMore),c.testTypesMore = opts.testTypesMore;
-                else,                             c.testTypesMore = {char(opts.testTypesMore)};
-                end
+            obj.cfg = obj.normalizeCfg(obj.mergeConfigureOptions(obj.cfg, opts));
+            obj.syncRuntimeConfig();
+            if obj.debugMode
+                obj.printConfiguration();
             end
-            if ~isempty(opts.tryRelaxStep),       c.tryRelaxStep    = logical(opts.tryRelaxStep);  end
-            if ~isempty(opts.recordNormHistory),  c.recordNormHistory = logical(opts.recordNormHistory); end
-            if ~isempty(opts.recordDiagnostics),  c.recordDiagnostics = logical(opts.recordDiagnostics); end
-            if ~isempty(opts.tryAlterAlgoTypes),  c.tryAlterAlgoTypes = logical(opts.tryAlterAlgoTypes); end
-            if ~all(isnan(opts.algoTypes)),       c.algoTypes       = opts.algoTypes;              end
-            if ~isempty(opts.UserAlgoArgs),       c.UserAlgoArgs    = opts.UserAlgoArgs;            end
-            if ~isnan(opts.initialStep),          c.initialStep     = opts.initialStep;             end
-            if ~isnan(opts.relaxation),           c.relaxation      = opts.relaxation;              end
-            if ~isnan(opts.minStep),              c.minStep         = opts.minStep;                 end
-            if ~isempty(opts.debugMode),          c.debugMode       = logical(opts.debugMode);      end
-            if ~isnan(opts.printPer),             c.printPer        = opts.printPer;                end
-
-            obj.cfg = obj.normalizeCfg(c);
-            obj.analysisType = string(obj.cfg.analysis);
-            obj.debugMode    = logical(obj.cfg.debugMode);
-
             obj.requireOps();
             obj.applyTest();
             obj.applyAlgorithm(obj.cfg.algoTypes(1));
@@ -659,6 +629,46 @@ classdef SmartAnalyze < handle
     % -----------------------------------------------------------------------
     methods (Access = private)
 
+        function c = mergeConfigureOptions(obj, c, opts)
+            %#ok<INUSD> Keep this as an instance method so future config merges
+            % can depend on object state without changing configure().
+            if ~ismissing(opts.analysis), c.analysis = char(opts.analysis); end
+            if ~ismissing(opts.testType),  c.testType = char(opts.testType);  end
+
+            if analysis.SmartAnalyze.hasNumericValue(opts.testTol),       c.testTol = opts.testTol; end
+            if analysis.SmartAnalyze.hasNumericValue(opts.testIterTimes), c.testIterTimes = opts.testIterTimes; end
+            if analysis.SmartAnalyze.hasNumericValue(opts.testPrintFlag), c.testPrintFlag = opts.testPrintFlag; end
+            if analysis.SmartAnalyze.hasNumericValue(opts.normTol),       c.normTol = opts.normTol; end
+            if analysis.SmartAnalyze.hasNumericValue(opts.testIterTimesMore), c.testIterTimesMore = opts.testIterTimesMore; end
+            if analysis.SmartAnalyze.hasNumericValue(opts.looseTestTolTo),    c.looseTestTolTo = opts.looseTestTolTo; end
+            if analysis.SmartAnalyze.hasNumericValue(opts.algoTypes),     c.algoTypes = opts.algoTypes; end
+            if analysis.SmartAnalyze.hasNumericValue(opts.initialStep),   c.initialStep = opts.initialStep; end
+            if analysis.SmartAnalyze.hasNumericValue(opts.relaxation),    c.relaxation = opts.relaxation; end
+            if analysis.SmartAnalyze.hasNumericValue(opts.minStep),       c.minStep = opts.minStep; end
+            if analysis.SmartAnalyze.hasNumericValue(opts.printPer),      c.printPer = opts.printPer; end
+
+            if ~isempty(opts.tryAddTestTimes),     c.tryAddTestTimes = logical(opts.tryAddTestTimes); end
+            if ~isempty(opts.tryLooseTestTol),     c.tryLooseTestTol = logical(opts.tryLooseTestTol); end
+            if ~isempty(opts.tryAlterTestTypes),   c.tryAlterTestTypes = logical(opts.tryAlterTestTypes); end
+            if ~isempty(opts.tryRelaxStep),        c.tryRelaxStep = logical(opts.tryRelaxStep); end
+            if ~isempty(opts.recordNormHistory),   c.recordNormHistory = logical(opts.recordNormHistory); end
+            if ~isempty(opts.recordDiagnostics),   c.recordDiagnostics = logical(opts.recordDiagnostics); end
+            if ~isempty(opts.tryAlterAlgoTypes),   c.tryAlterAlgoTypes = logical(opts.tryAlterAlgoTypes); end
+            if ~isempty(opts.debugMode),           c.debugMode = logical(opts.debugMode); end
+
+            if ~isempty(opts.testTypesMore)
+                c.testTypesMore = analysis.SmartAnalyze.toTextCell(opts.testTypesMore);
+            end
+            if ~isempty(opts.UserAlgoArgs)
+                c.UserAlgoArgs = opts.UserAlgoArgs;
+            end
+        end
+
+        function syncRuntimeConfig(obj)
+            obj.analysisType = string(obj.cfg.analysis);
+            obj.debugMode    = logical(obj.cfg.debugMode);
+        end
+
         function requireOps(obj)
             if isempty(obj.ops)
                 error('SmartAnalyze:OpsNotSet', ...
@@ -681,7 +691,7 @@ classdef SmartAnalyze < handle
             step    = obj.cfg.initialStep;
             verbose = obj.debugMode;
 
-            ok = obj.analyzeOne(step, verbose, "initial");
+            ok = obj.analyzeOne(step, verbose, "baseStep");
             if ok < 0, ok = obj.tryAddTestTimes(step, verbose);  end
             if ok < 0, ok = obj.tryAlterAlgo(step, verbose);     end
             if ok < 0, ok = obj.tryAlterTestTypes(step, verbose); end
@@ -764,7 +774,7 @@ classdef SmartAnalyze < handle
             ok = -1;
             if ~obj.cfg.tryAlterAlgoTypes || numel(obj.cfg.algoTypes) <= 1, return; end
             for a = obj.cfg.algoTypes(2:end)
-                if verbose, fprintf('%s Setting algorithm to %d. ✳️\n', obj.logo, a); end
+                if verbose, fprintf('%s Trying algorithm type %g. ✳️\n', obj.logo, a); end
                 obj.applyAlgorithm(a);
                 ok = obj.analyzeOne(step, verbose, sprintf('tryAlterAlgo:%g', a));
                 if ok == 0, return; end
@@ -868,10 +878,6 @@ classdef SmartAnalyze < handle
 
         function applyAlgorithm(obj, algotype)
             args = analysis.SmartAnalyze.resolveAlgoArgs(algotype, obj.cfg.UserAlgoArgs);
-            if obj.debugMode
-                fprintf('%s Setting algorithm to %s ✳️\n', obj.logo, ...
-                    strjoin(cellfun(@analysis.SmartAnalyze.toText, args, 'UniformOutput', false), ' '));
-            end
             obj.ops.algorithm(args{:});
             obj.currentAlgorithmType = algotype;
             obj.currentAlgorithmArgs = args;
@@ -966,6 +972,27 @@ classdef SmartAnalyze < handle
         end
 
         % --- Print helpers --------------------------------------------------
+        function printConfiguration(obj)
+            firstAlgo = obj.cfg.algoTypes(1);
+            firstAlgoText = analysis.SmartAnalyze.algoText( ...
+                analysis.SmartAnalyze.resolveAlgoArgs(firstAlgo, obj.cfg.UserAlgoArgs));
+
+            fprintf('%s Configuration:\n', obj.logo);
+            fprintf('    analysis=%s, test=%s, tol=%.3e, iter=%g, printFlag=%g\n', ...
+                obj.cfg.analysis, obj.cfg.testType, obj.cfg.testTol, ...
+                obj.cfg.testIterTimes, obj.cfg.testPrintFlag);
+            fprintf('    algorithm=%s (type %g), candidates=[%s]\n', ...
+                firstAlgoText, firstAlgo, analysis.SmartAnalyze.numericListText(obj.cfg.algoTypes));
+            fprintf('    retry: addIter=%d [%s], alterAlgo=%d, alterTest=%d [%s], looseTol=%d [%s], relaxStep=%d (relaxation=%.3g, minStep=%.3e)\n', ...
+                obj.cfg.tryAddTestTimes, analysis.SmartAnalyze.numericListText(obj.cfg.testIterTimesMore), ...
+                obj.cfg.tryAlterAlgoTypes, obj.cfg.tryAlterTestTypes, ...
+                strjoin(obj.cfg.testTypesMore, ', '), obj.cfg.tryLooseTestTol, ...
+                analysis.SmartAnalyze.numericListText(obj.cfg.looseTestTolTo), ...
+                obj.cfg.tryRelaxStep, obj.cfg.relaxation, obj.cfg.minStep);
+            fprintf('    record: normHistory=%d, diagnostics=%d, printPer=%d\n', ...
+                obj.cfg.recordNormHistory, obj.cfg.recordDiagnostics, obj.cfg.printPer);
+        end
+
         function printStatus(obj, success)
             t = obj.elapsed();
             if obj.progress.npts > 0
@@ -1075,6 +1102,10 @@ classdef SmartAnalyze < handle
             c.testTypesMore = c.testTypesMore(~cellfun('isempty', c.testTypesMore));
             c.recordNormHistory = logical(c.recordNormHistory);
             c.recordDiagnostics = logical(c.recordDiagnostics);
+            c.printPer = round(c.printPer);
+            if ~isscalar(c.printPer) || ~isfinite(c.printPer) || c.printPer < 1
+                error('SmartAnalyze:InvalidInput', 'printPer must be a positive finite scalar.');
+            end
         end
 
         function trend = computeTrend(norms)
@@ -1165,6 +1196,30 @@ classdef SmartAnalyze < handle
             elseif isnumeric(x) && isscalar(x), s = num2str(x);
             else, s = '<arg>';
             end
+        end
+
+        function tf = hasNumericValue(x)
+            tf = ~isempty(x) && any(~isnan(double(x(:))));
+        end
+
+        function c = toTextCell(x)
+            if iscell(x)
+                c = cellfun(@(v) char(string(v)), x(:).', 'UniformOutput', false);
+            elseif isstring(x)
+                c = cellstr(x(:).');
+            else
+                c = {char(string(x))};
+            end
+        end
+
+        function s = numericListText(x)
+            x = double(x(:)).';
+            if isempty(x)
+                s = '';
+                return;
+            end
+            parts = arrayfun(@(v) sprintf('%g', v), x, 'UniformOutput', false);
+            s = strjoin(parts, ', ');
         end
 
         function m = buildAlgoMap()

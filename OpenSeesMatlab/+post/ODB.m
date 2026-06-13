@@ -25,6 +25,9 @@ classdef ODB < handle
                 ops
                 odbTag
                 options.flushEvery                       = 20
+                options.recordDt                         =  0
+                options.floatPrecision                   = "double"
+                options.intPrecision                     = "int32"
 
                 options.saveNodalResp           logical = true
                 options.saveFrameResp           logical = true
@@ -70,6 +73,18 @@ classdef ODB < handle
 
             if ~isempty(obj.kargs.flushEvery)
                 args = [args, {'-flushEvery', obj.kargs.flushEvery}];
+            end
+
+            if ~isempty(obj.kargs.recordDt) && obj.kargs.recordDt > 0
+                args = [args, {'-recordDt', obj.kargs.recordDt}];
+            end
+
+            if ~isempty(obj.kargs.floatPrecision)
+                args = [args, {'-floatPrecision', obj.kargs.floatPrecision}];
+            end
+            
+            if ~isempty(obj.kargs.intPrecision)
+                args = [args, {'-intPrecision', obj.kargs.intPrecision}];
             end
 
             if obj.kargs.saveNodalResp

@@ -142,8 +142,18 @@ ops.analysis('Static');
 
 ```matlab
 ODB = opsMAT.post.createODB("myODB", projectGaussToNodes="extrapolate");  % create ODB
+```
+
+<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-weight:600;">Output</div>
+<div style="white-space:pre-wrap; font-family:Consolas;">
+Output file: .openseesmatlab.output\Responses-myODB.odb\output.h5
+</div>
+</div>
+
+```matlab
 ok = ops.analyze(Nsteps);
-ODB.close();
+% ODB.close();
 ```
 
 ## Post\-processing

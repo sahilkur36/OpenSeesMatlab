@@ -342,6 +342,12 @@ classdef OpenSeesMatlabPost < handle
             %     A unique identifier for the ODB.
             % flushEvery : integer, optional, default 10
             %     If provided, specifies the frequency (in steps) at which to save data to disk.
+            % recordDt : numeric, optional, default 0
+            %     If > 0, specifies the time interval at which to record responses. If 0, responses are recorded at every step.
+            % floatPrecision : char | string, optional, default "double"
+            %     Precision for floating-point data in the ODB. Options are "float" or "double". 'double' reflects the full precision of MATLAB's default numeric type, while 'float' uses single-precision storage to reduce file size at the cost of precision.
+            % intPrecision : char | string, optional, default "int32"
+            %     Precision for integer data in the ODB. Options are "int32" or "int64". 'int32' is sufficient for most models and results in smaller file sizes, while 'int64' allows for larger models with more nodes/elements at the cost of increased file size.
             % elasticFrameSecPoints : integer, optional, default 9
             %     Number of points to use for elastic frame section integration.
             % interpolateBeamDisp : char | string | integer, optional, default "off"
@@ -407,6 +413,9 @@ classdef OpenSeesMatlabPost < handle
                 odbTag  = ""
 
                 options.flushEvery                       = 10
+                options.recordDt                         =  0
+                options.floatPrecision                   = "double"
+                options.intPrecision                     = "int32"
 
                 options.saveNodalResp           logical = true
                 options.saveFrameResp           logical = true

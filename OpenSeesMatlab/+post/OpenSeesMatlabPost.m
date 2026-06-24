@@ -586,6 +586,31 @@ classdef OpenSeesMatlabPost < handle
                 odbTag, eleType=options.eleType, eleTags=options.eleTags, respType=options.respType);
         end
 
+        function data = transformResponseStruct(obj, respData)
+            % Transform model-update response arrays into one scalar struct.
+            %
+            % getNodalResponse and getElementResponse may return a struct array
+            % when the model topology changes during an analysis. This method
+            % merges that array into a scalar struct by concatenating time,
+            % merging nodeTags/eleTags, and aligning response data to the merged
+            % tags. Missing tag data in a segment is filled with NaN.
+            %
+            % Example
+            % -------
+            %     nr = obj.getNodalResponse("MyODB");
+            %     nr = obj.transformResponseStruct(nr);
+            %
+            %     er = obj.getElementResponse("MyODB", eleType="Frame");
+            %     er = obj.transformResponseStruct(er);
+
+            arguments
+                obj (1,1) post.OpenSeesMatlabPost %#ok<INUSA>
+                respData struct
+            end
+
+            data = post.utils.ResponseStructTransformer.merge(respData);
+        end
+
         function results = writeResponsePVD(obj, odbTag, outDir, baseName, options)
             % Write nodal and Shell, Plane, Solid element responses to ParaView-readable VTU/PVD files.
             %

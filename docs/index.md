@@ -14,6 +14,8 @@
 
 ---
 
+[👉 Installation Instructions](getting_started/installation.md)
+
 ## ⚡ Quick Start
 
 Using `OpenSeesMatlab` is straightforward:

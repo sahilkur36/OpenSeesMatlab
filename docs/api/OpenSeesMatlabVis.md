@@ -15,6 +15,8 @@
       members:
         - plotModel
         - plotEigen
+        - plotModelGUI
+        - plotEigenGUI
         - plotNodalResponse
         - plotDeformation
         - plotFrameResponse

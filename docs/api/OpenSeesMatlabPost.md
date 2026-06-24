@@ -23,6 +23,7 @@
         - getModelDataFromODB
         - getNodalResponse
         - getElementResponse
+        - transformResponseStruct
         - writeResponsePVD
 
 

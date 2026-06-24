@@ -164,6 +164,7 @@ nav:
       - Installation: "getting_started/installation.md"
       - OpenSees Command Interface: "getting_started/opensees.md"
       - Pre- and post-processing and visualization: "getting_started/post.md"
+      - Changelog: "getting_started/changelog.md"
 
   - Examples:
       - "examples/index.md"

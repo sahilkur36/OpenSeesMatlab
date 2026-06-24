@@ -652,6 +652,8 @@ classdef (Abstract) OpenSeesMatlabBase < handle
 
         function result = getDomainGeoTag(obj, varargin), result = obj.mexHandle('getDomainGeoTag', varargin{:}); end
 
+        function result = updateMaterials(obj, varargin), result = obj.mexHandle('UpdateMaterials', varargin{:}); end
+
         function result = matlabversion(obj, varargin), result = obj.mexHandle('matlabversion', varargin{:}); end
     end
 end

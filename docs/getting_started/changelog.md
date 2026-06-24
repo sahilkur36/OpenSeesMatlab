@@ -1,5 +1,14 @@
 # Changes Log
 
+## v3.8.0.2
+
+- Add ``post.transformResponseStruct`` to convert model-update response struct arrays from ``getNodalResponse`` and ``getElementResponse`` into one scalar struct, merging ``time``, ``nodeTags`` and ``eleTags`` while padding missing response data with ``NaN``.
+- Add ``ops.updateMaterials`` as a MATLAB wrapper for the OpenSees ``UpdateMaterials`` command.
+- Add support for ``Link`` element response queries in ``post.getElementResponse``.
+- Add GUI wrapper utilities for model and eigen visualization.
+- Extend frame, nodal and unstructured response plotters to support custom response fields and explicit response-location handling.
+- Update post-processing documentation and examples, including ODB response retrieval, quick plotting and visualization workflows.
+
 ## v3.8.0.1
 
 - By adding a new recorder object to the OpenSees C++ side, response post-processing can be implemented in C++, significantly improving post-processing performance.

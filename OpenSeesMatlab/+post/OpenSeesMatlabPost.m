@@ -572,7 +572,7 @@ classdef OpenSeesMatlabPost < handle
                 obj (1,1) post.OpenSeesMatlabPost
                 odbTag = ""
 
-                options.eleType   {mustBeTextScalar, mustBeMember(options.eleType, ["", "Frame", "Truss", "Shell", "Plane", "Solid"])} = ""
+                options.eleType   {mustBeTextScalar, mustBeMember(options.eleType, ["", "Frame", "Truss", "Shell", "Plane", "Solid", "Link"])} = ""
                 options.eleTags   double = []
                 options.respType  {mustBeTextScalar} = ""
             end

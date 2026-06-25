@@ -698,6 +698,237 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
             [varargout{1:nargout}] = obj.mexHandle('region', regTag, varargin{:});
         end
 
+        function varargout = parameter(obj, paramTag, varargin)
+            % Define a parameter in the OpenSees domain.
+            %
+            % Syntax
+            % ------
+            %     tag = parameter(paramTag)
+            %     tag = parameter(paramTag, value)
+            %     tag = parameter(paramTag, 'node', nodeTag, 'disp', dof)
+            %     tag = parameter(paramTag, 'element', eleTag, parameterArgs...)
+            %     tag = parameter(paramTag, 'region', regionTag, parameterArgs...)
+            %     tag = parameter(paramTag, 'pattern', patternTag, 'lambda')
+            %     tag = parameter(paramTag, 'loadPattern', patternTag, 'lambda')
+            %
+            % Parameters
+            % ----------
+            % paramTag : numeric scalar
+            %   Unique parameter tag. OpenSees returns an error if a parameter
+            %   with the same tag already exists.
+            % varargin : cell
+            %   Parameter definition arguments passed directly to OpenSees.
+            %   Common forms are:
+            %
+            %   - no extra arguments: create a blank parameter.
+            %   - ``value``: create a scalar parameter with an initial value.
+            %   - ``'node', nodeTag, 'disp', dof``: parameterize a nodal
+            %     displacement response degree of freedom.
+            %   - ``'element', eleTag, parameterArgs...``: parameterize an
+            %     element quantity accepted by the target element.
+            %   - ``'region', regionTag, parameterArgs...``: parameterize a
+            %     region component.
+            %   - ``'pattern'`` or ``'loadPattern'`` followed by a pattern tag
+            %     and ``'lambda'``: parameterize a load factor.
+            %   - ``'randomVariable', rvTag``: associate with a reliability
+            %     random variable when the OpenSees build supports reliability.
+            %
+            % Returns
+            % -------
+            % tag : numeric scalar
+            %   The parameter tag returned by OpenSees.
+            %
+            % Examples
+            % --------
+            %     ops.parameter(1, 10.0);
+            %     ops.parameter(2, 'node', 5, 'disp', 1);
+            %     ops.parameter(3, 'element', 10, 'E');
+            %     ops.parameter(4, 'loadPattern', 1, 'lambda');
+            %
+            % Notes
+            % -----
+            % The command is intentionally forwarded with flexible trailing
+            % arguments because valid parameter names are object-specific.
+            arguments
+                obj
+                paramTag (1,1) {mustBeNumeric}
+            end
+            arguments (Repeating)
+                varargin
+            end
+            [varargout{1:nargout}] = obj.mexHandle('parameter', paramTag, varargin{:});
+        end
+
+        function varargout = addToParameter(obj, paramTag, varargin)
+            % Add another domain object component to an existing parameter.
+            %
+            % Syntax
+            % ------
+            %     tag = addToParameter(paramTag, 'element', eleTag, parameterArgs...)
+            %     tag = addToParameter(paramTag, 'node', nodeTag, parameterArgs...)
+            %     tag = addToParameter(paramTag, 'loadPattern', patternTag, parameterArgs...)
+            %
+            % Parameters
+            % ----------
+            % paramTag : numeric scalar
+            %   Existing parameter tag.
+            % varargin : cell
+            %   Object selector, object tag and parameter-specific arguments.
+            %   The first argument should identify the object type, commonly
+            %   ``'element'``, ``'node'`` or ``'loadPattern'``. Remaining
+            %   arguments identify the quantity on that object to be added to
+            %   the existing parameter.
+            %
+            % Returns
+            % -------
+            % tag : numeric scalar
+            %   The parameter tag returned by OpenSees.
+            %
+            % Examples
+            % --------
+            %     ops.parameter(1, 'element', 1, 'E');
+            %     ops.addToParameter(1, 'element', 2, 'E');
+            %     ops.addToParameter(1, 'node', 5, 'disp', 1);
+            %
+            % Notes
+            % -----
+            % This command is useful when one parameter should control the same
+            % named quantity on multiple domain objects.
+            arguments
+                obj
+                paramTag (1,1) {mustBeNumeric}
+            end
+            arguments (Repeating)
+                varargin
+            end
+            [varargout{1:nargout}] = obj.mexHandle('addToParameter', paramTag, varargin{:});
+        end
+
+        function varargout = updateParameter(obj, paramTag, newValue)
+            % Update the value of an existing parameter.
+            %
+            % Syntax
+            % ------
+            %     tag = updateParameter(paramTag, newValue)
+            %
+            % Parameters
+            % ----------
+            % paramTag : numeric scalar
+            %   Existing parameter tag.
+            % newValue : numeric scalar
+            %   New value assigned to the parameter.
+            %
+            % Returns
+            % -------
+            % tag : numeric scalar
+            %   The parameter tag returned by OpenSees.
+            %
+            % Examples
+            % --------
+            %     ops.parameter(1, 'element', 10, 'E');
+            %     ops.updateParameter(1, 2.05e11);
+            %
+            % Notes
+            % -----
+            % After updating material or element parameters, call the relevant
+            % OpenSees update command when the model object requires it.
+            arguments
+                obj
+                paramTag (1,1) {mustBeNumeric}
+                newValue (1,1) {mustBeNumeric}
+            end
+            [varargout{1:nargout}] = obj.mexHandle('updateParameter', paramTag, newValue);
+        end
+
+        function result = getParamTags(obj)
+            % Get all parameter tags currently defined in the domain.
+            %
+            % Syntax
+            % ------
+            %     tags = getParamTags()
+            %
+            % Returns
+            % -------
+            % tags : numeric vector
+            %   Tags of parameters currently stored in the OpenSees domain. If
+            %   no parameters exist, OpenSees may return an empty array.
+            %
+            % Examples
+            % --------
+            %     ops.parameter(1, 10.0);
+            %     tags = ops.getParamTags();
+            result = obj.mexHandle('getParamTags');
+        end
+
+        function result = getParamValue(obj, paramTag)
+            % Get the current value of a parameter.
+            %
+            % Syntax
+            % ------
+            %     value = getParamValue(paramTag)
+            %
+            % Parameters
+            % ----------
+            % paramTag : numeric scalar
+            %   Existing parameter tag.
+            %
+            % Returns
+            % -------
+            % value : numeric scalar
+            %   Current parameter value stored in OpenSees.
+            %
+            % Examples
+            % --------
+            %     ops.parameter(1, 10.0);
+            %     value = ops.getParamValue(1);
+            arguments
+                obj
+                paramTag (1,1) {mustBeNumeric}
+            end
+            result = obj.mexHandle('getParamValue', paramTag);
+        end
+
+        function varargout = setParameter(obj, varargin)
+            % Set element state parameters without explicitly keeping a parameter.
+            %
+            % Syntax
+            % ------
+            %     setParameter('-val', value, parameterArgs...)
+            %     setParameter('-val', value, '-ele', eleTags..., parameterArgs...)
+            %     setParameter('-val', value, '-eleRange', startEle, endEle, parameterArgs...)
+            %
+            % Parameters
+            % ----------
+            % varargin : cell
+            %   Arguments passed directly to the OpenSees ``setParameter``
+            %   command. The first option is normally ``'-val'`` followed by the
+            %   new value. Optional element selectors include:
+            %
+            %   - ``'-ele'``, ``'-eles'`` or ``'-element'`` followed by one or
+            %     more element tags.
+            %   - ``'-eleRange'`` followed by the first and last element tags.
+            %
+            %   Remaining arguments identify the object-specific parameter name.
+            %
+            % Examples
+            % --------
+            %     ops.setParameter('-val', 2.05e11, '-ele', 1, 2, 3, 'E');
+            %     ops.setParameter('-val', 30.0, '-eleRange', 1, 10, 'fy');
+            %
+            % Notes
+            % -----
+            % Unlike ``parameter`` followed by ``updateParameter``, this command
+            % creates a temporary OpenSees parameter internally and immediately
+            % removes it after applying the requested value.
+            arguments
+                obj
+            end
+            arguments (Repeating)
+                varargin
+            end
+            [varargout{1:nargout}] = obj.mexHandle('setParameter', varargin{:});
+        end
+
         function varargout = rayleigh(obj, alphaM, betaK, betaKinit, betaKcomm)
             % This command is used to assign damping to all previously-defined elements and nodes. When using rayleigh damping in OpenSees, the damping matrix for an element or node, D is specified as a combination of stiffness and mass-proportional damping matrices:
             %

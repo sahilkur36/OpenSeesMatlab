@@ -88,6 +88,12 @@ For details, please refer to their official documentation, You can call it in th
         - imposedMotion
         - mass
         - region
+        - parameter
+        - addToParameter
+        - updateParameter
+        - setParameter
+        - getParamTags
+        - getParamValue
         - rayleigh
         - modalDamping
         - damping

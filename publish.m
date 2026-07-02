@@ -17,7 +17,7 @@ clc;
 %% =========================
 % User-specified version
 % =========================
-version = "3.8.0.1";   % <-- manually set toolbox version here
+version = "3.8.0.2";   % <-- manually set toolbox version here
 
 %% Project root
 projectRoot = fileparts(mfilename("fullpath"));

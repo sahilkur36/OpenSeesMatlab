@@ -187,7 +187,7 @@ classdef Beam3DDispInterpolator < handle
 
             % Strip the leading singleton batch dimension added for 2-D input.
             if was2D
-                endLocal = squeeze(endLocal);   % (nEles, 12)
+                endLocal = reshape(endLocalFlat, [nEles, 12]);
             end
         end
 

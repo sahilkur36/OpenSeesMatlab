@@ -6,35 +6,42 @@
 
 OpenSeesMatlab is a MATLAB-based platform for structural analysis and simulation. It aims to provide powerful modeling, analysis, post-processing, and visualization tools for research and engineering applications in structural, earthquake, and geotechnical engineering.
 
-![](docs/static/images/demo-readme.png)
+![Demo screenshot](docs/static/images/demo-readme.png)
 
-![](docs/static/images/demo-readme2.png)
+![Demo screenshot 2](docs/static/images/demo-readme2.png)
 
 ## Documentation
+
 [https://openseesmatlab.readthedocs.io/en/latest/](https://openseesmatlab.readthedocs.io/en/latest/)
 
 ## OpenSees Integration
+
 OpenSeesMatlab leverages MATLAB's C++ mex interface to encapsulate the [OpenSees engine](https://opensees.github.io/OpenSeesDocumentation/), enabling seamless and interactive use of OpenSees directly within MATLAB. This allows users to:
+
 - Run OpenSees commands and analyses natively in MATLAB scripts and functions
 - Benefit from MATLAB's interactive environment for pre/post-processing and visualization
 - Integrate OpenSees with MATLAB toolboxes and workflows
 
 ## Installation
+
 1. Go to the [release directory](https://github.com/yexiang92/OpenSeesMatlab/releases) or [gitee 发行版](https://gitee.com/yexiang-yan/opensees-interface-for-matlab/releases) and choose the version you want. Download it.
 2. Open this release directory in MATLAB, then install the toolbox package by running:
+
    ```matlab
    installOpenSeesMatlab
    ```
 
 After installation, explore and run example models in the `examples/` directory (You need to use it as your working directory):
-   - Open any `.mlx` file in `examples/` with MATLAB Live Editor, e.g.:
-     - `examples/earthquake_frame3D_transient.mlx`
-     - `examples/structural_nonlinear_truss.mlx`
-     - `examples/geotechnical_PM4Sand.mlx`
-     - `examples/post_2d_Portal_Frame.mlx`
-   - Click "Run" in MATLAB to execute and interact with the example.
+
+- Open any `.mlx` file in `examples/` with MATLAB Live Editor, e.g.:
+  - `examples/earthquake_frame3D_transient.mlx`
+  - `examples/structural_nonlinear_truss.mlx`
+  - `examples/geotechnical_PM4Sand.mlx`
+  - `examples/post_2d_Portal_Frame.mlx`
+- Click "Run" in MATLAB to execute and interact with the example.
 
 ## Quick Start
+
 Using `OpenSeesMatlab` is straightforward:
 
 - The **`opensees`** module provides wrappers for almost all OpenSees commands, keeping the same parameter parsing style as OpenSees/OpenSeesPy.
@@ -63,6 +70,7 @@ opsMat.vis.plotModel();      % Visualize the model
 ```
 
 ## 🌟 Features
+
 - 🧱 **`.opensees`** — MATLAB interface to OpenSees commands (fully compatible syntax), implemented via MATLAB MEX wrapping of the OpenSees C++ library
 - 📊 **`.post`** — post-processing module for extracting, organizing, and exporting analysis results
 - 🏗️ **`.pre`** — preprocessing tools for model definition, units, and data preparation
@@ -76,9 +84,6 @@ MATLAB R2023a or later
 
 Windows operating system (currently only supported on Windows)
 
-
-For more detailed installation and usage instructions, see the documentation.
-
-
 ## License
+
 This project is licensed for academic research and personal use only. Commercial and closed-source use is prohibited. See the [LICENSE](LICENSE) file for details.

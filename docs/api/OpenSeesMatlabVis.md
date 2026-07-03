@@ -13,10 +13,13 @@
         namespaces: false
       docstring_section_style: list
       members:
-        - plotModel
-        - plotEigen
         - plotModelGUI
         - plotEigenGUI
+        - plotNodalResponseGUI
+        - plotShellResponseGUI
+        - plotContinuumResponseGUI
+        - plotModel
+        - plotEigen
         - plotNodalResponse
         - plotDeformation
         - plotFrameResponse

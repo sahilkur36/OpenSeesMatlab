@@ -29,7 +29,7 @@ if ~ismember(double(opts0.mode.modeTag), double(modeTags))
 end
 
 fig = figure( ...
-    'Name', 'OpenSeesMatlab Eigen Plotter', ...
+    'Name', 'OpenSeesMatlab Eigen Plotter | 作者：Yexiang Yan (闫业祥)', ...
     'NumberTitle', 'off', ...
     'Color', 'w', ...
     'MenuBar', 'none', ...
@@ -67,7 +67,7 @@ controls.modeTag = addPopup(localModeLabels(state.modeTags, state.eigenInfo), st
 y = y - dy;
 
 addLabel('View', y);
-controls.view = addPopup({'auto','iso','xy','xz','yz'}, state.opts.general.view, y);
+controls.view = addPopup(localViewNames(), state.opts.general.view, y);
 y = y - dy;
 
 addLabel('Component', y);
@@ -319,7 +319,7 @@ redraw();
     end
 
     function showHelp(~, ~)
-        helpFig = figure('Name', 'PlotEigen Options Help', 'NumberTitle', 'off', ...
+        helpFig = figure('Name', 'PlotEigen Options Help | 作者：Yexiang Yan (闫业祥)', 'NumberTitle', 'off', ...
             'Color', 'w', 'Units', 'pixels', 'Position', [180 160 820 620]);
         uicontrol(helpFig, 'Style', 'edit', 'Units', 'normalized', ...
             'Position', [0.02 0.02 0.96 0.96], ...
@@ -340,7 +340,7 @@ redraw();
             'MP constraint', {'mpConstraint','color'}
             };
 
-        colorFig = figure('Name', 'PlotEigen Colors', 'NumberTitle', 'off', ...
+        colorFig = figure('Name', 'PlotEigen Colors | 作者：Yexiang Yan (闫业祥)', 'NumberTitle', 'off', ...
             'Color', 'w', 'MenuBar', 'none', 'Toolbar', 'none', ...
             'Units', 'pixels', 'Position', [240 180 320 330]);
 
@@ -425,6 +425,10 @@ end
 
 function names = localColormapNames()
 names = {'jet','parula','turbo','hot','cool','spring','summer','autumn','winter','gray'};
+end
+
+function names = localViewNames()
+names = {'auto','iso','xy','xz','yz','yx','zx','zy'};
 end
 
 function cmap = localBuildColormap(name)

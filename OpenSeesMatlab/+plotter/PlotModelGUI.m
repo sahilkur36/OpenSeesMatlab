@@ -39,7 +39,7 @@ if ~isfield(opts0.general, 'hoverInfo')
 end
 
 fig = figure( ...
-    'Name', 'OpenSeesMatlab Model Plotter', ...
+    'Name', 'OpenSeesMatlab Model Plotter | 作者：Yexiang Yan (闫业祥)', ...
     'NumberTitle', 'off', ...
     'Color', 'w', ...
     'MenuBar', 'none', ...
@@ -76,7 +76,7 @@ y = 0.955;
 dy = 0.035;
 
 addLabel('View', y);
-controls.view = addPopup({'auto','iso','xy','xz','yz'}, state.opts.general.view, y);
+controls.view = addPopup(localViewNames(), state.opts.general.view, y);
 y = y - dy;
 
 addLabel('Style', y);
@@ -261,7 +261,7 @@ end
     end
 
     function showHelp(~, ~)
-        helpFig = figure('Name', 'PlotModel Options Help', 'NumberTitle', 'off', ...
+        helpFig = figure('Name', 'PlotModel Options Help | 作者：Yexiang Yan (闫业祥)', 'NumberTitle', 'off', ...
             'Color', 'w', 'Units', 'pixels', 'Position', [180 160 820 620]);
         uicontrol(helpFig, 'Style', 'edit', 'Units', 'normalized', ...
             'Position', [0.02 0.02 0.96 0.96], ...
@@ -293,7 +293,7 @@ end
             'Contact family',{'style','familyColors','Contact'}
             };
 
-        colorFig = figure('Name', 'PlotModel Colors', 'NumberTitle', 'off', ...
+        colorFig = figure('Name', 'PlotModel Colors | 作者：Yexiang Yan (闫业祥)', 'NumberTitle', 'off', ...
             'Color', 'w', 'MenuBar', 'none', 'Toolbar', 'none', ...
             'Units', 'pixels', 'Position', [220 160 330 610]);
 
@@ -804,6 +804,10 @@ if ~isstruct(modelInfo) || ~isfield(modelInfo, 'Nodes')
     error('PlotModelGUI:InvalidModelInfo', ...
         'Reloaded data must be a modelInfo struct with a Nodes field.');
 end
+end
+
+function names = localViewNames()
+names = {'auto','iso','xy','xz','yz','yx','zx','zy'};
 end
 
 function lines = localModelSummary(modelInfo)

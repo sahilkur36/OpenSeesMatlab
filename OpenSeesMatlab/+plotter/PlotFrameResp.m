@@ -71,7 +71,8 @@ classdef PlotFrameResp < handle
             opts.general = struct( ...
                 'clearAxes',true, 'holdOn',true, 'axisEqual',true, ...
                 'grid',true, 'box',false, 'view','auto', ...
-                'title','auto', 'padRatio',0.25, 'figureSize',[1000,618]);
+                'title','auto', 'padRatio',0.25, 'figureSize',[1000,618], ...
+                'axesOff',false);
 
             opts.respType   = 'sectionForces';
             opts.component  = 'MZ';
@@ -1566,8 +1567,13 @@ classdef PlotFrameResp < handle
                 hold(obj.Ax,'on');
             end
             if obj.Opts.general.axisEqual, axis(obj.Ax,'equal'); end
-            if obj.Opts.general.grid, grid(obj.Ax,'on'); else, grid(obj.Ax,'off'); end
-            if obj.Opts.general.box,  box(obj.Ax,'on');  else, box(obj.Ax,'off');  end
+            if isfield(obj.Opts.general,'axesOff') && obj.Opts.general.axesOff
+                axis(obj.Ax,'off');
+            else
+                axis(obj.Ax,'on');
+                if obj.Opts.general.grid, grid(obj.Ax,'on'); else, grid(obj.Ax,'off'); end
+                if obj.Opts.general.box,  box(obj.Ax,'on');  else, box(obj.Ax,'off');  end
+            end
             colormap(obj.Ax, obj.Opts.color.colormap);
             % Refresh model dim for this segment
             P = obj.nodeCoordsRaw(segIdx);
@@ -1589,7 +1595,11 @@ classdef PlotFrameResp < handle
             switch v
                 case 'iso', view(obj.Ax,3);
                 case 'xy',  view(obj.Ax,2);
+                case 'yx',  view(obj.Ax,90,90);
                 case 'xz',  view(obj.Ax,0,0);
+                case 'zx',  view(obj.Ax,180,0);
+                case 'yz',  view(obj.Ax,90,0);
+                case 'zy',  view(obj.Ax,-90,0);
                 otherwise
                     if obj.CachedModelDim==2, view(obj.Ax,3); else, view(obj.Ax,3); end
             end

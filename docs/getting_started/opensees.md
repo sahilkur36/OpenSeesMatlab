@@ -2,8 +2,9 @@
 # OpenSees Command Interface
 
 ## Overview
+
 Almost all OpenSees commands are encapsulated in the `.opensees` module.
-All commands use the same input format as ``OpenSees`` and ``OpenSeesPy``. 
+All commands use the same input format as ``OpenSees`` and ``OpenSeesPy``.
 For example:
 
 ```matlab
@@ -31,7 +32,7 @@ For details, please refer to their official documentation, You can call it in th
     - ✨ Both ``char`` and ``string`` inputs are supported. However, using ``char`` is recommended.
     - ✨ Most commands accept **scalar arguments only** and do not support passing
         a `numeric array` directly. Please pass scalar arguments one by one.
-      
+
         To unpack a `cell` array, use `{:}` expansion:
         
             ops.node(1, coords{:});         % coords is a cell array
@@ -55,9 +56,8 @@ For details, please refer to their official documentation, You can call it in th
     - ✨ Commands with return values will return MATLAB data. If a command has no return value, an empty array ``[]`` will be returned.
     - ✨ The additional post-processing provided by OpenSeesMatlab may be slow or buggy. If you think so, you can use only the OpenSees command interface and use ``recorder`` or other output commands to post-process the analysis results.
 
-
-
 ## Example
+
 The following is an example of <span style="color:rgb(213,80,0)">**Nolinear Truss Pushover Analysis**</span>:
 
 First, instantiate the OpenSeesMatlab interface class. This class provides native OpenSees commands, as well as additional visualization, pre/post\-processing, and utility methods.
@@ -66,7 +66,9 @@ First, instantiate the OpenSeesMatlab interface class. This class provides nativ
 opsMat = OpenSeesMatlab();
 ops = opsMat.opensees;  % OpenSees command interface
 ```
+
 ### Create model
+
 ```matlab
 ops.wipe();
 ops.model('basic', '-ndm', 2, '-ndf', 2);
@@ -109,7 +111,9 @@ ops.pattern('Plain', 1, 1);
 % Create the nodal load
 ops.load(4, Px, Py);
 ```
+
 ### Start of analysis generation
+
 ```matlab
 % create SOE
 ops.system('ProfileSPD');
@@ -126,7 +130,9 @@ ops.test('NormUnbalance', 1e-8, 10, 1);
 % create analysis object
 ops.analysis("Static");
 ```
+
 ### Finally perform the analysis
+
 Analysis results data are returned directly from the OpenSees domain:
 
 ```matlab
@@ -140,6 +146,7 @@ end
 ```
 
 ### Plot
+
 You can visualize it directly in MATLAB.
 
 ```matlab

@@ -12,8 +12,9 @@ OpenSeesMatlab provides a comprehensive set of pre- and post-processing tools th
 4. [Response Data Recording (ODB)](#response-data-recording-odb)
 5. [Retrieving Responses](#retrieving-responses)
 6. [Visualization of Analysis Results](#visualization-of-analysis-results)
-7. [Export to ParaView (PVD)](#export-to-paraview-pvd)
-8. [Preprocessing Utilities](#preprocessing-utilities)
+7. [Interactive GUI Plotters](#interactive-gui-plotters)
+8. [Export to ParaView (PVD)](#export-to-paraview-pvd)
+9. [Preprocessing Utilities](#preprocessing-utilities)
 
 ---
 
@@ -32,8 +33,8 @@ The `opsMAT` object provides three main namespaces:
 |-----------|---------|
 | `opsMAT.opensees` | Native OpenSees Tcl commands |
 | `opsMAT.pre` | Preprocessing helpers (sections, loads, units, etc.) |
-| `opsMAT.post` | Post-processing (ODB, responses, visualization) |
-| `opsMAT.vis` | Visualization (model, eigen, deformation, etc.) |
+| `opsMAT.post` | Post-processing (ODB creation, saved model/eigen data, response retrieval) |
+| `opsMAT.vis` | Visualization (model, eigen modes, deformation, response plots, GUIs) |
 
 ---
 
@@ -48,11 +49,14 @@ At any point during model creation, visualize the current geometry:
 opsMAT.vis.plotModel();
 
 % Customized plot
-opts = opsMAT.vis.defaultPlotModelOptions();
+opts = opsMAT.vis.defaultPlotModelOptions;
 opts.nodes.show = true;
 opts.nodes.showLabels = true;
 disp(opts.help);
 opsMAT.vis.plotModel(opts=opts);
+
+% Interactive model GUI
+app = opsMAT.vis.plotModelGUI();
 ```
 
 ---
@@ -73,9 +77,12 @@ eigenData = opsMAT.post.getEigenData(odbTag=tag);
 opsMAT.vis.plotEigen(1, eigenData);
 
 % Plot with colormap
-opts = opsMAT.vis.defaultPlotEigenOptions();
+opts = opsMAT.vis.defaultPlotEigenOptions;
 opts.color.useColormap = true;
 opsMAT.vis.plotEigen(3, eigenData, opts=opts);
+
+% Interactive eigen-mode GUI
+app = opsMAT.vis.plotEigenGUI(eigenData);
 ```
 
 ---
@@ -161,6 +168,10 @@ opsMAT.vis.plotDeformation(nodeResp, stepIdx="absMax", scaleFactor=1.0);
 
 % Specific displacement component, or any other response component
 opsMAT.vis.plotNodalResponse(nodeResp, stepIdx="absMax", respType="disp", respComponent="ux");
+
+% Interactive nodal response GUI
+app = opsMAT.vis.plotNodalResponseGUI(nodeResp, ...
+    respType="disp", respComponent="magnitude");
 ```
 
 ### Frame Response Diagrams
@@ -174,7 +185,22 @@ opsMAT.vis.plotFrameResponse(frameResp, stepIdx="absMax", ...
 
 % Section deformation diagram
 opsMAT.vis.plotFrameResponse(frameResp, stepIdx="absMax", ...
-    respType="sectionDeformations", respComponent="curvatureZ");
+    respType="sectionDeformations", respComponent="MZ");
+
+% Interactive frame response GUI
+app = opsMAT.vis.plotFrameResponseGUI(frameResp, stepIdx="absMax");
+```
+
+### Shell Response Visualization
+
+```matlab
+shellResp = opsMAT.post.getElementResponse("myODB", eleType="Shell");
+
+opsMAT.vis.plotShellResponse(shellResp, ...
+    respType="SecForceAtGP", respComponent="mxx", fiberPoint="top");
+
+% Interactive shell response GUI
+app = opsMAT.vis.plotShellResponseGUI(shellResp);
 ```
 
 ### Plane/Solid Response Visualization
@@ -185,6 +211,9 @@ planeResp = opsMAT.post.getElementResponse("myODB", eleType="Plane");
 
 opsMAT.vis.plotContinuumResponse(planeResp, ...
     respType="StressAtGP", respComponent="sxx");
+
+% Interactive continuum response GUI
+app = opsMAT.vis.plotContinuumResponseGUI(planeResp);
 ```
 
 ### Step Index Options
@@ -194,8 +223,61 @@ All `stepIdx` parameters accept:
 | Value | Meaning |
 |-------|---------|
 | Integer (0-based) | Specific step index |
-| `"absMax"` / `"absmin"` | Maximum absolute value step |
-| `"max"` / `"min"` | Maximum / minimum value step |
+| `"absMax"` / `"absMin"` | Maximum / minimum absolute value step |
+| `"Max"` / `"Min"` | Maximum / minimum signed value step |
+
+Selectors are case-insensitive in the plotters, but the examples use the canonical mixed-case spelling.
+
+---
+
+## Interactive GUI Plotters
+
+The `opsMAT.vis` interface includes GUI wrappers for the model, eigen modes, and the main response plotters. Each GUI returns an `app` struct containing the figure, axes, controls, and helper callbacks such as `app.getOptions()`, `app.refresh()`, and `app.reset()`.
+
+### Available GUI Entry Points
+
+| GUI | Typical input | Purpose |
+|-----|---------------|---------|
+| `plotModelGUI()` | current OpenSees model | Inspect model geometry and toggle model display options |
+| `plotEigenGUI(eigenData)` | eigen data struct | Switch mode number, component, deformation scale, colors, and view |
+| `plotNodalResponseGUI(nodeResp)` | nodal response from `getNodalResponse` | Explore nodal fields, deformation, vectors, colormap, and mesh display |
+| `plotFrameResponseGUI(frameResp)` | frame element response from `getElementResponse(..., eleType="Frame")` | Explore section/basic/local frame diagrams and step selection |
+| `plotShellResponseGUI(shellResp)` | shell response from `getElementResponse(..., eleType="Shell")` | Explore shell section force/deformation, stress, or strain fields |
+| `plotContinuumResponseGUI(planeOrSolidResp)` | plane/solid response from `getElementResponse` | Explore plane/solid stress, strain, and stress-measure fields |
+
+### GUI Examples
+
+```matlab
+% Model and eigen GUIs
+appModel = opsMAT.vis.plotModelGUI();
+appEigen = opsMAT.vis.plotEigenGUI(eigenData);
+
+% Response GUIs
+appNode = opsMAT.vis.plotNodalResponseGUI(nodeResp);
+
+appFrame = opsMAT.vis.plotFrameResponseGUI(frameResp);
+
+appShell = opsMAT.vis.plotShellResponseGUI(shellResp);
+
+appPlane = opsMAT.vis.plotContinuumResponseGUI(planeResp);
+```
+
+### Common GUI Controls
+
+The response GUIs share a common set of controls:
+
+- Step selector: explicit 0-based step, `absMax`, `absMin`, `Max`, or `Min`.
+- View selector: `auto`, `iso`, `xy`, `xz`, `yz`, `yx`, `zx`, and `zy`.
+- Colormap selector: `jet`, `parula`, `turbo`, `hot`, `cool`, `spring`, `summer`, `autumn`, `winter`, and `gray`.
+- `Axes off`: hide all axis ticks, labels, and box/grid decorations.
+- `Colors...`: edit solid, edge, fixed-node, vector, model, or diagram colors, depending on the plotter.
+- `Help`: show the option help text from the underlying plotter.
+
+Some GUI control panels are scrollable. Use the mouse wheel or the panel scrollbar to reach controls below the visible area.
+
+!!! note
+
+    Response GUI functions read model information from the ODB tag stored in the response struct. For shell and continuum response GUIs, the GUI also reads nodal displacement (`respType="disp"`) from the same ODB so deformed geometry and interpolation can be displayed.
 
 ---
 

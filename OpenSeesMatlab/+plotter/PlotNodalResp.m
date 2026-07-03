@@ -64,7 +64,8 @@ classdef PlotNodalResp < handle
             opts.general = struct( ...
                 'clearAxes', true,  'holdOn',    true, 'axisEqual', true, ...
                 'grid',      true,  'box',       false,'view',      'auto', ...
-                'title',     'auto','padRatio',  0.15, 'figureSize',[1000, 618]);
+                'title',     'auto','padRatio',  0.15, 'figureSize',[1000, 618], ...
+                'axesOff',   false);
 
             opts.field  = struct('type','disp', 'component','magnitude', 'show',true);
 
@@ -653,9 +654,15 @@ classdef PlotNodalResp < handle
             shownPts = Pdef;
 
             if obj.Opts.deform.show && obj.Opts.deform.showUndeformed
-                obj.Handles.UndeformedLine = obj.drawLine( ...
-                    P, lineConn, obj.Opts.color.undeformedColor, ...
-                    obj.Opts.line.undeformedLineWidth, 'UndeformedLine');
+                if obj.hasInterpData(segIdx, localStep) && obj.Opts.interp.useInterpolation
+                    [obj.Handles.UndeformedLine, PlineU] = obj.drawInterpolatedLine( ...
+                        segIdx, localStep, [], [], true);
+                    shownPts = [shownPts; PlineU];
+                else
+                    obj.Handles.UndeformedLine = obj.drawLine( ...
+                        P, lineConn, obj.Opts.color.undeformedColor, ...
+                        obj.Opts.line.undeformedLineWidth, 'UndeformedLine');
+                end
                 obj.Handles.UndeformedSurf = obj.drawUnstructured( ...
                     P, segIdx, [], [], true);
             end
@@ -790,24 +797,36 @@ classdef PlotNodalResp < handle
             cells = cells(all(cells >= 1, 2), :);
         end
 
-        function [h, Pline] = drawInterpolatedLine(obj, segIdx, localStep, Snode, clim_)
+        function [h, Pline] = drawInterpolatedLine(obj, segIdx, localStep, Snode, clim_, asUndeformed)
+            if nargin < 6, asUndeformed = false; end
             h = gobjects(0);
             Pline = zeros(0,3);
             [pts, disp_, cells] = obj.getInterpSlice(segIdx, localStep);
             if isempty(pts) || isempty(cells), return; end
 
-            scale = obj.resolveDeformScale(segIdx, localStep);
-            U3    = disp_(:,1:min(3,size(disp_,2)));
-            if size(U3,2) < 3, U3(:,end+1:3) = 0; end
-            Pline = pts + scale * U3;
+            if asUndeformed || ~obj.Opts.deform.show
+                Pline = pts;
+            else
+                scale = obj.resolveDeformScale(segIdx, localStep);
+                U3    = disp_(:,1:min(3,size(disp_,2)));
+                if size(U3,2) < 3, U3(:,end+1:3) = 0; end
+                Pline = pts + scale * U3;
+            end
 
             s.nodes     = Pline;
             s.lines     = cells;
-            s.lineWidth = obj.Opts.interp.lineWidth;
+            if asUndeformed
+                s.lineWidth = obj.Opts.interp.undeformedLineWidth;
+            else
+                s.lineWidth = obj.Opts.interp.lineWidth;
+            end
             s.lineStyle = obj.Opts.interp.lineStyle;
             s.tag       = 'InterpLine';
 
-            if obj.Opts.color.useColormap
+            if asUndeformed
+                s.color = obj.Opts.color.undeformedColor;
+                h = obj.Plotter.addLine(s);
+            elseif obj.Opts.color.useColormap
                 if ~isempty(Snode)
                     if strcmpi(obj.Opts.field.type, 'disp')
                         sval = obj.computeScalarFieldWithComp( ...
@@ -1603,10 +1622,15 @@ classdef PlotNodalResp < handle
                 hold(obj.Ax,'on');
             end
             if obj.Opts.general.axisEqual, axis(obj.Ax,'equal'); end
-            if obj.Opts.general.grid, grid(obj.Ax,'on');
-            else,                     grid(obj.Ax,'off'); end
-            if obj.Opts.general.box,  box(obj.Ax,'on');
-            else,                     box(obj.Ax,'off');  end
+            if isfield(obj.Opts.general,'axesOff') && obj.Opts.general.axesOff
+                axis(obj.Ax,'off');
+            else
+                axis(obj.Ax,'on');
+                if obj.Opts.general.grid, grid(obj.Ax,'on');
+                else,                     grid(obj.Ax,'off'); end
+                if obj.Opts.general.box,  box(obj.Ax,'on');
+                else,                     box(obj.Ax,'off');  end
+            end
             colormap(obj.Ax, obj.Opts.color.colormap);
         end
 

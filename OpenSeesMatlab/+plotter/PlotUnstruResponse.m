@@ -64,7 +64,8 @@ classdef PlotUnstruResponse < handle
             opts.general = struct( ...
                 'clearAxes',true, 'holdOn',true, 'axisEqual',true, ...
                 'grid',true, 'box',false, 'view','auto', ...
-                'title','auto', 'padRatio',0.05, 'figureSize',[1000,618]);
+                'title','auto', 'padRatio',0.05, 'figureSize',[1000,618], ...
+                'axesOff',false);
 
             opts.deform = struct( ...
                 'show',true, 'type','disp', 'scale',1, ...
@@ -628,7 +629,7 @@ classdef PlotUnstruResponse < handle
             [pts, disp_, cells] = obj.getInterpSlice(segIdx, localStep);
             if isempty(pts) || isempty(cells), return; end
 
-            if asUndeformed
+            if asUndeformed || ~obj.Opts.deform.show
                 Pline = pts;
             else
                 scale = obj.globalDeformScale(segIdx, localStep);
@@ -639,7 +640,11 @@ classdef PlotUnstruResponse < handle
 
             s.nodes     = Pline;
             s.lines     = cells;
-            s.lineWidth = obj.Opts.interp.lineWidth;
+            if asUndeformed
+                s.lineWidth = obj.Opts.interp.undeformedLineWidth;
+            else
+                s.lineWidth = obj.Opts.interp.lineWidth;
+            end
             s.lineStyle = obj.Opts.interp.lineStyle;
             s.tag       = 'InterpLine';
 
@@ -1574,8 +1579,13 @@ classdef PlotUnstruResponse < handle
             if obj.Opts.general.clearAxes, cla(obj.Ax,'reset'); hold(obj.Ax,'on');
             elseif obj.Opts.general.holdOn, hold(obj.Ax,'on'); end
             if obj.Opts.general.axisEqual, axis(obj.Ax,'equal'); end
-            if obj.Opts.general.grid, grid(obj.Ax,'on'); else, grid(obj.Ax,'off'); end
-            if obj.Opts.general.box,  box(obj.Ax,'on');  else, box(obj.Ax,'off');  end
+            if isfield(obj.Opts.general,'axesOff') && obj.Opts.general.axesOff
+                axis(obj.Ax,'off');
+            else
+                axis(obj.Ax,'on');
+                if obj.Opts.general.grid, grid(obj.Ax,'on'); else, grid(obj.Ax,'off'); end
+                if obj.Opts.general.box,  box(obj.Ax,'on');  else, box(obj.Ax,'off');  end
+            end
             colormap(obj.Ax, obj.Opts.color.colormap);
             obj.applyFigureSize();
             P = obj.getNodeCoordsRaw(segIdx);

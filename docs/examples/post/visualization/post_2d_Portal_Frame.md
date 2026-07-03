@@ -11,25 +11,6 @@ First, instantiate the class and obtain the OpenSees interface.
 
 ```matlab
 opsMAT = OpenSeesMatlab();
-```
-
-<div style="font-size:0.85em; color:#87ae73;">
-<div style="font-weight:600;">Output</div>
-<div style="white-space:pre-wrap; font-family:Consolas;">
-============================================================
-  OpenSeesMatlab v3.8.0.1
-  OpenSees MEX Interface for MATLAB
-  Copyright (c) 2026, By Yexiang Yan
-
-
-  Type 'help OpenSeesMatlab' in MATLAB for documentation.
-  Documentation also available at 
-  https://openseesmatlab.readthedocs.io/en/latest/ 
-============================================================
-</div>
-</div>
-
-```matlab
 ops = opsMAT.opensees;
 ```
 

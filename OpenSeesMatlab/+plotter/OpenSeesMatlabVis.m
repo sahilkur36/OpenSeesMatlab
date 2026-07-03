@@ -405,6 +405,48 @@ classdef OpenSeesMatlabVis < handle
             pr.plotStep(options.stepIdx);
         end
 
+        function app = plotNodalResponseGUI(obj, nodeRespData, options)
+            % Open an interactive GUI for nodal response visualization.
+            %
+            % Syntax
+            % ------
+            %     app = vis.plotNodalResponseGUI(nodeRespData)
+            %     app = vis.plotNodalResponseGUI(nodeRespData, opts=opts)
+            %     app = vis.plotNodalResponseGUI(nodeRespData, respType="disp", respComponent="magnitude")
+            %
+            % Parameters
+            % ----------
+            % nodeRespData : struct
+            %     Nodal response data, typically obtained from
+            %     ``opsmat.post.getNodalResponse(odbTag)``.
+            % respType : string, optional
+            %     Initial response field. Default is "disp".
+            % respComponent : string, optional
+            %     Initial response component. Default is "magnitude".
+            % stepIdx : integer or string, optional
+            %     Initial step selector. Use a 0-based integer, "absMax",
+            %     "absMin", "Max", or "Min".
+            % opts : struct, optional
+            %     Initial visualization options passed to plotter.PlotNodalRespGUI.
+
+            arguments
+                obj (1,1) plotter.OpenSeesMatlabVis
+                nodeRespData struct
+                options.respType {mustBeTextScalar} = "disp"
+                options.respComponent {mustBeTextScalar} = "magnitude"
+                options.stepIdx = "absMax"
+                options.opts (1,1) struct = struct()
+            end
+
+            odbTag = nodeRespData(1).odbTag;
+            modelInfo = post.ODB.readModelInfo(obj.parent.opensees, odbTag);
+            app = plotter.PlotNodalRespGUI(modelInfo, nodeRespData, ...
+                respType=options.respType, ...
+                respComponent=options.respComponent, ...
+                stepIdx=options.stepIdx, ...
+                opts=options.opts);
+        end
+
         function plotDeformation(obj, nodeRespData, options)
             % Visualize deformed model geometry from nodal displacement data.
             %
@@ -615,6 +657,50 @@ classdef OpenSeesMatlabVis < handle
 
         end
 
+        function app = plotFrameResponseGUI(obj, respData, options)
+            % Open an interactive GUI for frame element response diagrams.
+            %
+            %   plotFrameResponseGUI displays frame response data with controls
+            %   for response type, component, step selection, style, scaling,
+            %   colours, labels, and common performance options.
+            %
+            % Syntax
+            % ------
+            %     app = vis.plotFrameResponseGUI(respData)
+            %     app = vis.plotFrameResponseGUI(respData, opts=opts)
+            %     app = vis.plotFrameResponseGUI(respData, stepIdx=0)
+            %
+            % Parameters
+            % ----------
+            % respData : struct
+            %     Frame response data, typically obtained from
+            %     ``opsmat.post.getElementResponse(odbTag, eleType="Frame")``.
+            % opts : struct, optional
+            %     Initial visualization options passed to plotter.PlotFrameRespGUI.
+            % stepIdx : integer or string, optional
+            %     Initial step selector. Use a 0-based integer, "absMax",
+            %     "absMin", "Max", or "Min".
+            %
+            % Returns
+            % -------
+            % app : struct
+            %     GUI handles and helper callbacks. Use app.getOptions() to read
+            %     the current PlotFrameResp option struct.
+
+            arguments
+                obj (1,1) plotter.OpenSeesMatlabVis
+                respData struct
+                options.opts (1,1) struct = struct()
+                options.stepIdx = "absMax"
+            end
+
+            odbTag = respData(1).odbTag;
+            modelInfo = post.ODB.readModelInfo(obj.parent.opensees, odbTag);
+            app = plotter.PlotFrameRespGUI(modelInfo, respData, ...
+                opts=options.opts, ...
+                stepIdx=options.stepIdx);
+        end
+
         function plotShellResponse(obj, respData, options)
             % Visualize Shell element response for a specific step.
             %
@@ -742,6 +828,41 @@ classdef OpenSeesMatlabVis < handle
             pu.setResponse('Shell', options.respType, options.respComponent, ...
                 options.fiberPoint);
             pu.plotStep(options.stepIdx);
+        end
+
+        function app = plotShellResponseGUI(obj, respData, options)
+            % Open an interactive GUI for shell element response visualization.
+            %
+            % Syntax
+            % ------
+            %     app = vis.plotShellResponseGUI(respData)
+            %     app = vis.plotShellResponseGUI(respData, opts=opts)
+            %     app = vis.plotShellResponseGUI(respData, respType="StressAtGP", respComponent="sxx")
+
+            arguments
+                obj     (1,1) plotter.OpenSeesMatlabVis
+                respData struct
+                options.respType {mustBeTextScalar} = "SecForceAtGP"
+                options.respComponent {mustBeTextScalar} = "mxx"
+                options.fiberPoint = "top"
+                options.responseLocation {mustBeTextScalar} = ""
+                options.stepIdx    = "absMax"
+                options.opts          (1,1) struct = struct()
+            end
+
+            odbTag = respData(1).odbTag;
+            modelInfo = post.ODB.readModelInfo(obj.parent.opensees, odbTag);
+            nodalResp = obj.parent.post.getNodalResponse(odbTag, respType="disp");
+            options.opts.responseLocation = options.responseLocation;
+
+            app = plotter.PlotUnstruResponseGUI( ...
+                modelInfo, nodalResp, respData, ...
+                eleType="Shell", ...
+                respType=options.respType, ...
+                respComponent=options.respComponent, ...
+                fiberPoint=options.fiberPoint, ...
+                stepIdx=options.stepIdx, ...
+                opts=options.opts);
         end
 
         % -----------------------------------------------------------------
@@ -872,6 +993,54 @@ classdef OpenSeesMatlabVis < handle
                 modelInfo, nodalResp, respData, options.ax, options.opts);
             pu.setResponse(eleType, options.respType, options.respComponent);
             pu.plotStep(options.stepIdx);
+        end
+
+        function app = plotContinuumResponseGUI(obj, respData, options)
+            % Open an interactive GUI for plane or solid continuum response visualization.
+            %
+            % Syntax
+            % ------
+            %     app = vis.plotContinuumResponseGUI(respData)
+            %     app = vis.plotContinuumResponseGUI(respData, eleType="Solid")
+            %     app = vis.plotContinuumResponseGUI(respData, respType="StressAtGP", respComponent="sxx")
+
+            arguments
+                obj      (1,1) plotter.OpenSeesMatlabVis
+                respData struct
+                options.eleType {mustBeTextScalar} = ""
+                options.respType {mustBeTextScalar} = "StressAtGP"
+                options.respComponent {mustBeTextScalar} = "sxx"
+                options.responseLocation {mustBeTextScalar} = ""
+                options.stepIdx   = "absMax"
+                options.opts          (1,1) struct = struct()
+            end
+
+            eleType = options.eleType;
+            if strlength(string(eleType)) == 0
+                eleType = respData(1).eleType;
+            end
+            switch lower(char(string(eleType)))
+                case 'plane'
+                    eleType = 'Plane';
+                case {'solid', 'brick'}
+                    eleType = 'Solid';
+                otherwise
+                    error('plotContinuumResponseGUI:BadEleType', ...
+                        'eleType must be "Plane" or "Solid". Got "%s".', eleType);
+            end
+
+            odbTag = respData(1).odbTag;
+            modelInfo = post.ODB.readModelInfo(obj.parent.opensees, odbTag);
+            nodalResp = obj.parent.post.getNodalResponse(odbTag, respType="disp");
+            options.opts.responseLocation = options.responseLocation;
+
+            app = plotter.PlotUnstruResponseGUI( ...
+                modelInfo, nodalResp, respData, ...
+                eleType=eleType, ...
+                respType=options.respType, ...
+                respComponent=options.respComponent, ...
+                stepIdx=options.stepIdx, ...
+                opts=options.opts);
         end
 
     end

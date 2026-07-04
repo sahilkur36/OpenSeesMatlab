@@ -1,5 +1,7 @@
 # <span style="color:rgb(213,80,0)">**Automatic Unit System Conversion**</span>
 
+This live script is written as a guided walkthrough for a post\-processing workflow. It focuses on retrieving, organizing, and visualizing model or response data after an OpenSees analysis. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
+
 As we all know, the units should be unified in the finite element analysis. Common basic units include `length`, `force`, and `time`. The units of the base system can be combined in any combination, but other units including `pressure`, `stress`, `mass`, etc. should be unified with base system. In order to facilitate unit processing in the model, ``OpenSeesMatlab`` has developed a class that can automatically perform unit conversion based on the basic units you set.
 
 ```matlab
@@ -12,6 +14,9 @@ ops = opsMAT.opensees;
 ```
 
 ## Basic usage
+
+The following commands carry out this step of the workflow. Run this cell after the previous sections so the required variables and model state already exist.
+
 ```matlab
 length_unit = "m";    % base unit
 force_unit  = "kN";   % base unit
@@ -96,16 +101,6 @@ length_unit1 = "m";
 force_unit1 = "kN";
 UNIT.setBasicUnits(length_unit1, force_unit1, "sec");
 [u1, forces1, f1] = trussModel(opsMAT);
-```
-
-<div style="font-size:0.85em; color:#87ae73;">
-<div style="font-weight:600;">Output</div>
-<div style="white-space:pre-wrap; font-family:Consolas;">
-[OpenSees] WARNING - the 'fullGenLapack' eigen solver is VERY SLOW. Consider using the default eigen solver.
-</div>
-</div>
-
-```matlab
 
 
 length_unit2 = "cm";
@@ -178,6 +173,9 @@ Reaction at node 2: N/kN = 1000, lbf/kN = 224.809
 The displacement and force values depend on the base unit system you set up, but they are proportional to each other. Well, the rest is left to you to verify.
 
 ## Truss Model Code
+
+This section creates the finite\-element idealization used by the rest of the example. Check the dimensions, tags, and connectivity here before moving on.
+
 ```matlab
 function [u, forces, freq] = trussModel(opsMAT)
 %TRUSSMODEL  Simple 2D truss example in OpenSeesMatlab.

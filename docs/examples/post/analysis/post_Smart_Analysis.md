@@ -1,5 +1,7 @@
 # <span style="color:rgb(213,80,0)">**Smart Analysis**</span>
 
+This live script is written as a guided walkthrough for a post\-processing workflow. It focuses on retrieving, organizing, and visualizing model or response data after an OpenSees analysis. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
+
 **Demonstrating how to use intelligent analysis algorithms.**
 
 **See also [opstool](https://opstool\-doc.readthedocs.io/en/latest/src/analysis/smart\_analysis.html\#).**
@@ -13,6 +15,9 @@ ops = opsMAT.opensees;
 ```
 
 ## Reinforced Concrete Frame Pushover Analysis
+
+This section configures and runs the analysis. The solver, constraints, convergence test, and step size should be read together because they control numerical robustness.
+
 ```matlab
 FEModel(ops);
 
@@ -71,7 +76,11 @@ opsMAT.anlys.smartAnalyze.configure(...
 <div style="font-size:0.85em; color:#87ae73;">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
-[OpenSeesMatlab::SmartAnalyze] Setting algorithm to KrylovNewton ✳️
+[OpenSeesMatlab::SmartAnalyze] Configuration:
+    analysis=Static, test=EnergyIncr, tol=1.000e-10, iter=10, printFlag=0
+    algorithm=KrylovNewton (type 40), candidates=[40, 10, 20, 30]
+    retry: addIter=1 [50, 100], alterAlgo=1, alterTest=0 [NormDispIncr, NormUnbalance, RelativeEnergyIncr], looseTol=0 [1e-08], relaxStep=1 (relaxation=0.5, minStep=1.000e-06)
+    record: normHistory=1, diagnostics=0, printPer=50
 </div>
 </div>
 
@@ -89,11 +98,11 @@ end
 <div style="font-size:0.85em; color:#87ae73;">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
-[OpenSeesMatlab::SmartAnalyze] progress 50 steps. Time: 0.183 s. ✅
-[OpenSeesMatlab::SmartAnalyze] progress 100 steps. Time: 0.221 s. ✅
-[OpenSeesMatlab::SmartAnalyze] progress 150 steps. Time: 0.250 s. ✅
-[OpenSeesMatlab::SmartAnalyze] progress 200 steps. Time: 0.278 s. ✅
-[OpenSeesMatlab::SmartAnalyze] progress 250 steps. Time: 0.311 s. ✅
+[OpenSeesMatlab::SmartAnalyze] progress 50 steps. Time: 0.112 s. ✅
+[OpenSeesMatlab::SmartAnalyze] progress 100 steps. Time: 0.146 s. ✅
+[OpenSeesMatlab::SmartAnalyze] progress 150 steps. Time: 0.175 s. ✅
+[OpenSeesMatlab::SmartAnalyze] progress 200 steps. Time: 0.201 s. ✅
+[OpenSeesMatlab::SmartAnalyze] progress 250 steps. Time: 0.233 s. ✅
 [OpenSees] WARNING: CTestEnergyIncr::test() - failed to converge 
 [OpenSees] after: 10 iterations
 [OpenSees]  current EnergyIncr: 5.80578e-06 (max: 1e-10)     Norm deltaX: 0.00017573, Norm deltaR: 0.672724
@@ -101,9 +110,9 @@ end
 [OpenSees] StaticAnalysis::analyze() - the Algorithm failed at step: 0 with domain at load factor 2.89496
 [OpenSees] OpenSees &gt; analyze failed, returned: -3 error flag
 [OpenSeesMatlab::SmartAnalyze] Adding test times to 50. ✳️
-[OpenSeesMatlab::SmartAnalyze] progress 300 steps. Time: 0.359 s. ✅
-[OpenSeesMatlab::SmartAnalyze] progress 350 steps. Time: 0.396 s. ✅
-[OpenSeesMatlab::SmartAnalyze] progress 400 steps. Time: 0.428 s. ✅
+[OpenSeesMatlab::SmartAnalyze] progress 300 steps. Time: 0.278 s. ✅
+[OpenSeesMatlab::SmartAnalyze] progress 350 steps. Time: 0.317 s. ✅
+[OpenSeesMatlab::SmartAnalyze] progress 400 steps. Time: 0.347 s. ✅
 [OpenSees] WARNING: CTestEnergyIncr::test() - failed to converge 
 [OpenSees] after: 10 iterations
 [OpenSees]  current EnergyIncr: 2.70125e-05 (max: 1e-10)     Norm deltaX: 0.000819596, Norm deltaR: 0.253889
@@ -111,7 +120,7 @@ end
 [OpenSees] StaticAnalysis::analyze() - the Algorithm failed at step: 0 with domain at load factor 1.64367
 [OpenSees] OpenSees &gt; analyze failed, returned: -3 error flag
 [OpenSeesMatlab::SmartAnalyze] Adding test times to 50. ✳️
-[OpenSeesMatlab::SmartAnalyze] progress 450 steps. Time: 0.477 s. ✅
+[OpenSeesMatlab::SmartAnalyze] progress 450 steps. Time: 0.383 s. ✅
 </div>
 </div>
 
@@ -170,7 +179,11 @@ opsMAT.anlys.smartAnalyze.configure(...
 <div style="font-size:0.85em; color:#87ae73;">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
-[OpenSeesMatlab::SmartAnalyze] Setting algorithm to KrylovNewton ✳️
+[OpenSeesMatlab::SmartAnalyze] Configuration:
+    analysis=Static, test=NormDispIncr, tol=1.000e-08, iter=10, printFlag=0
+    algorithm=KrylovNewton (type 40), candidates=[40, 10, 20, 30]
+    retry: addIter=1 [50, 100], alterAlgo=1, alterTest=0 [NormDispIncr, NormUnbalance, RelativeEnergyIncr], looseTol=0 [1e-08], relaxStep=1 (relaxation=0.5, minStep=1.000e-06)
+    record: normHistory=1, diagnostics=0, printPer=50
 </div>
 </div>
 
@@ -192,34 +205,34 @@ end
 <div style="font-size:0.85em; color:#87ae73;">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
-[OpenSeesMatlab::SmartAnalyze] progress 11.111 % (50/450). Time: 0.079 s. ✅
-[OpenSeesMatlab::SmartAnalyze] progress 22.222 % (100/450). Time: 0.125 s. ✅
-[OpenSeesMatlab::SmartAnalyze] progress 33.333 % (150/450). Time: 0.165 s. ✅
-[OpenSeesMatlab::SmartAnalyze] progress 44.444 % (200/450). Time: 0.204 s. ✅
-[OpenSeesMatlab::SmartAnalyze] progress 55.556 % (250/450). Time: 0.258 s. ✅
+[OpenSeesMatlab::SmartAnalyze] progress 11.111 % (50/450). Time: 0.067 s. ✅
+[OpenSeesMatlab::SmartAnalyze] progress 22.222 % (100/450). Time: 0.110 s. ✅
+[OpenSeesMatlab::SmartAnalyze] progress 33.333 % (150/450). Time: 0.140 s. ✅
+[OpenSeesMatlab::SmartAnalyze] progress 44.444 % (200/450). Time: 0.170 s. ✅
+[OpenSeesMatlab::SmartAnalyze] progress 55.556 % (250/450). Time: 0.207 s. ✅
 [OpenSees] WARNING: CTestNormDispIncr::test() - failed to converge 
 [OpenSees] after: 10 iterations  current Norm: 0.000359096 (max: 1e-08, Norm deltaR: 0.195182)
 [OpenSees] AcceleratedNewton::solveCurrentStep() -The ConvergenceTest object failed in test()
 [OpenSees] StaticAnalysis::analyze() - the Algorithm failed at step: 0 with domain at load factor 2.89483
 [OpenSees] OpenSees &gt; analyze failed, returned: -3 error flag
 [OpenSeesMatlab::SmartAnalyze] Adding test times to 50. ✳️
-[OpenSeesMatlab::SmartAnalyze] progress 66.667 % (300/450). Time: 0.312 s. ✅
+[OpenSeesMatlab::SmartAnalyze] progress 66.667 % (300/450). Time: 0.263 s. ✅
 [OpenSees] WARNING: CTestNormDispIncr::test() - failed to converge 
 [OpenSees] after: 10 iterations  current Norm: 3.45018e-08 (max: 1e-08, Norm deltaR: 0.00026513)
 [OpenSees] AcceleratedNewton::solveCurrentStep() -The ConvergenceTest object failed in test()
 [OpenSees] StaticAnalysis::analyze() - the Algorithm failed at step: 0 with domain at load factor 2.30484
 [OpenSees] OpenSees &gt; analyze failed, returned: -3 error flag
 [OpenSeesMatlab::SmartAnalyze] Adding test times to 50. ✳️
-[OpenSeesMatlab::SmartAnalyze] progress 77.778 % (350/450). Time: 0.370 s. ✅
-[OpenSeesMatlab::SmartAnalyze] progress 88.889 % (400/450). Time: 0.411 s. ✅
+[OpenSeesMatlab::SmartAnalyze] progress 77.778 % (350/450). Time: 0.307 s. ✅
+[OpenSeesMatlab::SmartAnalyze] progress 88.889 % (400/450). Time: 0.342 s. ✅
 [OpenSees] WARNING: CTestNormDispIncr::test() - failed to converge 
 [OpenSees] after: 10 iterations  current Norm: 0.000819595 (max: 1e-08, Norm deltaR: 0.25389)
 [OpenSees] AcceleratedNewton::solveCurrentStep() -The ConvergenceTest object failed in test()
 [OpenSees] StaticAnalysis::analyze() - the Algorithm failed at step: 0 with domain at load factor 1.64367
 [OpenSees] OpenSees &gt; analyze failed, returned: -3 error flag
 [OpenSeesMatlab::SmartAnalyze] Adding test times to 50. ✳️
-[OpenSeesMatlab::SmartAnalyze] progress 100.000 % (450/450). Time: 0.465 s. ✅
-[OpenSeesMatlab::SmartAnalyze] Successfully finished! Progress: 100.000 % (450/450). Time: 0.477 s. 
+[OpenSeesMatlab::SmartAnalyze] progress 100.000 % (450/450). Time: 0.401 s. ✅
+[OpenSeesMatlab::SmartAnalyze] Successfully finished! Progress: 100.000 % (450/450). Time: 0.402 s. 
 </div>
 </div>
 

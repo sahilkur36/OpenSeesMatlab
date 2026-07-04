@@ -1,5 +1,7 @@
 # <span style="color:rgb(213,80,0)">**PM4Sand model undrained cyclic simple shear element**</span>
 
+This live script is written as a guided walkthrough for a geotechnical material or element example. It shows how the soil model is defined, loaded, and checked through selected response quantities. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
+
 The original model is from 2D Undrained Cyclic Direct Simple Shear Test Using One Element at University of Washington, Department of Civil and Environmental Eng by Geotechnical Eng Group L. Chen, P. Arduino \- Feb 2018.
 
 ```matlab
@@ -431,7 +433,7 @@ fprintf('Analysis is done!\nComputation time is %.2f seconds\n', run_time);
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Analysis is done!
-Computation time is 11.93 seconds
+Computation time is 11.35 seconds
 </div>
 </div>
 

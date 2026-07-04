@@ -100,6 +100,7 @@ Data recording, retrieval, and export.
 **Response data layouts:**
 - **Nodal responses** (`getNodalResponse`): Layout C with fields `disp.ux/uy/uz/rx/ry/rz`, `vel`, `accel`, `reaction`
 - **Element responses** (`getElementResponse`): Layout C with component fields (e.g., `sectionForces.Mz/My/N/Vy/Vz/T`)
+- **Custom response fields**: response plotters and GUIs accept numeric fields, `.data` plus `.dofs`, or Layout-C numeric subfields; custom field names become `respType` entries and `.dofs` or subfield names become selectable components.
 
 **Data structures:**
 - Scalar struct: single stage, fixed topology

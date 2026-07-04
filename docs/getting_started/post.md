@@ -170,8 +170,7 @@ opsMAT.vis.plotDeformation(nodeResp, stepIdx="absMax", scaleFactor=1.0);
 opsMAT.vis.plotNodalResponse(nodeResp, stepIdx="absMax", respType="disp", respComponent="ux");
 
 % Interactive nodal response GUI
-app = opsMAT.vis.plotNodalResponseGUI(nodeResp, ...
-    respType="disp", respComponent="magnitude");
+app = opsMAT.vis.plotNodalResponseGUI(nodeResp);
 ```
 
 ### Frame Response Diagrams
@@ -188,7 +187,7 @@ opsMAT.vis.plotFrameResponse(frameResp, stepIdx="absMax", ...
     respType="sectionDeformations", respComponent="MZ");
 
 % Interactive frame response GUI
-app = opsMAT.vis.plotFrameResponseGUI(frameResp, stepIdx="absMax");
+app = opsMAT.vis.plotFrameResponseGUI(frameResp);
 ```
 
 ### Shell Response Visualization
@@ -196,8 +195,7 @@ app = opsMAT.vis.plotFrameResponseGUI(frameResp, stepIdx="absMax");
 ```matlab
 shellResp = opsMAT.post.getElementResponse("myODB", eleType="Shell");
 
-opsMAT.vis.plotShellResponse(shellResp, ...
-    respType="SecForceAtGP", respComponent="mxx", fiberPoint="top");
+opsMAT.vis.plotShellResponse(shellResp);
 
 % Interactive shell response GUI
 app = opsMAT.vis.plotShellResponseGUI(shellResp);
@@ -215,6 +213,71 @@ opsMAT.vis.plotContinuumResponse(planeResp, ...
 % Interactive continuum response GUI
 app = opsMAT.vis.plotContinuumResponseGUI(planeResp);
 ```
+
+### Custom Response Fields and Components
+
+The response plotters and response GUIs can also read user-defined fields
+directly from the response data struct. The field name becomes the available
+`respType`, and the component list is inferred from the data layout:
+
+```matlab
+% Nodal scalar field: component shown as "value" in the GUI
+nodeResp.MyScalar = rand(nStep, nNode);
+
+% Nodal vector field: components come from .dofs
+nodeResp.MyVector.data = rand(nStep, nNode, nComp);
+nodeResp.MyVector.dofs = {'c1','c2','c3'};
+
+% Nodal Layout-C field: components come from numeric subfield names
+nodeResp.MyLayoutC.c1 = rand(nStep, nNode);
+nodeResp.MyLayoutC.c2 = rand(nStep, nNode);
+
+opsMAT.vis.plotNodalResponse(nodeResp, respType="MyVector", respComponent="c2");
+app = opsMAT.vis.plotNodalResponseGUI(nodeResp);
+```
+
+Frame response custom fields follow the same idea, with `responseLocation`
+used to state whether values are element-level or section/sample-point values:
+
+```matlab
+% Element scalar diagram
+frameResp.MyScalar = rand(nStep, nEle);
+opsMAT.vis.plotFrameResponse(frameResp, ...
+    respType="MyScalar", respComponent="value", responseLocation="element");
+
+% Vector field with named components
+frameResp.MyVector.data = rand(nStep, nEle, nComp);
+frameResp.MyVector.dofs = {'c1','c2','c3'};
+
+% Section-style Layout-C field
+frameResp.MySection.c1 = rand(nStep, nEle, nSec);
+opsMAT.vis.plotFrameResponse(frameResp, ...
+    respType="MySection", respComponent="c1", responseLocation="section");
+```
+
+For shell, plane, and solid element responses, custom fields can be stored as
+element, Gauss-point, or node data. Names containing `AtNode` are treated as
+node fields by default; names containing `AtGP` are treated as Gauss-point
+fields; other custom fields are treated as element fields unless
+`responseLocation` is set explicitly.
+
+```matlab
+% Element/Gauss-point vector field
+eleResp.MyStress.data = rand(nStep, nEle, nGP, nComp);
+eleResp.MyStress.dofs = {'s11','s22','s12'};
+opsMAT.vis.plotContinuumResponse(eleResp, ...
+    respType="MyStress", respComponent="s11", responseLocation="gp");
+
+% Node-based Layout-C field
+eleResp.MyFieldAtNode.c1 = rand(nStep, nNode);
+opsMAT.vis.plotContinuumResponse(eleResp, ...
+    respType="MyFieldAtNode", respComponent="c1");
+```
+
+For all response GUIs, custom fields and components are populated from the
+first response struct entry, for example `nodeResp(1)`, `frameResp(1)`, or
+`eleResp(1)`. If a multi-stage response uses struct arrays, put the custom
+field names and component metadata in the first entry as well.
 
 ### Step Index Options
 

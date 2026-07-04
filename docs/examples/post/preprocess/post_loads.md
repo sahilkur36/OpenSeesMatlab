@@ -1,5 +1,7 @@
 # <span style="color:rgb(213,80,0)">**Loads Processing**</span>
 
+This live script is written as a guided walkthrough for a post\-processing workflow. It focuses on retrieving, organizing, and visualizing model or response data after an OpenSees analysis. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
+
 **Demonstrates how to easily create loads.**
 
 ```matlab

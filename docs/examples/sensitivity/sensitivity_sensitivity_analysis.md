@@ -1,4 +1,7 @@
 # <span style="color:rgb(213,80,0)">**Two storey steel moment frame with W\-sections for displacement\-controlled sensitivity analysis**</span>
+
+This live script is written as a guided walkthrough for a sensitivity\-analysis example. It shows how design parameters are connected to response quantities so that gradients can be evaluated. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
+
 ```matlab
 clc; clear;
 

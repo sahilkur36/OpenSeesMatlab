@@ -1,5 +1,7 @@
 # <span style="color:rgb(213,80,0)">**Excavation Supported by Cantilevered Sheet Pile Wall**</span>
 
+This live script is written as a guided walkthrough for a post\-processing workflow. It focuses on retrieving, organizing, and visualizing model or response data after an OpenSees analysis. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
+
 This example is from file [<u>Excavation Supported by Cantilevered Sheet Pile Wall</u>](https://opensees.berkeley.edu/wiki/index.php?title=Excavation_Supported_by_Cantilevered_Sheet_Pile_Wall) on the OpenSees website.
 
 Note that this model has a bug: it crashes when ``ops.wipe()`` is run again after analysis. OpenSeesPy has the same problem, which is probably a problem with related components inside OpenSees, but the specific cause is unknown.
@@ -19,6 +21,9 @@ excavationFEM(ops);
 ```
 
 ## Plot Model
+
+This section creates the finite\-element idealization used by the rest of the example. Check the dimensions, tags, and connectivity here before moving on.
+
 ```matlab
 opts = opsMAT.vis.defaultPlotModelOptions;
 opts.nodes.showLabels = false;
@@ -467,6 +472,9 @@ Lift 10 removed
 </div>
 
 ## Post\-processing and visualization
+
+This section turns the numerical results into plots. Use these figures to check the deformed shape, response pattern, and whether the result is physically reasonable.
+
 ```matlab
 odbData = opsMAT.post.getODBData("myODB");
 ```

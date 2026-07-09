@@ -47,11 +47,14 @@ classdef plotEigen < plotter.polyscope.ViewerBase
                 end
             end
 
-            if contains(lower(char(string(obj.Opts.polyscope.backend))), 'mock')
-                obj.frameTick();
-            else
+            if obj.isHeadless_()
+                obj.Opts.polyscope.backend = 'openGL_mock';
+            end
+            if obj.shouldAutoShow_()
                 obj.enableGui();
                 obj.show();
+            else
+                obj.frameTick();
             end
         end
 

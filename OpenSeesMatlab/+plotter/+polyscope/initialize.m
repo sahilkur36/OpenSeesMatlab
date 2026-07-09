@@ -8,6 +8,10 @@ function initialize(ps, opts, varargin)
     if nargin < 2 || isempty(opts)
         opts = struct();
     end
+    is2D = false;
+    if nargin >= 3 && (islogical(varargin{1}) || isnumeric(varargin{1}))
+        is2D = logical(varargin{1});
+    end
     if nargin >= 4 && ~isempty(varargin{2})
         phase = varargin{2};
     elseif nargin >= 3 && ~isempty(varargin{1}) && ...
@@ -44,19 +48,23 @@ function initialize(ps, opts, varargin)
         case 'post'
             tryCall_(ps, 'set_program_name', programName);
             applyProgramOptions_(ps, psOpts);
-            tryCall_(ps, 'set_up_dir', 'z_up', false);
+            if ~is2D
+                tryCall_(ps, 'set_up_dir', 'z_up', false);
+            end
             if isfield(opts, 'polyscope')
                 if isfield(opts.polyscope, 'backgroundColor')
                     tryCall_(ps, 'set_background_color', opts.polyscope.backgroundColor);
                 end
-                if isfield(opts.polyscope, 'maximize') && opts.polyscope.maximize
-                    [w, h] = screenSize_();
-                    tryCall_(ps, 'set_window_size', w, h);
-                elseif isfield(opts.polyscope, 'windowSize') && ...
-                        numel(opts.polyscope.windowSize) >= 2 && ...
-                        ~(isfield(opts.polyscope, 'maximize') && opts.polyscope.maximize)
-                    tryCall_(ps, 'set_window_size', ...
-                        opts.polyscope.windowSize(1), opts.polyscope.windowSize(2));
+                if ~isHeadless_(opts)
+                    if isfield(opts.polyscope, 'maximize') && opts.polyscope.maximize
+                        [w, h] = screenSize_();
+                        tryCall_(ps, 'set_window_size', w, h);
+                    elseif isfield(opts.polyscope, 'windowSize') && ...
+                            numel(opts.polyscope.windowSize) >= 2 && ...
+                            ~(isfield(opts.polyscope, 'maximize') && opts.polyscope.maximize)
+                        tryCall_(ps, 'set_window_size', ...
+                            opts.polyscope.windowSize(1), opts.polyscope.windowSize(2));
+                    end
                 end
             end
         case 'postupdate'
@@ -101,6 +109,13 @@ function tryCall_(obj, methodName, varargin)
     try
         obj.(methodName)(varargin{:});
     catch
+    end
+end
+
+function tf = isHeadless_(opts)
+    tf = false;
+    if isfield(opts, 'polyscope') && isfield(opts.polyscope, 'headless')
+        tf = logical(opts.polyscope.headless);
     end
 end
 

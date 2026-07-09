@@ -358,10 +358,8 @@ classdef (Abstract) ViewerBase < handle
             L = max(mx - mn);
             if ~isfinite(L) || L <= 0, L = 1; end
             r = L * 2.5;
-            obj.setSceneScaleForPoints_(P);
 
             viewName = lower(char(string(name)));
-            obj.setUpDir_('z_up');
             isPlaneView = any(strcmp(viewName, {'xy', 'xz', 'yz', 'yx', 'zx', 'zy'}));
             if isPlaneView
                 obj.setNavigationStyle_('turntable');
@@ -393,11 +391,17 @@ classdef (Abstract) ViewerBase < handle
                     up = [0, 0, 1];
             end
 
+            if ~isPlaneView
+                obj.setUpDir_(obj.upDirNameForVector_(up));
+            end
+            obj.setSceneScaleForPoints_(P);
             if isPlaneView
                 obj.App.setProjectionMode('orthographic');
+                obj.setPlaneViewFov_();
                 obj.setNavigationStyle_('planar');
             else
                 obj.App.setProjectionMode('perspective');
+                obj.setPerspectiveViewFov_();
                 obj.setNavigationStyle_('turntable');
             end
 
@@ -417,11 +421,17 @@ classdef (Abstract) ViewerBase < handle
             ext = mx - mn;
             L = max(ext);
             if ~isfinite(L) || L <= 0, L = 1; end
-            pad = 0.05 * L;
+            pad = max(0.05 * L, eps(max(1, L)) * 32);
+            low = mn - pad;
+            high = mx + pad;
+            thin = (high - low) <= eps(max(1, L)) * 64;
+            center = (mn + mx) / 2;
+            low(thin) = center(thin) - pad;
+            high(thin) = center(thin) + pad;
             try
                 ps = obj.App.polyscopeHandle();
                 ps.set_length_scale(L);
-                ps.set_bounding_box(mn - pad, mx + pad);
+                ps.set_bounding_box(low, high);
                 ps.update_scene_extents();
             catch
             end
@@ -443,38 +453,42 @@ classdef (Abstract) ViewerBase < handle
             if strcmp(viewName, 'auto')
                 viewName = '3d';
             end
-            obj.setUpDir_('z_up');
-            obj.setSceneScaleForPoints_(P);
             switch viewName
                 case 'xy'
                     eye = target + [0, 0, r];
                     up = [0, 1, 0];
                     obj.App.setProjectionMode('orthographic');
+                    obj.setPlaneViewFov_();
                     obj.setNavigationStyle_('planar');
                 case 'yx'
                     eye = target + [0, 0, -r];
                     up = [1, 0, 0];
                     obj.App.setProjectionMode('orthographic');
+                    obj.setPlaneViewFov_();
                     obj.setNavigationStyle_('planar');
                 case 'xz'
                     eye = target + [0, -r, 0];
                     up = [0, 0, 1];
                     obj.App.setProjectionMode('orthographic');
+                    obj.setPlaneViewFov_();
                     obj.setNavigationStyle_('planar');
                 case 'zx'
                     eye = target + [0, r, 0];
                     up = [1, 0, 0];
                     obj.App.setProjectionMode('orthographic');
+                    obj.setPlaneViewFov_();
                     obj.setNavigationStyle_('planar');
                 case 'yz'
                     eye = target + [r, 0, 0];
                     up = [0, 0, 1];
                     obj.App.setProjectionMode('orthographic');
+                    obj.setPlaneViewFov_();
                     obj.setNavigationStyle_('planar');
                 case 'zy'
                     eye = target + [-r, 0, 0];
                     up = [0, 1, 0];
                     obj.App.setProjectionMode('orthographic');
+                    obj.setPlaneViewFov_();
                     obj.setNavigationStyle_('planar');
                 otherwise
                     eye = target + [r * cosd(-37.5) * cosd(30), ...
@@ -482,8 +496,14 @@ classdef (Abstract) ViewerBase < handle
                                      r * sind(30)];
                     up = [0, 0, 1];
                     obj.App.setProjectionMode('perspective');
+                    obj.setPerspectiveViewFov_();
                     obj.setNavigationStyle_('turntable');
             end
+            isPlaneView = any(strcmp(viewName, {'xy', 'xz', 'yz', 'yx', 'zx', 'zy'}));
+            if ~isPlaneView
+                obj.setUpDir_(obj.upDirNameForVector_(up));
+            end
+            obj.setSceneScaleForPoints_(P);
             viewMat = obj.cameraViewMatrix_(eye, target, up);
             obj.App.setCameraViewMatrix(viewMat);
             obj.App.setViewCenter(target);
@@ -491,6 +511,48 @@ classdef (Abstract) ViewerBase < handle
                 obj.App.polyscopeHandle().request_redraw();
             catch
             end
+        end
+
+        function state = animationPlaneCameraState_(obj)
+            state = [];
+            try
+                if ~isfield(obj.gui_, 'animationMode') || ~obj.gui_.animationMode
+                    return;
+                end
+                if ~isfield(obj.Opts, 'general') || ~isfield(obj.Opts.general, 'view') || ...
+                        ~obj.isPlaneView_(obj.Opts.general.view)
+                    return;
+                end
+                ps = obj.App.polyscopeHandle();
+                state.viewMat = double(ps.get_camera_view_matrix());
+                state.center = double(ps.get_view_center());
+            catch
+                state = [];
+            end
+        end
+
+        function restoreCameraState_(obj, state)
+            if isempty(state) || ~isstruct(state)
+                return;
+            end
+            try
+                if isfield(state, 'viewMat') && all(size(state.viewMat) >= [3, 4])
+                    viewMat = state.viewMat;
+                    if size(viewMat, 1) == 3
+                        viewMat = [viewMat(1:3, 1:4); 0, 0, 0, 1];
+                    end
+                    obj.App.setCameraViewMatrix(viewMat);
+                end
+                if isfield(state, 'center') && numel(state.center) >= 3 && all(isfinite(state.center(1:3)))
+                    obj.App.setViewCenter(state.center(1:3));
+                end
+                obj.App.polyscopeHandle().request_redraw();
+            catch
+            end
+        end
+
+        function tf = isPlaneView_(~, viewName)
+            tf = any(strcmpi(char(string(viewName)), {'xy', 'xz', 'yz', 'yx', 'zx', 'zy'}));
         end
 
         function names = viewNames_(~)
@@ -1152,6 +1214,12 @@ classdef (Abstract) ViewerBase < handle
             up = obj.normalizeRow_(candidates(idx, :));
         end
 
+        function name = upDirNameForVector_(~, up)
+            [~, idx] = max(abs(double(up(:))));
+            names = {'x_up', 'y_up', 'z_up'};
+            name = names{idx};
+        end
+
         function setUpDir_(obj, upDir)
             try
                 obj.App.polyscopeHandle().set_up_dir(upDir, false);
@@ -1159,9 +1227,65 @@ classdef (Abstract) ViewerBase < handle
             end
         end
 
+        function setPlaneViewFov_(obj)
+            try
+                fov = double(obj.getOptField_(obj.Opts.polyscope, 'planeViewFov', 82.5));
+                if ~isfinite(fov)
+                    fov = 82.5;
+                end
+                fov = max(5.0, min(160.0, fov));
+                obj.App.polyscopeHandle().set_vertical_fov_degrees(fov);
+            catch
+            end
+        end
+
+        function setPerspectiveViewFov_(obj)
+            try
+                fov = double(obj.getOptField_(obj.Opts.polyscope, 'perspectiveViewFov', 45.0));
+                if ~isfinite(fov)
+                    fov = 45.0;
+                end
+                fov = max(5.0, min(160.0, fov));
+                obj.App.polyscopeHandle().set_vertical_fov_degrees(fov);
+            catch
+            end
+        end
+
         function setNavigationStyle_(obj, style)
             try
                 obj.App.polyscopeHandle().set_navigation_style(style);
+            catch
+            end
+        end
+
+        function tf = isHeadless_(obj)
+            tf = logical(obj.getOptField_(obj.Opts.polyscope, 'headless', false));
+        end
+
+        function tf = shouldAutoShow_(obj)
+            tf = logical(obj.getOptField_(obj.Opts.polyscope, 'autoShow', true)) && ~obj.isHeadless_();
+        end
+
+        function configureAnimationRenderLoop_(obj, isRunning, fps)
+            try
+                ps = obj.App.polyscopeHandle();
+                if isRunning
+                    fps = max(1, double(fps));
+                    ps.set_max_fps(fps);
+                    ps.set_always_redraw(true);
+                    ps.set_enable_vsync(false);
+                else
+                    ps.set_max_fps(max(1, double(obj.getOptField_(obj.Opts.polyscope, 'maxFps', 30))));
+                    ps.set_always_redraw(obj.getOptField_(obj.Opts.polyscope, 'alwaysRedraw', false));
+                    ps.set_enable_vsync(obj.getOptField_(obj.Opts.polyscope, 'enableVsync', true));
+                end
+            catch
+            end
+        end
+
+        function delete(obj)
+            try
+                obj.App.shutdown();
             catch
             end
         end

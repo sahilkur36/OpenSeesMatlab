@@ -78,11 +78,14 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             obj.currentStep_ = obj.resolveStepArg_(obj.getOptField_(obj.Opts, 'stepIdx', 'absmax'));
             obj.initialOpts_ = obj.Opts;
 
-            if contains(lower(char(string(obj.Opts.polyscope.backend))), 'mock')
-                obj.frameTick();
-            else
+            if obj.isHeadless_()
+                obj.Opts.polyscope.backend = 'openGL_mock';
+            end
+            if obj.shouldAutoShow_()
                 obj.enableGui();
                 obj.show();
+            else
+                obj.frameTick();
             end
         end
 
@@ -1096,19 +1099,9 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
         end
 
         function configureAnimationRenderLoop_(obj)
-            try
-                ps = obj.App.polyscopeHandle();
-                if isfield(obj.gui_, 'animationMode') && obj.gui_.animationMode && obj.gui_.playing
-                    ps.set_max_fps(max(1, double(obj.gui_.fps)));
-                    ps.set_always_redraw(true);
-                    ps.set_enable_vsync(false);
-                else
-                    ps.set_max_fps(max(1, double(obj.getOptField_(obj.Opts.polyscope, 'maxFps', 30))));
-                    ps.set_always_redraw(obj.getOptField_(obj.Opts.polyscope, 'alwaysRedraw', false));
-                    ps.set_enable_vsync(obj.getOptField_(obj.Opts.polyscope, 'enableVsync', true));
-                end
-            catch
-            end
+            isRunning = isfield(obj.gui_, 'animationMode') && obj.gui_.animationMode && obj.gui_.playing;
+            fps = max(1, double(obj.getOptField_(obj.gui_, 'fps', 12)));
+            configureAnimationRenderLoop_@plotter.polyscope.ViewerBase(obj, isRunning, fps);
         end
 
         function advanceAnimation_(obj)

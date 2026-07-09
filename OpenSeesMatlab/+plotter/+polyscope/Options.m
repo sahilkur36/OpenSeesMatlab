@@ -153,6 +153,41 @@ classdef Options
             opts.fiberPoint = 'top';
         end
 
+        function opts = defaultFrameResponseOptions()
+            opts = plotter.PlotFrameResp.defaultOptions();
+            opts.polyscope = plotter.polyscope.Options.polyscopeCommon();
+            opts.polyscope.name = 'frame_resp';
+            opts.polyscope.edgeRadius = 0.0009;
+            opts.polyscope.modelRadius = 0.0008;
+            opts.polyscope.zeroRadius = 0.00055;
+            opts.polyscope.diagramRadius = 0.0010;
+            opts.polyscope.surfaceMaterial = 'flat';
+            opts.polyscope.surfaceSmoothShade = false;
+            opts.polyscope.scalarColorMap = 'jet';
+            opts.polyscope.onscreenColorbar = false;
+            opts.polyscope.onscreenColorbarLocation = [1200, 800];
+            opts.polyscope.colorbarTitle = '';
+            opts.animation = struct('play', false, 'fps', 12, ...
+                                    'loop', true, 'pingpong', false, ...
+                                    'updateColors', true);
+            opts.stepIdx = 'absmax';
+            opts.color.climMode = 'current';
+            opts.surf.show = true;
+            opts.showMaxMinLabel = 'none';
+            opts.slice = struct();
+            opts.slice.show = false;
+            opts.slice.name = 'frame_resp_SlicePlane';
+            opts.slice.center = [];
+            opts.slice.normal = [0, 0, 1];
+            opts.slice.drawPlane = true;
+            opts.slice.drawWidget = false;
+            opts.slice.widgetSize = 0.75;
+            opts.slice.color = [0.90, 0.35, 0.55];
+            opts.slice.gridColor = [1.00, 1.00, 1.00];
+            opts.slice.transparency = 0.45;
+            opts.slice.cullWholeElements = false;
+        end
+
         function out = mergeOpts(base, user)
             out = base;
             if nargin < 2 || isempty(user) || ~isstruct(user)
@@ -177,10 +212,14 @@ classdef Options
             p.enableVsync = true;
             p.alwaysRedraw = false;
             p.frameTickLimitFpsMode = 'auto';
+            p.headless = false;              % true -> force openGL_mock backend, skip window creation
+            p.autoShow = true;               % false -> init but call frameTick() instead of show()
             p.groundPlaneMode = 'shadow_only'; % 'shadow_only', 'tile', or 'none'
             p.backFacePolicy = 'identical'; % 'identical', 'different', 'custom', or 'cull'
             p.showModelInfo = false; % show the Model Info window (nodes, elements)
             p.displayNames = struct(); % user-friendly Polyscope structure names, e.g. displayNames.ElasticBeam3d = 'Line mesh';
+            p.planeViewFov = 82.5; % orthographic plane-view zoom sensitivity; midpoint of Polyscope's 5..160 deg range
+            p.perspectiveViewFov = 45.0;
         end
 
         function out = mergeStruct_(base, add)

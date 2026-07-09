@@ -28,11 +28,14 @@ classdef plotModel < plotter.polyscope.ViewerBase
             obj.App = plotter.polyscope.PolyscopeApp();
             obj.L_ = plotter.polyscope.ModelAdapter.modelLength(modelInfo);
             obj.P0_ = plotter.polyscope.ModelAdapter.nodeCoords(modelInfo);
-            if contains(lower(char(string(obj.Opts.polyscope.backend))), 'mock')
-                obj.frameTick();
-            else
+            if obj.isHeadless_()
+                obj.Opts.polyscope.backend = 'openGL_mock';
+            end
+            if obj.shouldAutoShow_()
                 obj.enableGui();
                 obj.show();
+            else
+                obj.frameTick();
             end
         end
 

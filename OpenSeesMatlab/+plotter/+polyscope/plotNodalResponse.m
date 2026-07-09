@@ -21,6 +21,8 @@ classdef plotNodalResponse < plotter.polyscope.ViewerBase
         lastAnimTic_ = []
         globalClimCache_ double = []
         globalClimKey_ char = ''
+        globalDeformScaleCache_ double = NaN
+        globalDeformScaleKey_ char = ''
         extremeStepCache_ struct = struct()
         historyCacheKey_ char = ''
         historyCacheX_ double = []
@@ -60,18 +62,22 @@ classdef plotNodalResponse < plotter.polyscope.ViewerBase
             obj.Opts.vector.type = obj.pickExisting_(obj.fieldTypes_, obj.Opts.vector.type);
             obj.currentStep_ = obj.resolveStepArg_(obj.getOptField_(obj.Opts, 'stepIdx', 'absmax'));
 
-            if contains(lower(char(string(obj.Opts.polyscope.backend))), 'mock')
-                obj.frameTick();
-            else
+            if obj.isHeadless_()
+                obj.Opts.polyscope.backend = 'openGL_mock';
+            end
+            if obj.shouldAutoShow_()
                 obj.enableGui();
                 obj.show();
+            else
+                obj.frameTick();
             end
         end
 
         function build(obj)
             firstBuild = ~obj.built_;
             is2D = obj.is2DPoints_(obj.nodeCoords_(1));
-            if is2D && strcmpi(char(string(obj.Opts.general.view)), '3D')
+            view0 = char(string(obj.Opts.general.view));
+            if is2D && any(strcmpi(view0, {'auto', '3D'}))
                 obj.Opts.general.view = 'XY';
             end
 
@@ -104,6 +110,7 @@ classdef plotNodalResponse < plotter.polyscope.ViewerBase
             if nargin < 3, force = false; end
             step = obj.resolveStepArg_(stepArg);
             [segIdx, localStep] = obj.resolveGlobalStep_(step);
+            camState = obj.animationPlaneCameraState_();
             if force || segIdx ~= obj.currentSeg_
                 obj.registerSegment_(segIdx);
             end
@@ -111,6 +118,7 @@ classdef plotNodalResponse < plotter.polyscope.ViewerBase
             obj.currentSeg_ = segIdx;
             obj.currentLocalStep_ = localStep;
             obj.updateStep_(segIdx, localStep);
+            obj.restoreCameraState_(camState);
             obj.updateProgramName_();
             if isfield(obj.gui_, 'step')
                 obj.gui_.step = step;
@@ -197,7 +205,7 @@ classdef plotNodalResponse < plotter.polyscope.ViewerBase
                 panelW = 380;
                 panelH = max(520, ws(2));
                 GB.begin('Nodal Response', [max(0, ws(1) - panelW), 0], [panelW, panelH]);
-                windowCleanup = onCleanup(@() GB.finish()); %#ok<NASGU>
+                windowCleanup = onCleanup(@() GB.finish());
 
                 needsRebuild = false;
                 needsUpdate = false;
@@ -326,6 +334,7 @@ classdef plotNodalResponse < plotter.polyscope.ViewerBase
         function changed = drawAnimationGui_(obj)
             changed = false;
             GB = plotter.polyscope.GuiBuilder;
+            oldState = obj.gui_;
             oldMode = obj.gui_.animationMode;
             oldPlaying = obj.gui_.playing;
 
@@ -333,6 +342,8 @@ classdef plotNodalResponse < plotter.polyscope.ViewerBase
                 if GB.button('Enter animation')
                     obj.gui_.animationMode = true;
                     obj.gui_.playing = true;
+                    obj.gui_.autoScale = true;
+                    obj.Opts.deform.autoScale = true;
                     obj.gui_.climIdx = obj.indexOf_({'step','global','range','absmax','absmin'}, 'global');
                     obj.Opts.color.climMode = 'global';
                     obj.lastAnimTic_ = tic;
@@ -379,6 +390,9 @@ classdef plotNodalResponse < plotter.polyscope.ViewerBase
                 obj.gui_.animUpdateColors = GB.checkbox('Update colors', obj.gui_.animUpdateColors);
                 GB.sameLine();
                 obj.gui_.animUpdateVectors = GB.checkbox('Update vectors', obj.gui_.animUpdateVectors);
+                obj.gui_.autoScale = true;
+                obj.Opts.deform.autoScale = true;
+                obj.gui_.deformScale = GB.sliderFloat('Scale factor##animation', obj.gui_.deformScale, 0, 100);
                 oldFps = obj.gui_.fps;
                 obj.gui_.fps = GB.sliderFloat('FPS##animation', obj.gui_.fps, 1, 240);
                 if abs(oldFps - obj.gui_.fps) > eps
@@ -396,7 +410,9 @@ classdef plotNodalResponse < plotter.polyscope.ViewerBase
             obj.Opts.animation.fps = obj.gui_.fps;
             obj.Opts.animation.updateColors = logical(obj.gui_.animUpdateColors);
             obj.Opts.animation.updateVectors = logical(obj.gui_.animUpdateVectors);
-            changed = changed || oldMode ~= obj.gui_.animationMode;
+            obj.Opts.deform.scale = obj.gui_.deformScale;
+            changed = changed || oldMode ~= obj.gui_.animationMode || ...
+                obj.guiChanged_(oldState, {'autoScale','deformScale','climIdx'});
         end
 
         function drawNodeHistoryGui_(obj)
@@ -541,30 +557,17 @@ classdef plotNodalResponse < plotter.polyscope.ViewerBase
             polyscope.ImGui.SetNextWindowSize([w, h], ...
                 int32(polyscope.ImGui.get_constant('ImGuiCond_FirstUseEver')));
             visible = polyscope.ImGui.Begin('Node history');
-            cleanup = onCleanup(@() polyscope.ImGui.End()); %#ok<NASGU>
+            cleanup = onCleanup(@() polyscope.ImGui.End());
             if visible
                 obj.drawNodeHistoryGui_();
             end
         end
 
         function configureAnimationRenderLoop_(obj)
-            ps = obj.App.polyscopeHandle();
-            try
-                isRunning = isfield(obj.gui_, 'animationMode') && obj.gui_.animationMode && ...
-                    isfield(obj.gui_, 'playing') && obj.gui_.playing;
-                if isRunning
-                    fps = max(1, double(obj.gui_.fps));
-                    ps.set_max_fps(fps);
-                    ps.set_always_redraw(true);
-                    ps.set_enable_vsync(false);
-                else
-                    fps = obj.getOptField_(obj.Opts.polyscope, 'maxFps', 30);
-                    ps.set_max_fps(max(1, double(fps)));
-                    ps.set_always_redraw(obj.getOptField_(obj.Opts.polyscope, 'alwaysRedraw', false));
-                    ps.set_enable_vsync(obj.getOptField_(obj.Opts.polyscope, 'enableVsync', true));
-                end
-            catch
-            end
+            isRunning = isfield(obj.gui_, 'animationMode') && obj.gui_.animationMode && ...
+                isfield(obj.gui_, 'playing') && obj.gui_.playing;
+            fps = max(1, double(obj.getOptField_(obj.gui_, 'fps', 12)));
+            configureAnimationRenderLoop_@plotter.polyscope.ViewerBase(obj, isRunning, fps);
         end
 
         function changed = drawDisplayGui_(obj)
@@ -1359,12 +1362,39 @@ classdef plotNodalResponse < plotter.polyscope.ViewerBase
                 scale = obj.Opts.deform.scale;
                 return;
             end
-            umax = max(sqrt(sum(U3.^2, 2)), [], 'omitnan');
+            if isfield(obj.gui_, 'animationMode') && obj.gui_.animationMode
+                umax = obj.globalDeformUmax_();
+            else
+                umax = max(sqrt(sum(U3.^2, 2)), [], 'omitnan');
+            end
             if ~isfinite(umax) || umax <= 0
                 scale = obj.Opts.deform.scale;
             else
                 scale = obj.Opts.deform.scale * obj.modelLength_(P) / (10 * umax);
             end
+        end
+
+        function umax = globalDeformUmax_(obj)
+            key = matlab.lang.makeValidName(sprintf('%s_%d_%s', ...
+                char(string(obj.Opts.deform.type)), obj.nSteps_, obj.stepShapeSignature_()));
+            if isfinite(obj.globalDeformScaleCache_) && strcmp(obj.globalDeformScaleKey_, key)
+                umax = obj.globalDeformScaleCache_;
+                return;
+            end
+            umax = 0;
+            for g = 0:obj.nSteps_ - 1
+                [segIdx, localStep] = obj.resolveGlobalStep_(g);
+                U = obj.respSlice_(segIdx, obj.Opts.deform.type, localStep);
+                U3 = zeros(size(U, 1), 3);
+                U3(:, 1:min(3, size(U, 2))) = U(:, 1:min(3, size(U, 2)));
+                U3(~isfinite(U3)) = 0;
+                mag = max(sqrt(sum(U3.^2, 2)), [], 'omitnan');
+                if isfinite(mag)
+                    umax = max(umax, mag);
+                end
+            end
+            obj.globalDeformScaleCache_ = umax;
+            obj.globalDeformScaleKey_ = key;
         end
 
         function [S, clim] = scalarField_(obj, segIdx, localStep)
@@ -1472,6 +1502,8 @@ classdef plotNodalResponse < plotter.polyscope.ViewerBase
         function invalidateClimCache_(obj)
             obj.globalClimCache_ = [];
             obj.globalClimKey_ = '';
+            obj.globalDeformScaleCache_ = NaN;
+            obj.globalDeformScaleKey_ = '';
             obj.extremeStepCache_ = struct();
         end
 

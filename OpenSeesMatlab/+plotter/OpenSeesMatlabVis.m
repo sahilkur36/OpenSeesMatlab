@@ -44,7 +44,7 @@ classdef OpenSeesMatlabVis < handle
     % defaultPlotContinuumResponseOptions : struct
     %     Default option template used by continuum response plotting. See ``.help`` for details.
 
-    properties (Access = private)
+    properties (Access = public)
         parent  % Reference to the parent OpenSeesMatlab object
     end
 
@@ -78,6 +78,10 @@ classdef OpenSeesMatlabVis < handle
         % Default options for plotContinuumResponse, see ``.help`` for details.
     end
 
+    properties (Access = public)
+        polyscope  % Polyscope-based visualisation interface (plotter.OpenSeesMatlabVisPolyscope)
+    end
+
     methods
         function obj = OpenSeesMatlabVis(parentObj)
             % Construct an OpenSeesMatlabVis visualization interface.
@@ -103,6 +107,7 @@ classdef OpenSeesMatlabVis < handle
                     'A parent OpenSeesMatlab object is required.');
             end
             obj.parent = parentObj;
+            obj.polyscope = plotter.OpenSeesMatlabVisPolyscope(obj);
         end
 
         function h = plotModel(obj, options)

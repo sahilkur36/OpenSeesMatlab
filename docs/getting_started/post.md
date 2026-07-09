@@ -55,8 +55,8 @@ opts.nodes.showLabels = true;
 disp(opts.help);
 opsMAT.vis.plotModel(opts=opts);
 
-% Interactive model GUI
-app = opsMAT.vis.plotModelGUI();
+% Interactive Polyscope model window with in-window ImGui controls
+opsMAT.vis.polyscope.plotModel();
 ```
 
 ---
@@ -81,8 +81,8 @@ opts = opsMAT.vis.defaultPlotEigenOptions;
 opts.color.useColormap = true;
 opsMAT.vis.plotEigen(3, eigenData, opts=opts);
 
-% Interactive eigen-mode GUI
-app = opsMAT.vis.plotEigenGUI(eigenData);
+% Interactive Polyscope eigen-mode window with in-window ImGui controls
+opsMAT.vis.polyscope.plotEigen(1, eigenData);
 ```
 
 ---
@@ -169,8 +169,8 @@ opsMAT.vis.plotDeformation(nodeResp, stepIdx="absMax", scaleFactor=1.0);
 % Specific displacement component, or any other response component
 opsMAT.vis.plotNodalResponse(nodeResp, stepIdx="absMax", respType="disp", respComponent="ux");
 
-% Interactive nodal response GUI
-app = opsMAT.vis.plotNodalResponseGUI(nodeResp);
+% Interactive Polyscope nodal-response window (with ImPlot history)
+opsMAT.vis.polyscope.plotNodalResponse(nodeResp);
 ```
 
 ### Frame Response Diagrams
@@ -233,7 +233,7 @@ nodeResp.MyLayoutC.c1 = rand(nStep, nNode);
 nodeResp.MyLayoutC.c2 = rand(nStep, nNode);
 
 opsMAT.vis.plotNodalResponse(nodeResp, respType="MyVector", respComponent="c2");
-app = opsMAT.vis.plotNodalResponseGUI(nodeResp);
+opsMAT.vis.polyscope.plotNodalResponse(nodeResp);
 ```
 
 Frame response custom fields follow the same idea, with `responseLocation`
@@ -295,15 +295,15 @@ Selectors are case-insensitive in the plotters, but the examples use the canonic
 
 ## Interactive GUI Plotters
 
-The `opsMAT.vis` interface includes GUI wrappers for the model, eigen modes, and the main response plotters. Each GUI returns an `app` struct containing the figure, axes, controls, and helper callbacks such as `app.getOptions()`, `app.refresh()`, and `app.reset()`.
+The `opsMAT.vis` interface includes interactive plotters. Model, eigen, and nodal-response visualisation use Polyscope's in-window ImGui/ImPlot controls. Frame, shell, and continuum responses still provide MATLAB GUI wrappers that return an `app` struct containing the figure, axes, controls, and helper callbacks such as `app.getOptions()`, `app.refresh()`, and `app.reset()`.
 
 ### Available GUI Entry Points
 
 | GUI | Typical input | Purpose |
 |-----|---------------|---------|
-| `plotModelGUI()` | current OpenSees model | Inspect model geometry and toggle model display options |
-| `plotEigenGUI(eigenData)` | eigen data struct | Switch mode number, component, deformation scale, colors, and view |
-| `plotNodalResponseGUI(nodeResp)` | nodal response from `getNodalResponse` | Explore nodal fields, deformation, vectors, colormap, and mesh display |
+| `opsMAT.vis.polyscope.plotModel()` | current OpenSees model | Interactive Polyscope window with model display options |
+| `opsMAT.vis.polyscope.plotEigen(1, eigenData)` | eigen data struct | Switch mode number, component, deformation scale, colors, and view |
+| `opsMAT.vis.polyscope.plotNodalResponse(nodeResp)` | nodal response from `getNodalResponse` | Explore nodal fields, deformation, vectors, colormap, and mesh display |
 | `plotFrameResponseGUI(frameResp)` | frame element response from `getElementResponse(..., eleType="Frame")` | Explore section/basic/local frame diagrams and step selection |
 | `plotShellResponseGUI(shellResp)` | shell response from `getElementResponse(..., eleType="Shell")` | Explore shell section force/deformation, stress, or strain fields |
 | `plotContinuumResponseGUI(planeOrSolidResp)` | plane/solid response from `getElementResponse` | Explore plane/solid stress, strain, and stress-measure fields |
@@ -311,12 +311,10 @@ The `opsMAT.vis` interface includes GUI wrappers for the model, eigen modes, and
 ### GUI Examples
 
 ```matlab
-% Model and eigen GUIs
-appModel = opsMAT.vis.plotModelGUI();
-appEigen = opsMAT.vis.plotEigenGUI(eigenData);
-
-% Response GUIs
-appNode = opsMAT.vis.plotNodalResponseGUI(nodeResp);
+% Polyscope model/eigen/nodal windows
+opsMAT.vis.polyscope.plotModel();
+opsMAT.vis.polyscope.plotEigen(1, eigenData);
+opsMAT.vis.polyscope.plotNodalResponse(nodeResp);
 
 appFrame = opsMAT.vis.plotFrameResponseGUI(frameResp);
 

@@ -13,9 +13,6 @@
         namespaces: false
       docstring_section_style: list
       members:
-        - plotModelGUI
-        - plotEigenGUI
-        - plotNodalResponseGUI
         - plotShellResponseGUI
         - plotContinuumResponseGUI
         - plotModel

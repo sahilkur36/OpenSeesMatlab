@@ -27,6 +27,9 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
         historyCacheX_ double = []
         historyCacheY_ double = []
         historyCacheLabel_ char = ''
+        globalDeformScaleCache_ double = NaN
+        globalDeformScaleKey_ char = ''
+        initialOpts_ struct
     end
 
     methods
@@ -73,6 +76,7 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             obj.components_ = obj.componentsForResponse_(obj.Opts.respType);
             obj.Opts.component = obj.pickExisting_(obj.components_, obj.Opts.component);
             obj.currentStep_ = obj.resolveStepArg_(obj.getOptField_(obj.Opts, 'stepIdx', 'absmax'));
+            obj.initialOpts_ = obj.Opts;
 
             if contains(lower(char(string(obj.Opts.polyscope.backend))), 'mock')
                 obj.frameTick();
@@ -153,6 +157,7 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
                     [rchg, topoChg] = obj.drawResponseGui_();
                     needsUpdate = needsUpdate || rchg;
                     needsRebuild = needsRebuild || topoChg;
+                    obj.gui_.showHistory = GB.checkbox('Show response history', obj.gui_.showHistory);
                 end
                 if GB.collapsingHeader('Geometry', int32(0))
                     [gchg, grebuild, visibilityOnly] = obj.drawGeometryGui_();
@@ -177,9 +182,18 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
                     polyscope.ImGui.Text(sprintf('Step %d / %d', obj.currentStep_, obj.nSteps_ - 1));
                     polyscope.ImGui.Text(sprintf('Segment %d, local step %d', obj.currentSeg_, obj.currentLocalStep_));
                 end
-                clear cleanup
-                if isfield(obj.gui_, 'showHistory') && obj.gui_.showHistory
-                    obj.drawResponseHistoryWindow_(ws);
+
+                GB.separator();
+                if GB.button('Redraw##unstru')
+                    needsRebuild = true;
+                end
+                GB.sameLine();
+                if GB.button('Reset##unstru')
+                    obj.Opts = obj.initialOpts_;
+                    obj.currentStep_ = obj.resolveStepArg_(obj.getOptField_(obj.Opts, 'stepIdx', 'absmax'));
+                    obj.initGuiState_();
+                    obj.setCameraForPoints_(obj.P0_, obj.Opts.general.view);
+                    needsRebuild = true;
                 end
 
                 if needsRebuild
@@ -191,6 +205,12 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
                     obj.registerMissingOptionalStructures_();
                     obj.applyStyle_();
                     obj.applyVisibility_();
+                end
+                clear cleanup
+                obj.drawScreenAxesOverlay_();
+                obj.updateScreenAxes3D_();
+                if isfield(obj.gui_, 'showHistory') && obj.gui_.showHistory
+                    obj.drawResponseHistoryWindow_(ws);
                 end
             catch ME
                 try
@@ -235,13 +255,6 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             obj.gui_.colorModeIdx = obj.indexOf_({'auto','node','element'}, obj.Opts.surf.colorMode);
             obj.gui_.gpReduceIdx = obj.indexOf_({'mean','max','min','index'}, obj.Opts.surf.gpReduce);
             obj.gui_.gpIndex = obj.Opts.surf.gpIndex;
-            obj.gui_.showHistory = false;
-            obj.gui_.historyTargetIdx = 1; % node, element
-            obj.gui_.historyUseTag = true;
-            obj.gui_.historyTag = obj.defaultHistoryTag_();
-            obj.gui_.historyIndex = 1;
-            obj.gui_.historyShowValue = true;
-            obj.gui_.historyFollowStep = true;
             obj.gui_.playing = obj.getOptField_(obj.Opts.animation, 'play', false);
             obj.gui_.animationMode = obj.gui_.playing;
             obj.gui_.fps = obj.getOptField_(obj.Opts.animation, 'fps', 12);
@@ -252,6 +265,16 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             obj.initSliceGuiState_();
             cmapNames = obj.colormapNames_();
             obj.gui_.cmapIdx = obj.indexOf_(cmapNames, obj.Opts.polyscope.scalarColorMap);
+            obj.gui_.showHistory = false;
+            obj.gui_.historyTargetType = 'node';
+            obj.gui_.historyUseTag = true;
+            tags = obj.historyNodeTags_(1);
+            if isempty(tags), tags = 1; end
+            obj.gui_.historyTag = tags(1);
+            obj.gui_.historyIndex = 1;
+            obj.gui_.historyAutoStep = true;
+            obj.gui_.historyShowValue = true;
+            obj.invalidateHistoryCache_();
             obj.lastAnimTic_ = tic;
         end
     end
@@ -283,6 +306,14 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             obj.gui_.locIdx = GB.combo('Location##unstru_response', obj.gui_.locIdx, locs);
             obj.Opts.responseLocation = locs{obj.gui_.locIdx};
 
+            if ~obj.resolveResponseIsNodeBased_(obj.Opts.respType)
+                gpModes = {'mean','max','min','index'};
+                obj.gui_.gpReduceIdx = GB.combo('GP reduce##unstru_response', obj.gui_.gpReduceIdx, gpModes);
+                obj.Opts.surf.gpReduce = gpModes{obj.gui_.gpReduceIdx};
+                obj.gui_.gpIndex = GB.sliderInt('GP index##unstru_response', round(obj.gui_.gpIndex), 1, 40);
+                obj.Opts.surf.gpIndex = max(1, round(obj.gui_.gpIndex));
+            end
+
             modes = {'step','absmax','absmin','max','min'};
             obj.gui_.stepModeIdx = GB.combo('Step mode##unstru_response', obj.gui_.stepModeIdx, modes);
             if strcmp(modes{obj.gui_.stepModeIdx}, 'step')
@@ -300,14 +331,14 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             if obj.gui_.showField && obj.gui_.useColormap
                 obj.drawColorbarGui_('##unstru_response', false);
             end
-            obj.gui_.showHistory = GB.checkbox('Show response history##unstru', obj.gui_.showHistory);
 
             topoChanged = obj.guiChanged_(old, {'eleTypeIdx'});
             changed = obj.guiChanged_(old, {'respIdx','compIdx','fiberIdx','locIdx', ...
-                'stepModeIdx','step','showField','useColormap','onscreenColorbar', ...
-                'onscreenColorbarLocation','showHistory'});
+                'gpReduceIdx','gpIndex','stepModeIdx','step','showField','useColormap', ...
+                'onscreenColorbar','onscreenColorbarLocation'});
             if changed
                 obj.invalidateScalarCaches_();
+                obj.invalidateHistoryCache_();
             end
         end
 
@@ -349,11 +380,6 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             colorModes = {'auto','node','element'};
             obj.gui_.colorModeIdx = GB.combo('Color mode##unstru_style', obj.gui_.colorModeIdx, colorModes);
             obj.Opts.surf.colorMode = colorModes{obj.gui_.colorModeIdx};
-            gpModes = {'mean','max','min','index'};
-            obj.gui_.gpReduceIdx = GB.combo('GP reduce##unstru_style', obj.gui_.gpReduceIdx, gpModes);
-            obj.Opts.surf.gpReduce = gpModes{obj.gui_.gpReduceIdx};
-            obj.gui_.gpIndex = GB.sliderInt('GP index##unstru_style', round(obj.gui_.gpIndex), 1, 40);
-            obj.Opts.surf.gpIndex = max(1, round(obj.gui_.gpIndex));
             [cchg, obj.gui_.solidColor] = GB.colorEdit3('Solid color##unstru_style', obj.gui_.solidColor);
             if cchg, obj.Opts.color.solidColor = obj.asRgb_(obj.gui_.solidColor); end
             [cchg, obj.gui_.edgeColor] = GB.colorEdit3('Edge color##unstru_style', obj.gui_.edgeColor);
@@ -375,7 +401,7 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
                 obj.setStep(obj.currentStep_, true);
             end
             obj.syncOptsFromGui_();
-            dataChanged = obj.guiChanged_(old, {'cmapIdx','climIdx','colorModeIdx','gpReduceIdx','gpIndex'});
+            dataChanged = obj.guiChanged_(old, {'cmapIdx','climIdx','colorModeIdx'});
             styleChanged = obj.guiChanged_(old, {'solidColor','edgeColor','ghostColor', ...
                 'deformedAlpha','ghostAlpha','edgeRadius','nodeRadius','viewIdx'});
             if dataChanged
@@ -391,6 +417,8 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             old = obj.gui_;
             obj.gui_.animationMode = GB.checkbox('Enter animation mode', obj.gui_.animationMode);
             if obj.gui_.animationMode
+                obj.gui_.autoScale = true;
+                obj.Opts.deform.autoScale = true;
                 if GB.button('Play / pause')
                     obj.gui_.playing = ~obj.gui_.playing;
                 end
@@ -418,135 +446,6 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             changed = obj.guiChanged_(old, {'animationMode','playing','fps','loop','pingpong','animUpdateColors'});
         end
 
-        function drawResponseHistoryWindow_(obj, ws)
-            if nargin < 2 || isempty(ws)
-                ws = obj.safeWindowSize_();
-            end
-            w = min(560, max(420, ws(1) * 0.36));
-            h = min(430, max(320, ws(2) * 0.40));
-            x = max(12, ws(1) - 390 - w - 18);
-            y = max(42, ws(2) - h - 18);
-            polyscope.ImGui.SetNextWindowPos([x, y], ...
-                int32(polyscope.ImGui.get_constant('ImGuiCond_FirstUseEver')));
-            polyscope.ImGui.SetNextWindowSize([w, h], ...
-                int32(polyscope.ImGui.get_constant('ImGuiCond_FirstUseEver')));
-            visible = polyscope.ImGui.Begin('Response history');
-            winCleanup = onCleanup(@() polyscope.ImGui.End()); %#ok<NASGU>
-            if visible
-                obj.drawResponseHistoryGui_();
-            end
-        end
-
-        function drawResponseHistoryGui_(obj)
-            GB = plotter.polyscope.GuiBuilder;
-            old = obj.gui_;
-            targets = {'node','element'};
-            obj.gui_.historyTargetIdx = GB.combo('Target##unstru_history', ...
-                obj.gui_.historyTargetIdx, targets);
-            polyscope.ImGui.Text(sprintf('Response: %s / %s / %s', ...
-                char(string(obj.Opts.respType)), char(string(obj.Opts.component)), ...
-                obj.responseLocation_()));
-
-            if obj.guiChanged_(old, {'historyTargetIdx'})
-                obj.resetHistoryTargetForCurrentKind_();
-                obj.invalidateHistoryCache_();
-            end
-
-            tags = obj.historyTargetTags_(targets{obj.gui_.historyTargetIdx});
-            if isempty(tags)
-                polyscope.ImGui.TextDisabled('No selectable nodes/elements.');
-                return;
-            end
-            n = numel(tags);
-            obj.gui_.historyUseTag = GB.checkbox('Use tag##unstru_history', obj.gui_.historyUseTag);
-            if obj.gui_.historyUseTag
-                [changed, tagVal] = polyscope.ImGui.InputInt('Tag##unstru_history', ...
-                    int32(round(obj.gui_.historyTag)), int32(1), int32(100));
-                if changed
-                    obj.gui_.historyTag = double(tagVal);
-                    hit = find(tags == obj.gui_.historyTag, 1);
-                    if ~isempty(hit), obj.gui_.historyIndex = hit; end
-                    obj.invalidateHistoryCache_();
-                end
-                if GB.button('Prev##unstru_history')
-                    idx = max(1, obj.historyTargetIndex_(tags) - 1);
-                    obj.gui_.historyIndex = idx;
-                    obj.gui_.historyTag = tags(idx);
-                    obj.invalidateHistoryCache_();
-                end
-                GB.sameLine();
-                if GB.button('Next##unstru_history')
-                    idx = min(n, obj.historyTargetIndex_(tags) + 1);
-                    obj.gui_.historyIndex = idx;
-                    obj.gui_.historyTag = tags(idx);
-                    obj.invalidateHistoryCache_();
-                end
-            else
-                [changed, idxVal] = polyscope.ImGui.InputInt('Index##unstru_history', ...
-                    int32(round(obj.gui_.historyIndex)), int32(1), int32(10));
-                if changed
-                    obj.gui_.historyIndex = round(max(1, min(n, double(idxVal))));
-                    obj.gui_.historyTag = tags(obj.gui_.historyIndex);
-                    obj.invalidateHistoryCache_();
-                end
-            end
-
-            if GB.button('Reset##unstru_history')
-                obj.resetResponseHistoryGui_();
-            end
-            GB.sameLine();
-            obj.gui_.historyFollowStep = GB.checkbox('Follow current step##unstru_history', obj.gui_.historyFollowStep);
-            obj.gui_.historyShowValue = GB.checkbox('Show current value##unstru_history', obj.gui_.historyShowValue);
-
-            [x, y, label] = obj.responseHistorySeries_();
-            finiteY = y(isfinite(y));
-            if isempty(finiteY)
-                polyscope.ImGui.TextDisabled('No response values for this target.');
-                return;
-            end
-            ymin = min(finiteY);
-            ymax = max(finiteY);
-            if ymin == ymax
-                pad = max(1, abs(ymin)) * 0.05;
-                ymin = ymin - pad;
-                ymax = ymax + pad;
-            end
-            finiteX = x(isfinite(x));
-            xmin = min(finiteX);
-            xmax = max(finiteX);
-            if xmin == xmax, xmax = xmin + 1; end
-            xpad = 0.02 * max(1, xmax - xmin);
-            ypad = 0.08 * max(1e-12, ymax - ymin);
-
-            ip = polyscope.ImPlot;
-            flags = int32(polyscope.ImPlot.get_constant('ImPlotFlags_NoLegend'));
-            if ip.BeginPlot(['##unstru_history_plot_' label], [-1, 230], flags)
-                ip.SetupAxes('time / step', 'response');
-                ip.SetupAxesLimits(xmin - xpad, xmax + xpad, ymin - ypad, ymax + ypad, ...
-                    int32(polyscope.ImPlot.get_constant('ImPlotCond_Always')));
-                ip.PlotLineXY('response##unstru_history_line', x(:), y(:));
-                if obj.currentStep_ >= 0 && obj.currentStep_ < numel(x)
-                    k = obj.currentStep_ + 1;
-                    if isfinite(y(k))
-                        try
-                            ip.SetNextMarkerStyle( ...
-                                int32(polyscope.ImPlot.get_constant('ImPlotMarker_Circle')), ...
-                                8, [1.0, 0.78, 0.05, 1.0], 2.0, [0.05, 0.05, 0.05, 1.0]);
-                        catch
-                        end
-                        ip.PlotScatterXY('current##unstru_history_current', x(k), y(k));
-                    end
-                end
-                ip.EndPlot();
-            end
-            if obj.gui_.historyShowValue && obj.currentStep_ >= 0 && obj.currentStep_ < numel(y)
-                val = y(obj.currentStep_ + 1);
-                if isfinite(val)
-                    polyscope.ImGui.Text(sprintf('Current response: %.6g', val));
-                end
-            end
-        end
-
         function registerSegment_(obj, segIdx)
             obj.clear_();
             obj.handles_ = struct();
@@ -564,6 +463,9 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             if obj.Opts.nodes.show, obj.registerNodes_(ps, Pdef, Snode, clim); end
             if obj.Opts.fixed.show, obj.registerFixed_(ps, segIdx, Pdef, Snode, clim); end
             if obj.Opts.deform.showUndeformed, obj.registerGhost_(ps, segIdx); end
+            if ~obj.isOverlayScreenAxes_()
+                obj.registerScreenAxes3D_();
+            end
             obj.applyStyle_();
             obj.applyVisibility_();
         end
@@ -754,7 +656,7 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             obj.updateNodes_(segIdx, Pdef, Snode, clim);
             obj.applyVisibility_();
             obj.App.polyscopeHandle().set_program_name(sprintf( ...
-                'OpenSeesMatlab | Unstructured response | %s %s | step %d | scale %.4g - by Yexiang Yan', ...
+                'Unstructured response | %s %s | step %d | scale %.4g', ...
                 char(string(obj.Opts.eleType)), char(string(obj.Opts.respType)), ...
                 obj.currentStep_, scale));
         end
@@ -864,6 +766,318 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             end
         end
 
+        function invalidateHistoryCache_(obj)
+            obj.historyCacheKey_ = '';
+            obj.historyCacheX_ = [];
+            obj.historyCacheY_ = [];
+            obj.historyCacheLabel_ = '';
+        end
+
+        function drawResponseHistoryWindow_(obj, ws)
+            if nargin < 2 || isempty(ws)
+                ws = obj.safeWindowSize_();
+            end
+            w = min(520, max(380, ws(1) * 0.34));
+            h = min(390, max(300, ws(2) * 0.36));
+            x = max(12, ws(1) - 390 - w - 18);
+            y = max(42, ws(2) - h - 18);
+            polyscope.ImGui.SetNextWindowPos([x, y], ...
+                int32(polyscope.ImGui.get_constant('ImGuiCond_FirstUseEver')));
+            polyscope.ImGui.SetNextWindowSize([w, h], ...
+                int32(polyscope.ImGui.get_constant('ImGuiCond_FirstUseEver')));
+            visible = polyscope.ImGui.Begin('Response history');
+            cleanup = onCleanup(@() polyscope.ImGui.End());
+            if visible
+                obj.drawResponseHistoryGui_();
+            end
+        end
+
+        function drawResponseHistoryGui_(obj)
+            GB = plotter.polyscope.GuiBuilder;
+            oldState = obj.gui_;
+            if obj.resolveResponseIsNodeBased_(obj.Opts.respType)
+                expectedType = 'node';
+            else
+                expectedType = 'element';
+            end
+            if ~isfield(obj.gui_, 'historyTargetType') || ~strcmpi(obj.gui_.historyTargetType, expectedType)
+                obj.gui_.historyTargetType = expectedType;
+                obj.invalidateHistoryCache_();
+            end
+            isNode = strcmpi(obj.gui_.historyTargetType, 'node');
+            polyscope.ImGui.Text(sprintf('Target: %s', char(string(obj.gui_.historyTargetType))));
+            if isNode
+                tags = obj.historyNodeTags_(obj.currentSeg_);
+            else
+                tags = obj.historyElementTags_(obj.currentSeg_);
+            end
+            nTarget = numel(tags);
+            if nTarget == 0
+                polyscope.ImGui.TextDisabled('No targets are available for the current response.');
+                return;
+            end
+
+            obj.gui_.historyUseTag = GB.checkbox('Use tag##history', obj.getOptField_(obj.gui_, 'historyUseTag', true));
+            if obj.gui_.historyUseTag
+                [changed, tagVal] = polyscope.ImGui.InputInt('Target tag##history', ...
+                    int32(round(obj.getOptField_(obj.gui_, 'historyTag', tags(1)))), int32(1), int32(100));
+                if changed
+                    obj.gui_.historyTag = double(tagVal);
+                    idx = find(tags == obj.gui_.historyTag, 1);
+                    if ~isempty(idx), obj.gui_.historyIndex = idx; end
+                    obj.invalidateHistoryCache_();
+                end
+                if GB.button('Prev##history')
+                    idx = max(1, obj.getHistoryIndex_(tags) - 1);
+                    obj.gui_.historyIndex = idx;
+                    obj.gui_.historyTag = tags(idx);
+                    obj.invalidateHistoryCache_();
+                end
+                GB.sameLine();
+                if GB.button('Next##history')
+                    idx = min(nTarget, obj.getHistoryIndex_(tags) + 1);
+                    obj.gui_.historyIndex = idx;
+                    obj.gui_.historyTag = tags(idx);
+                    obj.invalidateHistoryCache_();
+                end
+            else
+                [changed, idxVal] = polyscope.ImGui.InputInt('Target index##history', ...
+                    int32(round(obj.getOptField_(obj.gui_, 'historyIndex', 1))), int32(1), int32(10));
+                if changed
+                    obj.gui_.historyIndex = round(max(1, min(nTarget, double(idxVal))));
+                    obj.gui_.historyTag = tags(obj.gui_.historyIndex);
+                    obj.invalidateHistoryCache_();
+                end
+            end
+            if GB.button('Reset##history')
+                obj.resetResponseHistoryGui_(tags);
+            end
+            GB.sameLine();
+            obj.gui_.historyAutoStep = GB.checkbox('Follow current step##history', obj.getOptField_(obj.gui_, 'historyAutoStep', true));
+            obj.gui_.historyShowValue = GB.checkbox('Show current value##history', obj.getOptField_(obj.gui_, 'historyShowValue', true));
+
+            if obj.guiChanged_(oldState, {'historyTargetType','historyUseTag'})
+                obj.invalidateHistoryCache_();
+            end
+
+            polyscope.ImGui.Separator();
+            polyscope.ImGui.Text(sprintf('Response: %s  |  Component: %s', ...
+                char(string(obj.Opts.respType)), char(string(obj.Opts.component))));
+            if strcmpi(char(string(obj.Opts.eleType)), 'Shell')
+                polyscope.ImGui.Text(sprintf('Fiber: %s', char(string(obj.Opts.fiberPoint))));
+            end
+            gpStr = char(string(obj.Opts.surf.gpReduce));
+            if strcmpi(gpStr, 'index')
+                gpStr = [gpStr, ' (', num2str(round(obj.Opts.surf.gpIndex)), ')'];
+            end
+            polyscope.ImGui.Text(sprintf('Location: %s  |  GP reduce: %s', ...
+                char(string(obj.Opts.responseLocation)), gpStr));
+
+            [x, y, ~] = obj.responseHistorySeries_();
+            finiteY = y(isfinite(y));
+            if isempty(finiteY)
+                polyscope.ImGui.TextDisabled('No response values for this target.');
+                return;
+            end
+            ymin = min(finiteY);
+            ymax = max(finiteY);
+            if ymin == ymax
+                pad = max(1, abs(ymin)) * 0.05;
+                ymin = ymin - pad;
+                ymax = ymax + pad;
+            end
+            xmin = min(x(isfinite(x)));
+            xmax = max(x(isfinite(x)));
+            if xmin == xmax, xmax = xmin + 1; end
+            xpad = 0.02 * max(1, xmax - xmin);
+            ypad = 0.08 * max(1e-12, ymax - ymin);
+            xmin = xmin - xpad;
+            xmax = xmax + xpad;
+            ymin = ymin - ypad;
+            ymax = ymax + ypad;
+
+            ip = polyscope.ImPlot;
+            plotFlags = int32(polyscope.ImPlot.get_constant('ImPlotFlags_NoLegend'));
+            if ip.BeginPlot('##response_history_plot', [-1, 200], plotFlags)
+                ip.SetupAxes('time / step', 'response');
+                ip.SetupAxesLimits(xmin, xmax, ymin, ymax, ...
+                    int32(polyscope.ImPlot.get_constant('ImPlotCond_Always')));
+                ip.PlotLineXY('response##history_line', x(:), y(:));
+                if obj.currentStep_ >= 0 && obj.currentStep_ < numel(x)
+                    k = obj.currentStep_ + 1;
+                    if isfinite(y(k))
+                        try
+                            ip.SetNextMarkerStyle( ...
+                                int32(polyscope.ImPlot.get_constant('ImPlotMarker_Circle')), ...
+                                8, [1.0, 0.78, 0.05, 1.0], 2.0, [0.05, 0.05, 0.05, 1.0]);
+                        catch
+                        end
+                        ip.PlotScatterXY('current##history_current', x(k), y(k));
+                    end
+                end
+                ip.EndPlot();
+            end
+            if obj.gui_.historyShowValue && obj.currentStep_ >= 0 && obj.currentStep_ < numel(y)
+                val = y(obj.currentStep_ + 1);
+                if isfinite(val)
+                    polyscope.ImGui.Text(sprintf('Current response: %.6g', val));
+                end
+            end
+        end
+
+        function [x, y, label] = responseHistorySeries_(obj)
+            key = obj.computeHistoryCacheKey_();
+            if strcmp(obj.historyCacheKey_, key) && ~isempty(obj.historyCacheX_)
+                x = obj.historyCacheX_;
+                y = obj.historyCacheY_;
+                label = obj.historyCacheLabel_;
+                return;
+            end
+            x = NaN(obj.nSteps_, 1);
+            y = NaN(obj.nSteps_, 1);
+            label = obj.responseHistoryLabel_();
+            targetType = char(string(obj.getOptField_(obj.gui_, 'historyTargetType', 'node')));
+            useTag = obj.getOptField_(obj.gui_, 'historyUseTag', true);
+            targetTag = obj.getOptField_(obj.gui_, 'historyTag', NaN);
+            targetIndex = round(obj.getOptField_(obj.gui_, 'historyIndex', 1));
+            for g = 0:obj.nSteps_ - 1
+                [segIdx, localStep] = obj.resolveGlobalStep_(g);
+                x(g + 1) = obj.timeAtStep_(segIdx, localStep, g);
+                if strcmpi(targetType, 'element')
+                    [tags, vals] = obj.responseElementValues_(segIdx, localStep);
+                else
+                    [tags, vals] = obj.responseNodeValues_(segIdx, localStep);
+                end
+                if isempty(vals), continue; end
+                if useTag
+                    row = find(tags == targetTag, 1);
+                else
+                    row = targetIndex;
+                end
+                if isempty(row) || row < 1 || row > numel(vals), continue; end
+                y(g + 1) = vals(row);
+            end
+            obj.historyCacheKey_ = key;
+            obj.historyCacheX_ = x;
+            obj.historyCacheY_ = y;
+            obj.historyCacheLabel_ = label;
+        end
+
+        function label = responseHistoryLabel_(obj)
+            label = char(string(obj.Opts.respType));
+            comp = char(string(obj.Opts.component));
+            if ~isempty(comp) && ~any(strcmpi(comp, {'auto','value','magnitude'}))
+                label = [label, ' ', comp];
+            end
+        end
+
+        function key = computeHistoryCacheKey_(obj)
+            key = sprintf('%s|%s|%s|%s|%s|%s|%s|%g|%g|%d|%s|%d', ...
+                char(string(obj.Opts.eleType)), ...
+                char(string(obj.Opts.respType)), ...
+                char(string(obj.Opts.component)), ...
+                char(string(obj.Opts.fiberPoint)), ...
+                char(string(obj.Opts.responseLocation)), ...
+                char(string(obj.Opts.surf.gpReduce)), ...
+                obj.Opts.surf.gpIndex, ...
+                char(string(obj.getOptField_(obj.gui_, 'historyTargetType', 'node'))), ...
+                obj.getOptField_(obj.gui_, 'historyTag', NaN), ...
+                obj.getOptField_(obj.gui_, 'historyIndex', 1), ...
+                logical(obj.getOptField_(obj.gui_, 'historyUseTag', true)), ...
+                obj.responseShapeSignature_(), ...
+                obj.nSteps_);
+        end
+
+        function [tags, vals] = responseNodeValues_(obj, segIdx, localStep)
+            tags = obj.historyNodeTags_(segIdx);
+            vals = [];
+            if isempty(tags), return; end
+            [Snode, ~, ~] = obj.scalarValues_(segIdx, localStep);
+            if isempty(Snode) || numel(Snode) ~= numel(tags), return; end
+            vals = Snode(:);
+        end
+
+        function [tags, vals] = responseElementValues_(obj, segIdx, localStep)
+            [~, ~, tags] = obj.familyCells_(segIdx);
+            vals = [];
+            if isempty(tags), return; end
+            [~, Sele, ~] = obj.scalarValues_(segIdx, localStep);
+            if isempty(Sele) || numel(Sele) ~= numel(tags), return; end
+            vals = Sele(:);
+        end
+
+        function tags = historyNodeTags_(obj, segIdx)
+            tags = [];
+            [~, modelTags] = obj.nodeStepData_(segIdx);
+            if ~isempty(modelTags)
+                tags = double(modelTags(:));
+            end
+            if isempty(tags)
+                P = obj.nodeCoords_(segIdx);
+                if ~isempty(P)
+                    tags = (1:size(P, 1)).';
+                end
+            end
+        end
+
+        function tags = historyElementTags_(obj, segIdx)
+            [~, ~, tags] = obj.familyCells_(segIdx);
+            if isempty(tags)
+                [cells, ~, ~] = obj.familyCells_(segIdx);
+                if ~isempty(cells)
+                    tags = (1:size(cells, 1)).';
+                end
+            end
+        end
+
+        function t = timeAtStep_(obj, segIdx, localStep, globalStep)
+            t = double(globalStep);
+            nr = obj.safeSeg_(obj.NodalResp, segIdx);
+            if isstruct(nr) && isfield(nr, 'time') && ~isempty(nr.time)
+                tv = double(nr.time(:));
+                if localStep >= 1 && localStep <= numel(tv)
+                    t = tv(localStep);
+                    return;
+                end
+            end
+            er = obj.safeSeg_(obj.EleResp, segIdx);
+            if isstruct(er) && isfield(er, 'time') && ~isempty(er.time)
+                tv = double(er.time(:));
+                if localStep >= 1 && localStep <= numel(tv)
+                    t = tv(localStep);
+                end
+            end
+        end
+
+        function idx = getHistoryIndex_(obj, tags)
+            idx = round(obj.getOptField_(obj.gui_, 'historyIndex', 1));
+            if obj.getOptField_(obj.gui_, 'historyUseTag', true)
+                hit = find(tags == obj.getOptField_(obj.gui_, 'historyTag', NaN), 1);
+                if ~isempty(hit), idx = hit; end
+            end
+            idx = max(1, min(numel(tags), idx));
+        end
+
+        function resetResponseHistoryGui_(obj, tags)
+            if nargin < 2 || isempty(tags)
+                if strcmpi(obj.getOptField_(obj.gui_, 'historyTargetType', 'node'), 'element')
+                    tags = obj.historyElementTags_(obj.currentSeg_);
+                else
+                    tags = obj.historyNodeTags_(obj.currentSeg_);
+                end
+            end
+            obj.gui_.historyUseTag = true;
+            obj.gui_.historyAutoStep = true;
+            obj.gui_.historyShowValue = true;
+            obj.gui_.historyIndex = 1;
+            if ~isempty(tags)
+                obj.gui_.historyTag = tags(1);
+            else
+                obj.gui_.historyTag = NaN;
+            end
+            obj.invalidateHistoryCache_();
+        end
+
         function syncOptsFromGui_(obj)
             obj.Opts.surf.show = logical(obj.gui_.showMesh);
             obj.Opts.surf.showEdges = logical(obj.gui_.showEdges);
@@ -963,8 +1177,12 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
                 return;
             end
             if obj.Opts.deform.autoScale
-                mag = sqrt(sum(U(:, 1:3).^2, 2));
-                umax = max(mag, [], 'omitnan');
+                if isfield(obj.gui_, 'animationMode') && obj.gui_.animationMode
+                    umax = obj.globalDeformUmax_();
+                else
+                    mag = sqrt(sum(U(:, 1:3).^2, 2));
+                    umax = max(mag, [], 'omitnan');
+                end
                 if isempty(umax) || ~isfinite(umax) || umax <= 0
                     scale = 0;
                 else
@@ -1578,181 +1796,6 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             vals = vals(:);
         end
 
-        function [x, y, label] = responseHistorySeries_(obj)
-            key = obj.historyCacheKeyForGui_();
-            if strcmp(obj.historyCacheKey_, key) && ~isempty(obj.historyCacheX_)
-                x = obj.historyCacheX_;
-                y = obj.historyCacheY_;
-                label = obj.historyCacheLabel_;
-                return;
-            end
-            x = NaN(obj.nSteps_, 1);
-            y = NaN(obj.nSteps_, 1);
-            targets = {'node','element'};
-            targetKind = targets{max(1, min(numel(targets), obj.gui_.historyTargetIdx))};
-            [respType, comp, loc] = obj.historyResponseSpec_();
-            label = obj.historyQuantityLabel_(targetKind, respType, comp, loc);
-            useTag = logical(obj.getOptField_(obj.gui_, 'historyUseTag', true));
-            targetTag = obj.getOptField_(obj.gui_, 'historyTag', NaN);
-            targetIndex = round(obj.getOptField_(obj.gui_, 'historyIndex', 1));
-
-            oldResp = obj.Opts.respType;
-            oldComp = obj.Opts.component;
-            oldLoc = obj.Opts.responseLocation;
-            cleanup = onCleanup(@() obj.restoreHistoryOpts_(oldResp, oldComp, oldLoc)); %#ok<NASGU>
-            obj.Opts.respType = respType;
-            obj.Opts.component = comp;
-            obj.Opts.responseLocation = loc;
-
-            for g = 0:obj.nSteps_ - 1
-                [segIdx, localStep] = obj.resolveGlobalStep_(g);
-                x(g + 1) = obj.timeAtStep_(segIdx, localStep, g);
-                if strcmp(targetKind, 'node')
-                    tags = plotter.polyscope.ModelAdapter.nodeTags(obj.ModelInfo(segIdx));
-                    if useTag
-                        row = find(double(tags(:)) == targetTag, 1);
-                    else
-                        row = targetIndex;
-                    end
-                    if isempty(row), continue; end
-                    [Snode, ~, ~] = obj.scalarValues_(segIdx, localStep);
-                    if row >= 1 && row <= numel(Snode)
-                        y(g + 1) = Snode(row);
-                    end
-                else
-                    [cells, ~, eleTags] = obj.familyCells_(segIdx);
-                    if useTag
-                        row = find(double(eleTags(:)) == targetTag, 1);
-                    else
-                        row = targetIndex;
-                    end
-                    if isempty(row), continue; end
-                    [Snode, Sele, nodeBased] = obj.scalarValues_(segIdx, localStep);
-                    if ~nodeBased && row >= 1 && row <= numel(Sele)
-                        y(g + 1) = Sele(row);
-                    elseif nodeBased && row >= 1 && row <= size(cells, 1)
-                        conn = obj.normalizedCellConn_(cells(row, :));
-                        conn = conn(conn >= 1 & conn <= numel(Snode));
-                        vals = Snode(conn);
-                        vals = vals(isfinite(vals));
-                        if ~isempty(vals), y(g + 1) = mean(vals); end
-                    end
-                end
-            end
-
-            obj.historyCacheKey_ = key;
-            obj.historyCacheX_ = x;
-            obj.historyCacheY_ = y;
-            obj.historyCacheLabel_ = label;
-        end
-
-        function [respType, comp, loc] = historyResponseSpec_(obj)
-            respType = obj.Opts.respType;
-            comp = obj.Opts.component;
-            loc = obj.responseLocation_();
-        end
-
-        function key = historyCacheKeyForGui_(obj)
-            targets = {'node','element'};
-            targetKind = targets{max(1, min(numel(targets), obj.getOptField_(obj.gui_, 'historyTargetIdx', 1)))};
-            [respType, comp, loc] = obj.historyResponseSpec_();
-            key = sprintf('%s|%s|%s|%s|tag:%g|idx:%g|useTag:%d|n:%d|%s', ...
-                targetKind, char(string(respType)), char(string(comp)), char(string(loc)), ...
-                obj.getOptField_(obj.gui_, 'historyTag', NaN), ...
-                obj.getOptField_(obj.gui_, 'historyIndex', NaN), ...
-                logical(obj.getOptField_(obj.gui_, 'historyUseTag', true)), ...
-                obj.nSteps_, obj.responseShapeSignature_());
-        end
-
-        function label = historyQuantityLabel_(~, targetKind, respType, comp, loc)
-            label = sprintf('%s %s %s', char(string(respType)), char(string(comp)), targetKind);
-            if ~isempty(loc) && ~strcmpi(loc, 'auto')
-                label = sprintf('%s (%s)', label, char(string(loc)));
-            end
-        end
-
-        function restoreHistoryOpts_(obj, respType, comp, loc)
-            obj.Opts.respType = respType;
-            obj.Opts.component = comp;
-            obj.Opts.responseLocation = loc;
-        end
-
-        function invalidateHistoryCache_(obj)
-            obj.historyCacheKey_ = '';
-            obj.historyCacheX_ = [];
-            obj.historyCacheY_ = [];
-            obj.historyCacheLabel_ = '';
-        end
-
-        function resetResponseHistoryGui_(obj)
-            obj.gui_.historyTargetIdx = 1;
-            obj.gui_.historyUseTag = true;
-            obj.gui_.historyIndex = 1;
-            obj.gui_.historyTag = obj.defaultHistoryTag_();
-            obj.gui_.historyShowValue = true;
-            obj.gui_.historyFollowStep = true;
-            obj.invalidateHistoryCache_();
-        end
-
-        function resetHistoryTargetForCurrentKind_(obj)
-            tags = obj.historyTargetTags_('');
-            obj.gui_.historyIndex = 1;
-            if ~isempty(tags)
-                obj.gui_.historyTag = tags(1);
-            end
-        end
-
-        function idx = historyTargetIndex_(obj, tags)
-            idx = round(obj.getOptField_(obj.gui_, 'historyIndex', 1));
-            if obj.getOptField_(obj.gui_, 'historyUseTag', true)
-                hit = find(double(tags(:)) == obj.getOptField_(obj.gui_, 'historyTag', NaN), 1);
-                if ~isempty(hit), idx = hit; end
-            end
-            idx = max(1, min(numel(tags), idx));
-        end
-
-        function tags = historyTargetTags_(obj, targetKind)
-            if nargin < 2 || isempty(targetKind)
-                targets = {'node','element'};
-                targetKind = targets{max(1, min(numel(targets), obj.getOptField_(obj.gui_, 'historyTargetIdx', 1)))};
-            end
-            segIdx = max(1, min(numel(obj.ModelInfo), max(1, obj.currentSeg_)));
-            if strcmpi(targetKind, 'element')
-                [~, ~, tags] = obj.familyCells_(segIdx);
-            else
-                tags = plotter.polyscope.ModelAdapter.nodeTags(obj.ModelInfo(segIdx));
-            end
-            tags = double(tags(:));
-        end
-
-        function tag = defaultHistoryTag_(obj)
-            tags = obj.historyTargetTags_('node');
-            if isempty(tags)
-                tag = 1;
-            else
-                tag = tags(1);
-            end
-        end
-
-        function t = timeAtStep_(obj, segIdx, localStep, globalStep)
-            t = double(globalStep);
-            er = obj.safeSeg_(obj.EleResp, segIdx);
-            if isstruct(er) && isfield(er, 'time') && ~isempty(er.time)
-                tv = double(er.time(:));
-                if localStep >= 1 && localStep <= numel(tv)
-                    t = tv(localStep);
-                    return;
-                end
-            end
-            nr = obj.safeSeg_(obj.NodalResp, segIdx);
-            if isstruct(nr) && isfield(nr, 'time') && ~isempty(nr.time)
-                tv = double(nr.time(:));
-                if localStep >= 1 && localStep <= numel(tv)
-                    t = tv(localStep);
-                end
-            end
-        end
-
         function key = extremeStepCacheKey_(obj, mode)
             key = sprintf('%s|%s|%s|%s|%s|%s|%s|%d|%s', ...
                 lower(char(string(mode))), char(string(obj.Opts.eleType)), ...
@@ -1797,7 +1840,54 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             obj.globalClimCache_ = [];
             obj.globalClimKey_ = '';
             obj.extremeStepCache_ = struct();
-            obj.invalidateHistoryCache_();
+            obj.globalDeformScaleCache_ = NaN;
+            obj.globalDeformScaleKey_ = '';
+        end
+
+        function umax = globalDeformUmax_(obj)
+            key = matlab.lang.makeValidName(sprintf('%s_%d_%s', ...
+                char(string(obj.Opts.deform.type)), obj.nSteps_, obj.deformShapeSignature_()));
+            if isfinite(obj.globalDeformScaleCache_) && strcmp(obj.globalDeformScaleKey_, key)
+                umax = obj.globalDeformScaleCache_;
+                return;
+            end
+            umax = 0;
+            for g = 0:obj.nSteps_ - 1
+                [segIdx, localStep] = obj.resolveGlobalStep_(g);
+                U = obj.nodalSlice_(segIdx, obj.Opts.deform.type, localStep);
+                U3 = zeros(size(U, 1), 3);
+                U3(:, 1:min(3, size(U, 2))) = U(:, 1:min(3, size(U, 2)));
+                U3(~isfinite(U3)) = 0;
+                mag = sqrt(sum(U3.^2, 2, 'omitnan'));
+                m = max(mag, [], 'omitnan');
+                if isfinite(m)
+                    umax = max(umax, m);
+                end
+            end
+            obj.globalDeformScaleCache_ = umax;
+            obj.globalDeformScaleKey_ = key;
+        end
+
+        function sig = deformShapeSignature_(obj)
+            sigParts = cell(1, numel(obj.NodalResp));
+            field = char(string(obj.Opts.deform.type));
+            for s = 1:numel(obj.NodalResp)
+                nr = obj.NodalResp(s);
+                if isstruct(nr) && isfield(nr, field)
+                    entry = nr.(field);
+                    if isstruct(entry) && isfield(entry, 'data') && isnumeric(entry.data)
+                        sz = size(entry.data);
+                    elseif isnumeric(entry)
+                        sz = size(entry);
+                    else
+                        sz = [0, 0];
+                    end
+                    sigParts{s} = [sprintf('%d:', s), char(strjoin(string(sz), 'x'))];
+                else
+                    sigParts{s} = sprintf('%d:none', s);
+                end
+            end
+            sig = strjoin(sigParts, '|');
         end
 
         function field = simpleHashField_(~, txt)
@@ -1951,17 +2041,17 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             names = lower(strtrim(cellstr(string(dofs))));
             for i = 1:numel(names)
                 switch names{i}
-                    case {'1','x','u1','dx','dof1','transx'}
+                    case {'x','u1','dx','dof1','transx'}
                         names{i} = 'ux';
-                    case {'2','y','u2','dy','dof2','transy'}
+                    case {'y','u2','dy','dof2','transy'}
                         names{i} = 'uy';
-                    case {'3','z','u3','dz','dof3','transz'}
+                    case {'z','u3','dz','dof3','transz'}
                         names{i} = 'uz';
-                    case {'4','r1','rotx','theta1','theta_x'}
+                    case {'r1','rotx','theta1','theta_x'}
                         names{i} = 'rx';
-                    case {'5','r2','roty','theta2','theta_y'}
+                    case {'r2','roty','theta2','theta_y'}
                         names{i} = 'ry';
-                    case {'6','r3','rotz','theta3','theta_z'}
+                    case {'r3','rotz','theta3','theta_z'}
                         names{i} = 'rz';
                 end
             end

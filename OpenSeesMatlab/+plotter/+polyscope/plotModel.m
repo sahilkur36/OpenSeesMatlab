@@ -9,8 +9,9 @@ classdef plotModel < plotter.polyscope.ViewerBase
     %   Customise with an opts struct (start from
     %   plotter.polyscope.Options.defaultModelOptions()).
 
-
-
+    properties (Access = private)
+        initialOpts_ struct
+    end
 
     methods
         function obj = plotModel(modelInfo, opts)
@@ -25,6 +26,7 @@ classdef plotModel < plotter.polyscope.ViewerBase
             obj.ModelInfo = modelInfo;
             obj.Opts = plotter.polyscope.Options.mergeOpts( ...
                 plotter.polyscope.Options.defaultModelOptions(), opts);
+            obj.initialOpts_ = obj.Opts;
             obj.App = plotter.polyscope.PolyscopeApp();
             obj.L_ = plotter.polyscope.ModelAdapter.modelLength(modelInfo);
             obj.P0_ = plotter.polyscope.ModelAdapter.nodeCoords(modelInfo);
@@ -433,13 +435,17 @@ classdef plotModel < plotter.polyscope.ViewerBase
 
             % Actions
             if GB.button('Redraw')
-                needsRebuild = true;
+                try
+                    obj.App.polyscopeHandle().request_redraw();
+                catch
+                end
             end
             GB.sameLine();
             if GB.button('Reset')
                 obj.setDefaultMouseInteraction_(true);
-                obj.Opts = plotter.polyscope.Options.defaultModelOptions();
+                obj.Opts = obj.initialOpts_;
                 obj.initGuiState_();
+                obj.setDefaultCamera_();
                 needsRebuild = true;
             end
             GB.sameLine();

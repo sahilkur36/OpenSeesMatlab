@@ -13,6 +13,7 @@ classdef plotEigen < plotter.polyscope.ViewerBase
         currentIdx_   double = 1
         surfData_     struct = struct()
         classData_    struct = struct()
+        initialOpts_  struct
     end
 
     methods (Access = public)
@@ -46,6 +47,7 @@ classdef plotEigen < plotter.polyscope.ViewerBase
                     obj.Opts.mode.modeTag = obj.modeTags_(1);
                 end
             end
+            obj.initialOpts_ = obj.Opts;
 
             if obj.isHeadless_()
                 obj.Opts.polyscope.backend = 'openGL_mock';
@@ -870,6 +872,83 @@ classdef plotEigen < plotter.polyscope.ViewerBase
             end
         end
 
+        function needsRebuild = applyVisibility_(obj)
+            needsRebuild = false;
+            if obj.Opts.mode.showUndeformed
+                names = fieldnames(obj.handles_);
+                hasGhost = any(startsWith(names, 'ghost_'));
+                if ~hasGhost
+                    needsRebuild = true;
+                else
+                    for i = 1:numel(names)
+                        if startsWith(names{i}, 'ghost_')
+                            obj.handles_.(names{i}).set_enabled(true);
+                        end
+                    end
+                end
+            else
+                names = fieldnames(obj.handles_);
+                for i = 1:numel(names)
+                    if startsWith(names{i}, 'ghost_')
+                        obj.handles_.(names{i}).set_enabled(false);
+                    end
+                end
+            end
+
+            lineNames = plotter.polyscope.ModelAdapter.lineFamilyNames();
+            hasLine = false;
+            for k = 1:numel(lineNames)
+                hName = ['def_' lineNames{k}];
+                if isfield(obj.handles_, hName)
+                    hasLine = true;
+                    obj.handles_.(hName).set_enabled(obj.Opts.line.show);
+                end
+            end
+            if obj.Opts.line.show && ~hasLine
+                needsRebuild = true;
+            end
+
+            if obj.Opts.nodes.show && ~isfield(obj.handles_, 'def_Nodes')
+                needsRebuild = true;
+            elseif isfield(obj.handles_, 'def_Nodes')
+                obj.handles_.def_Nodes.set_enabled(obj.Opts.nodes.show);
+            end
+
+            if obj.Opts.fixed.show && ~isfield(obj.handles_, 'Fixed')
+                needsRebuild = true;
+            elseif isfield(obj.handles_, 'Fixed')
+                obj.handles_.Fixed.set_enabled(obj.Opts.fixed.show);
+            end
+
+            if obj.Opts.mpConstraint.show && ~isfield(obj.handles_, 'def_MPConstraint')
+                needsRebuild = true;
+            elseif isfield(obj.handles_, 'def_MPConstraint')
+                obj.handles_.def_MPConstraint.set_enabled(obj.Opts.mpConstraint.show);
+            end
+        end
+
+        function applyStyle_(obj)
+            names = fieldnames(obj.handles_);
+            for i = 1:numel(names)
+                nm = names{i};
+                h = obj.handles_.(nm);
+                try
+                    if startsWith(nm, 'ghost_')
+                        h.set_transparency(obj.Opts.color.undeformedAlpha);
+                        h.set_color(obj.asRgb_(obj.Opts.color.undeformedColor));
+                    else
+                        h.set_transparency(obj.Opts.color.deformedAlpha);
+                    end
+                    if isa(h, 'polyscope.PointCloud')
+                        h.set_radius(obj.Opts.polyscope.nodeRadius, true);
+                    elseif isa(h, 'polyscope.CurveNetwork')
+                        h.set_radius(obj.Opts.polyscope.edgeRadius, true);
+                    end
+                catch
+                end
+            end
+        end
+
         function tf = isLineClass_(~, cellTypes)
             lineTypes = [3, 4, 21];
             tf = ~isempty(cellTypes) && all(ismember(double(cellTypes(:)).', lineTypes));
@@ -1238,7 +1317,7 @@ classdef plotEigen < plotter.polyscope.ViewerBase
                 if tf ~= obj.gui_.showUndeformed
                     obj.gui_.showUndeformed = tf;
                     obj.Opts.mode.showUndeformed = tf;
-                    needsRebuild = true;
+                    needsRebuild = needsRebuild || obj.applyVisibility_();
                 end
                 tf = GB.checkbox('Use colormap', obj.gui_.useColormap);
                 if tf ~= obj.gui_.useColormap
@@ -1270,7 +1349,7 @@ classdef plotEigen < plotter.polyscope.ViewerBase
                 if tf ~= obj.gui_.showLines
                     obj.gui_.showLines = tf;
                     obj.Opts.line.show = tf;
-                    needsRebuild = true;
+                    needsRebuild = needsRebuild || obj.applyVisibility_();
                 end
                 tf = GB.checkbox('Surfaces', obj.gui_.showSurfaces);
                 if tf ~= obj.gui_.showSurfaces
@@ -1288,19 +1367,19 @@ classdef plotEigen < plotter.polyscope.ViewerBase
                 if tf ~= obj.gui_.showNodes
                     obj.gui_.showNodes = tf;
                     obj.Opts.nodes.show = tf;
-                    needsRebuild = true;
+                    needsRebuild = needsRebuild || obj.applyVisibility_();
                 end
                 tf = GB.checkbox('Fixed nodes', obj.gui_.showFixed);
                 if tf ~= obj.gui_.showFixed
                     obj.gui_.showFixed = tf;
                     obj.Opts.fixed.show = tf;
-                    needsRebuild = true;
+                    needsRebuild = needsRebuild || obj.applyVisibility_();
                 end
                 tf = GB.checkbox('MP constraints', obj.gui_.showMP);
                 if tf ~= obj.gui_.showMP
                     obj.gui_.showMP = tf;
                     obj.Opts.mpConstraint.show = tf;
-                    needsRebuild = true;
+                    needsRebuild = needsRebuild || obj.applyVisibility_();
                 end
 
                 GB.separator();
@@ -1315,32 +1394,32 @@ classdef plotEigen < plotter.polyscope.ViewerBase
                 if abs(s - obj.gui_.deformedAlpha) > eps
                     obj.gui_.deformedAlpha = s;
                     obj.Opts.color.deformedAlpha = s;
-                    needsRebuild = true;
+                    obj.applyStyle_();
                 end
                 s = GB.sliderFloat('Undeformed alpha', obj.gui_.undeformedAlpha, 0, 1);
                 if abs(s - obj.gui_.undeformedAlpha) > eps
                     obj.gui_.undeformedAlpha = s;
                     obj.Opts.color.undeformedAlpha = s;
-                    needsRebuild = true;
+                    obj.applyStyle_();
                 end
                 s = GB.sliderFloat('Node radius', obj.gui_.nodeRadius, 0.0001, 0.012);
                 if abs(s - obj.gui_.nodeRadius) > eps
                     obj.gui_.nodeRadius = s;
                     obj.Opts.polyscope.nodeRadius = s;
-                    needsRebuild = true;
+                    obj.applyStyle_();
                 end
                 s = GB.sliderFloat('Edge radius', obj.gui_.edgeRadius, 0.0001, 0.006);
                 if abs(s - obj.gui_.edgeRadius) > eps
                     obj.gui_.edgeRadius = s;
                     obj.Opts.polyscope.edgeRadius = s;
-                    needsRebuild = true;
+                    obj.applyStyle_();
                 end
 
                 [cchg, obj.gui_.undeformedColor] = GB.colorEdit3( ...
                     'Undeformed color', obj.gui_.undeformedColor);
                 if cchg
                     obj.Opts.color.undeformedColor = obj.gui_.undeformedColor;
-                    needsRebuild = true;
+                    obj.applyStyle_();
                 end
 
                 GB.separator();
@@ -1389,12 +1468,16 @@ classdef plotEigen < plotter.polyscope.ViewerBase
                 % Actions
                 GB.separator();
                 if GB.button('Redraw')
-                    needsRebuild = true;
+                    try
+                        obj.App.polyscopeHandle().request_redraw();
+                    catch
+                    end
                 end
                 GB.sameLine();
                 if GB.button('Reset')
-                    obj.Opts = plotter.polyscope.Options.defaultEigenOptions();
+                    obj.Opts = obj.initialOpts_;
                     obj.initGuiState_();
+                    obj.setDefaultCamera_();
                     needsRebuild = true;
                 end
                 GB.sameLine();
@@ -1436,73 +1519,6 @@ classdef plotEigen < plotter.polyscope.ViewerBase
     end
 
     methods (Access = private)
-
-        function sliceDirty = drawSlicePlaneGui_(obj)
-            sliceDirty = false;
-            GB = plotter.polyscope.GuiBuilder;
-            if ~GB.collapsingHeader('Slice plane', int32(0))
-                return;
-            end
-            tf = GB.checkbox('Enable slice', obj.gui_.sliceShow);
-            if tf ~= obj.gui_.sliceShow
-                obj.gui_.sliceShow = tf;
-                obj.Opts.slice.show = tf;
-                sliceDirty = true;
-            end
-            tf = GB.checkbox('Draw plane', obj.gui_.sliceDrawPlane);
-            if tf ~= obj.gui_.sliceDrawPlane
-                obj.gui_.sliceDrawPlane = tf;
-                obj.Opts.slice.drawPlane = tf;
-                sliceDirty = true;
-            end
-            tf = GB.checkbox('Draw widget', obj.gui_.sliceDrawWidget);
-            if tf ~= obj.gui_.sliceDrawWidget
-                obj.gui_.sliceDrawWidget = tf;
-                obj.Opts.slice.drawWidget = tf;
-                sliceDirty = true;
-            end
-            c = GB.inputFloat3('Center', obj.gui_.sliceCenter);
-            if any(abs(c - obj.gui_.sliceCenter) > eps)
-                obj.gui_.sliceCenter = c;
-                obj.Opts.slice.center = c;
-                sliceDirty = true;
-            end
-            if GB.button('Center at model')
-                obj.gui_.sliceCenter = obj.defaultSliceCenter_();
-                obj.Opts.slice.center = obj.gui_.sliceCenter;
-                sliceDirty = true;
-            end
-            sz = GB.sliderFloat('Widget size', obj.gui_.sliceWidgetSize, 0.25, 2.00);
-            if abs(sz - obj.gui_.sliceWidgetSize) > eps
-                obj.gui_.sliceWidgetSize = sz;
-                obj.Opts.slice.widgetSize = sz;
-                sliceDirty = true;
-            end
-            n = GB.inputFloat3('Normal', obj.gui_.sliceNormal);
-            if any(abs(n - obj.gui_.sliceNormal) > eps)
-                obj.gui_.sliceNormal = n;
-                obj.Opts.slice.normal = n;
-                sliceDirty = true;
-            end
-            a = GB.sliderFloat('Slice alpha', obj.gui_.sliceTransparency, 0.0, 1.0);
-            if abs(a - obj.gui_.sliceTransparency) > eps
-                obj.gui_.sliceTransparency = a;
-                obj.Opts.slice.transparency = a;
-                sliceDirty = true;
-            end
-            [cchg, obj.gui_.sliceColor] = GB.colorEdit3('Slice color', obj.gui_.sliceColor);
-            if cchg
-                obj.Opts.slice.color = obj.gui_.sliceColor;
-                sliceDirty = true;
-            end
-            tf = GB.checkbox('Cull whole elements', obj.gui_.sliceCullWholeElements);
-            if tf ~= obj.gui_.sliceCullWholeElements
-                obj.gui_.sliceCullWholeElements = tf;
-                obj.Opts.slice.cullWholeElements = tf;
-                sliceDirty = true;
-            end
-            GB.separator();
-        end
 
         function drawModeInfoWindow_(obj)
             if ~obj.getOptField_(obj.Opts.polyscope, 'showModelInfo', false)

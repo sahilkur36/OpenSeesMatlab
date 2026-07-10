@@ -69,11 +69,12 @@ classdef ModelAdapter
                 edges, size(plotter.polyscope.ModelAdapter.nodeCoords(modelInfo), 1));
         end
 
-        function [V, F, midPoints, edgePoints] = surfaceMesh(modelInfo, familyName)
+        function [V, F, midPoints, edgePoints, out] = surfaceMesh(modelInfo, familyName)
             V = zeros(0, 3);
             F = zeros(0, 3);
             midPoints = zeros(0, 3);
             edgePoints = zeros(0, 3);
+            out = [];
             fam = plotter.polyscope.ModelAdapter.families(modelInfo);
             if ~isfield(fam, familyName), return; end
             S = fam.(familyName);
@@ -85,6 +86,7 @@ classdef ModelAdapter
             out = plotter.utils.VTKElementTriangulator.triangulate( ...
                 P, double(S.CellTypes), double(S.Cells));
             if isempty(out) || ~isfield(out, 'Points') || isempty(out.Points)
+                out = [];
                 return;
             end
             V = out.Points;
@@ -97,13 +99,18 @@ classdef ModelAdapter
             end
         end
 
-        function [V, tets, hexes, cells, cellIds, edgePoints] = volumeMesh(modelInfo, familyName)
+        function [V, tets, hexes, cells, cellIds, edgePoints, surfOut] = volumeMesh(modelInfo, familyName, needEdgePoints)
             V = zeros(0, 3);
             tets = zeros(0, 4);
             hexes = zeros(0, 8);
             cells = zeros(0, 8);
             cellIds = zeros(0, 1);
             edgePoints = zeros(0, 3);
+            surfOut = [];
+
+            if nargin < 3 || isempty(needEdgePoints)
+                needEdgePoints = true;
+            end
 
             fam = plotter.polyscope.ModelAdapter.families(modelInfo);
             if ~isfield(fam, familyName), return; end
@@ -130,6 +137,9 @@ classdef ModelAdapter
                 cellIds = out.CellIds;
             end
 
+            if ~needEdgePoints
+                return;
+            end
             surfOut = plotter.utils.VTKElementTriangulator.triangulate( ...
                 P, double(S.CellTypes), double(S.Cells));
             if isfield(surfOut, 'EdgePoints')
@@ -239,6 +249,8 @@ classdef ModelAdapter
             [nRows, nCols] = size(cells);
             nNode = size(plotter.polyscope.ModelAdapter.nodeCoords(modelInfo), 1);
 
+            % First pass: count valid segments per row to preallocate.
+            segCounts = zeros(nRows, 1);
             for i = 1:nRows
                 row = cells(i, :);
                 row = row(isfinite(row));
@@ -248,19 +260,41 @@ classdef ModelAdapter
                     if isfinite(n) && n >= 2 && numel(row) >= n + 1
                         ids = row(2:1+n);
                     else
-                        ids = row;
-                        ids = ids(ids >= 1);
+                        ids = row(row >= 1);
                     end
                 else
                     ids = row;
                 end
 
-                ids = ids(ids >= 1);
-                ids = round(ids);
-                ids = ids(ids >= 1 & ids <= nNode);
-                if numel(ids) < 2, continue; end
-                seg = [ids(1:end-1)', ids(2:end)'];
-                edges = [edges; seg]; %#ok<AGROW>
+                ids = round(ids(ids >= 1 & ids <= nNode));
+                segCounts(i) = max(0, numel(ids) - 1);
+            end
+
+            total = sum(segCounts);
+            if total == 0, return; end
+            edges = zeros(total, 2);
+
+            pos = 0;
+            for i = 1:nRows
+                if segCounts(i) == 0, continue; end
+                row = cells(i, :);
+                row = row(isfinite(row));
+
+                if nCols > 2
+                    n = row(1);
+                    if isfinite(n) && n >= 2 && numel(row) >= n + 1
+                        ids = row(2:1+n);
+                    else
+                        ids = row(row >= 1);
+                    end
+                else
+                    ids = row;
+                end
+
+                ids = round(ids(ids >= 1 & ids <= nNode));
+                nSeg = segCounts(i);
+                edges(pos + 1:pos + nSeg, :) = [ids(1:end-1).', ids(2:end).'];
+                pos = pos + nSeg;
             end
         end
 

@@ -30,6 +30,7 @@ classdef VTKElementTriangulator < handle
     %   EdgePoints    : NaN-separated surface edge polyline points
     %   MidPoints     : one midpoint per original input cell
     %   TriCellIds    : for each triangle, which original cell it belongs to
+    %   PointNodeIds  : for each expanded point, the original node id (1-based)
     %
     % If node-wise scalars are supplied:
     %   NodeScalars   : original node scalar array
@@ -38,6 +39,9 @@ classdef VTKElementTriangulator < handle
     %
     % If element-wise scalars are supplied:
     %   CellScalars   : original element scalar array
+    %
+    % Line results also include:
+    %   MeshPointNodeIds : for each expanded line-mesh point, the original node id
     %
     % Author: OpenAI ChatGPT
 
@@ -56,6 +60,9 @@ classdef VTKElementTriangulator < handle
     properties (SetAccess = private)
         % Expanded triangle-mesh vertices.
         FacePoints double = zeros(0, 3)
+
+        % For each expanded triangle-mesh vertex, the original 1-based node id.
+        FacePointNodeIds double = zeros(0, 1)
 
         % NaN-separated polyline points for surface edges.
         FaceLinePoints double = zeros(0, 3)
@@ -111,6 +118,9 @@ classdef VTKElementTriangulator < handle
         % Expanded line-mesh vertices for LineSegments.
         LineMeshPoints double = zeros(0, 3)
 
+        % For each expanded line-mesh vertex, the original 1-based node id.
+        LineMeshPointNodeIds double = zeros(0, 1)
+
         % Scalars attached to LineMeshPoints.
         LineScalars double = zeros(0, 1)
 
@@ -165,6 +175,7 @@ classdef VTKElementTriangulator < handle
         function resetSurfaceData(obj)
             %RESETSURFACEDATA Clear all accumulated surface / solid triangulation results.
             obj.FacePoints = zeros(0, 3);
+            obj.FacePointNodeIds = zeros(0, 1);
             obj.FaceLinePoints = zeros(0, 3);
             obj.FaceMidPoints = zeros(0, 3);
             obj.Triangles = zeros(0, 3);
@@ -192,6 +203,7 @@ classdef VTKElementTriangulator < handle
             obj.LineMidPoints = zeros(0, 3);
             obj.LineSegments = zeros(0, 2);
             obj.LineMeshPoints = zeros(0, 3);
+            obj.LineMeshPointNodeIds = zeros(0, 1);
             obj.LineScalars = zeros(0, 1);
             obj.LinePolylineScalars = zeros(0, 1);
             obj.LineScalarElementIndex = 1;
@@ -256,6 +268,7 @@ classdef VTKElementTriangulator < handle
             baseIdx = size(obj.FacePoints, 1) + 1;
 
             obj.FacePoints = [obj.FacePoints; data]; %#ok<AGROW>
+            obj.FacePointNodeIds = [obj.FacePointNodeIds; conn(:)]; %#ok<AGROW>
             obj.FaceMidPoints = [obj.FaceMidPoints; mean(data, 1)]; %#ok<AGROW>
 
             if ~isempty(obj.Scalars) && ~obj.ScalarsByElement
@@ -291,6 +304,7 @@ classdef VTKElementTriangulator < handle
 
             baseIdx = size(obj.LineMeshPoints, 1) + 1;
             obj.LineMeshPoints = [obj.LineMeshPoints; pts]; %#ok<AGROW>
+            obj.LineMeshPointNodeIds = [obj.LineMeshPointNodeIds; orderedConn(:)]; %#ok<AGROW>
 
             if size(pts, 1) >= 2
                 seg = [(baseIdx:baseIdx + size(pts, 1) - 2).', ...
@@ -311,12 +325,13 @@ classdef VTKElementTriangulator < handle
         function out = getSurfaceResults(obj)
             %GETSURFACERESULTS Return triangulated surface/solid results.
             out = struct();
-            out.Points     = obj.FacePoints;
-            out.EdgePoints = obj.FaceLinePoints;
-            out.MidPoints  = obj.FaceMidPoints;
-            out.Triangles  = obj.Triangles;
-            out.TriCellIds = obj.TriCellIds;
-            out.EdgeCellIds = obj.EdgeCellIds;
+            out.Points       = obj.FacePoints;
+            out.PointNodeIds = obj.FacePointNodeIds;
+            out.EdgePoints   = obj.FaceLinePoints;
+            out.MidPoints    = obj.FaceMidPoints;
+            out.Triangles    = obj.Triangles;
+            out.TriCellIds   = obj.TriCellIds;
+            out.EdgeCellIds  = obj.EdgeCellIds;
 
             if ~isempty(obj.Scalars)
                 if obj.ScalarsByElement
@@ -354,10 +369,11 @@ classdef VTKElementTriangulator < handle
         function out = getLineResults(obj)
             %GETLINERESULTS Return converted line-element results.
             out = struct();
-            out.Points     = obj.LinePoints;
-            out.MeshPoints = obj.LineMeshPoints;
-            out.MidPoints  = obj.LineMidPoints;
-            out.Segments   = obj.LineSegments;
+            out.Points           = obj.LinePoints;
+            out.MeshPoints       = obj.LineMeshPoints;
+            out.MeshPointNodeIds = obj.LineMeshPointNodeIds;
+            out.MidPoints        = obj.LineMidPoints;
+            out.Segments         = obj.LineSegments;
 
             if ~isempty(obj.Scalars)
                 if obj.ScalarsByElement

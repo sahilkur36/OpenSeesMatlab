@@ -35,7 +35,8 @@ tasks = [
     "verify",       "", "verify_beam";
 ];
 
-rootDir = "../docs/examples";
+scriptDir = fileparts(mfilename('fullpath'));
+rootDir = fullfile(scriptDir, "..", "docs", "examples");
 forceRebuild = false;
 
 if ~exist(rootDir, "dir")
@@ -45,7 +46,7 @@ end
 % =========================================================================
 % Copy utils folder
 % =========================================================================
-srcUtilsDir = "utils";
+srcUtilsDir = fullfile(scriptDir, "utils");
 dstUtilsDir = fullfile(rootDir, "utils");
 
 if exist(srcUtilsDir, "dir")
@@ -60,27 +61,13 @@ else
 end
 
 % =========================================================================
-% Create all export folders before parfor
+% Precompute absolute source/destination paths for parallel export
 % =========================================================================
-for i = 1:size(tasks, 1)
-    category = tasks(i, 1);
-    subgroup = tasks(i, 2);
+nTasks = size(tasks, 1);
+mlxFiles = cell(nTasks, 1);
+outFiles = cell(nTasks, 1);
 
-    if strlength(subgroup) > 0
-        outDir = fullfile(rootDir, category, subgroup);
-    else
-        outDir = fullfile(rootDir, category);
-    end
-
-    if ~isfolder(outDir)
-        mkdir(outDir);
-    end
-end
-
-% =========================================================================
-% Export .mlx files to Markdown
-% =========================================================================
-parfor i = 1:size(tasks, 1)
+for i = 1:nTasks
     category = tasks(i, 1);
     subgroup = tasks(i, 2);
     name     = tasks(i, 3);
@@ -91,10 +78,28 @@ parfor i = 1:size(tasks, 1)
         outDir = fullfile(rootDir, category);
     end
 
-    mlxFile = name + ".mlx";
-    outFile = fullfile(outDir, name + ".md");
+    if ~isfolder(outDir)
+        mkdir(outDir);
+    end
+
+    mlxFiles{i} = fullfile(scriptDir, name + ".mlx");
+    outFiles{i} = fullfile(outDir, name + ".md");
+end
+
+% =========================================================================
+% Export .mlx files to Markdown
+% =========================================================================
+parfor i = 1:nTasks
+    mlxFile = mlxFiles{i};
+    outFile = outFiles{i};
 
     if localNeedExport(mlxFile, outFile, forceRebuild)
+        % Remove any stale destination so export() does not trip on
+        % read-only/locked existing files when overwriting.
+        if exist(outFile, "file")
+            delete(outFile);
+        end
+
         export(mlxFile, outFile, ...
             Format="markdown", ...
             EmbedImages=true, ...

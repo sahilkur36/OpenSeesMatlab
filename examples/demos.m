@@ -279,6 +279,7 @@ function localPostProcessMarkdown(mdFile)
     txt = replace(txt, "\]", "]");
 
     txt = localReplaceMatlabTextOutputBlocks(txt);
+    txt = localNormalizeCodeBlankLines(txt);
 
     fid = fopen(mdFile, "w");
     if fid == -1
@@ -308,6 +309,41 @@ function txt = localReplaceMatlabTextOutputBlocks(txt)
 
         content = tokens{i}{1};
         pieces{p} = localFormatOutputBlock(content);
+        p = p + 1;
+
+        prevEnd = ends(i);
+    end
+
+    pieces{p} = txt(prevEnd + 1 : end);
+    txt = [pieces{1:p}];
+end
+
+function txt = localNormalizeCodeBlankLines(txt)
+    % Collapse runs of 3+ line endings inside ```matlab ... ``` blocks to
+    % exactly 2 line endings. The MATLAB live-script exporter sometimes
+    % turns a single intentional blank line into two blank lines.
+    pattern = '```matlab\s*\r?\n([\s\S]*?)\r?\n```';
+
+    [starts, ends, tokens] = regexp(txt, pattern, "start", "end", "tokens");
+
+    if isempty(starts)
+        return;
+    end
+
+    pieces = cell(numel(starts) * 2 + 1, 1);
+    prevEnd = 0;
+    p = 1;
+
+    for i = 1:numel(starts)
+        pieces{p} = txt(prevEnd + 1 : starts(i) - 1);
+        p = p + 1;
+
+        block = txt(starts(i) : ends(i));
+        content = tokens{i}{1};
+        normContent = regexprep(content, '(\r?\n)(\r?\n)(\r?\n)+', '$1$2');
+        block = strrep(block, content, normContent);
+
+        pieces{p} = block;
         p = p + 1;
 
         prevEnd = ends(i);

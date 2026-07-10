@@ -129,6 +129,50 @@ classdef OpenSeesMatlabVisPolyscope < handle
             h = plotter.polyscope.plotUnstruResponse(modelInfo, nodeRespData(1), eleRespData(1), options.opts);
         end
 
+        function h = plotFrameResponse(obj, frameRespData, options)
+            arguments
+                obj (1,1) plotter.OpenSeesMatlabVisPolyscope
+                frameRespData struct
+                options.respType {mustBeTextScalar} = ""
+                options.respComponent {mustBeTextScalar} = ""
+                options.responseLocation {mustBeTextScalar} = ""
+                options.stepIdx = "absMax"
+                options.opts (1,1) struct = struct()
+            end
+            if strlength(string(options.respType)) > 0
+                options.opts.respType = char(string(options.respType));
+            end
+            if strlength(string(options.respComponent)) > 0
+                options.opts.component = char(string(options.respComponent));
+            end
+            if strlength(string(options.responseLocation)) > 0
+                options.opts.responseLocation = char(string(options.responseLocation));
+            end
+            options.opts.stepIdx = options.stepIdx;
+            if isfield(frameRespData(1), 'odbTag')
+                odbTag = frameRespData(1).odbTag;
+                modelInfo = post.ODB.readModelInfo(obj.parent.parent.opensees, odbTag);
+            else
+                modelInfo = obj.parent.parent.post.getModelData();
+            end
+            h = plotter.polyscope.plotFrameResponse(modelInfo, frameRespData, options.opts);
+        end
+
+        function h = plotFrameResp(obj, frameRespData, options)
+            arguments
+                obj (1,1) plotter.OpenSeesMatlabVisPolyscope
+                frameRespData struct
+                options.respType {mustBeTextScalar} = ""
+                options.respComponent {mustBeTextScalar} = ""
+                options.responseLocation {mustBeTextScalar} = ""
+                options.stepIdx = "absMax"
+                options.opts (1,1) struct = struct()
+            end
+            h = obj.plotFrameResponse(frameRespData, respType=options.respType, ...
+                respComponent=options.respComponent, responseLocation=options.responseLocation, ...
+                stepIdx=options.stepIdx, opts=options.opts);
+        end
+
         function h = plotShellResponse(obj, respData, options)
             arguments
                 obj (1,1) plotter.OpenSeesMatlabVisPolyscope

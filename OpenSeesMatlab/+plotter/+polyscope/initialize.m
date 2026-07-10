@@ -37,16 +37,18 @@ function initialize(ps, opts, varargin)
             tryCall_(ps, 'set_program_name', programName);
             tryCall_(ps, 'set_use_prefs_file', false);
             tryCall_(ps, 'set_allow_headless_backends', true);
+            tryCall_(ps, 'set_print_prefix', '[OpenSeesMatlab] ');
             tryCall_(ps, 'set_errors_throw_exceptions', true);
-            tryCall_(ps, 'set_SSAA_factor', ssaa);
-            tryCall_(ps, 'set_ssaa_factor', ssaa);
             applyProgramOptions_(ps, psOpts);
-            tryCall_(ps, 'set_ground_plane_mode', 'shadow_only');
+            % tryCall_(ps, 'set_ground_plane_mode', 'shadow_only');
+            tryCall_(ps, 'set_ground_plane_mode', 'none');
             tryCall_(ps, 'set_ui_scale', 1.2);
             tryCall_(ps, 'set_autocenter_structures', false);
 
         case 'post'
             tryCall_(ps, 'set_program_name', programName);
+            tryCall_(ps, 'set_SSAA_factor', ssaa);
+            tryCall_(ps, 'set_ssaa_factor', ssaa);
             applyProgramOptions_(ps, psOpts);
             if ~is2D
                 tryCall_(ps, 'set_up_dir', 'z_up', false);

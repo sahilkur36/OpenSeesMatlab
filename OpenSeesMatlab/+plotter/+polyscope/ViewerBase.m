@@ -12,13 +12,14 @@ classdef (Abstract) ViewerBase < handle
     end
 
     properties (Access = protected)
-        built_     logical = false
-        handles_   struct = struct()
-        gui_       struct = struct()
-        L_         double = 1
-        P0_        double = zeros(0, 3)
-        query_     struct = struct()
-        highlight_ struct = struct()
+        built_      logical = false
+        handles_    struct = struct()
+        gui_        struct = struct()
+        L_          double = 1
+        P0_         double = zeros(0, 3)
+        query_      struct = struct()
+        highlight_  struct = struct()
+        rangeCache_ struct = struct()
     end
 
     methods
@@ -54,6 +55,28 @@ classdef (Abstract) ViewerBase < handle
         function screenshot(obj, filename, varargin)
             obj.App.screenshot(filename, varargin{:});
         end
+
+        function addSlicePlane(obj)
+            %ADDSLICEPLANE Add a new slice plane (public API).
+            obj.addSlicePlane_();
+        end
+
+        function removeSlicePlane(obj, idx)
+            %REMOVESLICEPLANE Remove a slice plane by index (public API).
+            %   If idx is omitted, the last plane is removed.
+            if nargin < 2 || isempty(idx)
+                if ~isfield(obj.Opts, 'slice') || ~isfield(obj.Opts.slice, 'planes')
+                    return;
+                end
+                idx = numel(obj.Opts.slice.planes);
+            end
+            obj.removeSlicePlaneByIdx_(idx);
+        end
+
+        function applySlicePlanes(obj)
+            %APPLYSLICEPLANES Apply current slice-plane state to Polyscope.
+            obj.applySlicePlane_();
+        end
     end
 
     methods (Abstract)
@@ -87,6 +110,7 @@ classdef (Abstract) ViewerBase < handle
             if isempty(obj.gui_.viewIdx)
                 obj.gui_.viewIdx = 1;
             end
+            obj.gui_.ssaaFactor = obj.getOptField_(obj.Opts.polyscope, 'ssaaFactor', 2);
         end
 
         function name = structName_(obj, base, prefix)
@@ -95,26 +119,74 @@ classdef (Abstract) ViewerBase < handle
             end
             topPrefix = char(string(obj.Opts.polyscope.name));
             displayBase = obj.displayBaseName_(base);
+            displayPrefix = obj.displayPrefix_(prefix);
             parts = {};
             if ~isempty(topPrefix), parts{end+1} = topPrefix; end
-            if ~isempty(prefix), parts{end+1} = char(string(prefix)); end
+            if ~isempty(displayPrefix), parts{end+1} = displayPrefix; end
             if ~isempty(displayBase), parts{end+1} = displayBase; end
             if isempty(parts)
                 name = '';
             else
-                name = strjoin(parts, '_');
+                name = strjoin(parts, ' ');
+            end
+        end
+
+        function p = displayPrefix_(~, prefix)
+            %DISPLAYPREFIX_ Map internal prefixes to user-friendly labels.
+            if isempty(prefix)
+                p = '';
+                return;
+            end
+            switch char(string(prefix))
+                case {'def', ''}
+                    p = '';
+                case 'ghost'
+                    p = 'Undeformed';
+                case 'ghostWire'
+                    p = 'Undeformed wireframe';
+                case 'wire'
+                    p = 'Wireframe';
+                case 'frame'
+                    p = 'Frame';
+                otherwise
+                    p = char(string(prefix));
             end
         end
 
         function db = displayBaseName_(obj, base)
             %DISPLAYBASENAME_ Return user-friendly display name for a structure.
             %   Users can customize via opts.polyscope.displayNames.(base).
+            %   Element class names are shown as-is from the data.
             dn = obj.getOptField_(obj.Opts.polyscope, 'displayNames', struct());
             if isstruct(dn) && isfield(dn, base) && ~isempty(dn.(base))
                 db = char(string(dn.(base)));
-            else
-                db = base;
+                return;
             end
+            b = char(string(base));
+            % Generic suffix rules for family-specific helpers (e.g. BeamEdges -> Beam edges,
+            % ShellGhost -> Shell edges).  Keep the literal base for short names.
+            if numel(b) > 5 && strcmpi(b(end-4:end), 'Edges')
+                db = [b(1:end-5) ' edges'];
+            elseif numel(b) > 5 && strcmpi(b(end-4:end), 'Ghost')
+                db = [b(1:end-5) ' edges'];
+            elseif numel(b) > 4 && strcmpi(b(end-3:end), 'Wire')
+                db = [b(1:end-4) ' wireframe'];
+            else
+                db = b;
+            end
+        end
+
+        function key = structKey_(obj, base, prefix)
+            %STRUCTKEY_ Return a valid MATLAB field name for internal query maps.
+            %   Based on the display name from structName_, but safe for dynamic
+            %   field access (no spaces or other invalid characters).
+            if nargin < 3, prefix = ''; end
+            key = obj.validQueryKey_(obj.structName_(base, prefix));
+        end
+
+        function key = validQueryKey_(~, name)
+            %VALIDQUERYKEY_ Convert any structure name to a valid field name.
+            key = matlab.lang.makeValidName(char(string(name)));
         end
 
         function val = getOptField_(~, S, fieldName, fallback)
@@ -266,22 +338,120 @@ classdef (Abstract) ViewerBase < handle
             end
         end
 
+        function changed = drawSsaaGui_(obj, idSuffix)
+            %DRAWSSAAGUI_ Draw a shared SSAA control and apply it immediately.
+            if nargin < 2 || isempty(idSuffix)
+                idSuffix = '';
+            end
+            changed = false;
+            GB = plotter.polyscope.GuiBuilder;
+            if ~isfield(obj.gui_, 'ssaaFactor') || isempty(obj.gui_.ssaaFactor)
+                obj.gui_.ssaaFactor = obj.getOptField_(obj.Opts.polyscope, 'ssaaFactor', 2);
+            end
+            oldVal = obj.gui_.ssaaFactor;
+            obj.gui_.ssaaFactor = GB.sliderInt(['SSAA' char(string(idSuffix))], ...
+                obj.gui_.ssaaFactor, 1, 4);
+            if obj.gui_.ssaaFactor ~= oldVal
+                obj.gui_.ssaaFactor = max(1, min(4, round(double(obj.gui_.ssaaFactor))));
+                obj.Opts.polyscope.ssaaFactor = obj.gui_.ssaaFactor;
+                try
+                    obj.App.setSSAAFactor(obj.gui_.ssaaFactor);
+                catch
+                end
+                changed = true;
+            end
+        end
+
         function initSliceGuiState_(obj)
-            if ~isfield(obj.Opts, 'slice')
+            if ~isfield(obj.Opts, 'slice') || isempty(obj.Opts.slice)
+                obj.Opts.slice = struct();
+            end
+            obj.normalizeSliceOpts_();
+            n = numel(obj.Opts.slice.planes);
+            obj.gui_.slicePlaneIdx = 1;
+            obj.gui_.slicePlanes = repmat(obj.emptySliceGuiPlane_(), 0);
+            for i = 1:n
+                obj.gui_.slicePlanes(i) = obj.slicePlaneOptsToGui_(obj.Opts.slice.planes(i));
+            end
+        end
+
+        function g = emptySliceGuiPlane_(~)
+            g = struct('show', false, 'drawPlane', true, 'drawWidget', false, ...
+                       'center', [0, 0, 0], 'normal', [0, 0, 1], ...
+                       'widgetSize', 0.75, 'transparency', 0.45, ...
+                       'color', [0.90, 0.35, 0.55], 'gridColor', [1, 1, 1], ...
+                       'cullWholeElements', false);
+        end
+
+        function g = slicePlaneOptsToGui_(obj, p)
+            g.show = logical(obj.getOptField_(p, 'show', false));
+            g.drawPlane = logical(obj.getOptField_(p, 'drawPlane', true));
+            g.drawWidget = logical(obj.getOptField_(p, 'drawWidget', false));
+            g.center = obj.resolveSliceCenterForPlane_(p);
+            n = double(obj.getOptField_(p, 'normal', [0, 0, 1]));
+            n = n(:).';
+            if ~all(isfinite(n)) || norm(n) <= 1e-12
+                n = [0, 0, 1];
+            end
+            g.normal = n;
+            g.widgetSize = double(obj.getOptField_(p, 'widgetSize', 0.75));
+            g.transparency = double(obj.getOptField_(p, 'transparency', 0.45));
+            g.color = plotter.polyscope.utils.colorToRgb(obj.getOptField_(p, 'color', [0.90, 0.35, 0.55]));
+            g.gridColor = plotter.polyscope.utils.colorToRgb(obj.getOptField_(p, 'gridColor', [1, 1, 1]));
+            g.cullWholeElements = logical(obj.getOptField_(p, 'cullWholeElements', false));
+        end
+
+        function normalizeSliceOpts_(obj)
+            if ~isfield(obj.Opts, 'slice') || isempty(obj.Opts.slice)
+                obj.Opts.slice = struct();
+            end
+            s = obj.Opts.slice;
+            if ~isstruct(s)
+                s = struct();
+            end
+            defaults = struct('name', 'Slice plane', ...
+                              'show', false, ...
+                              'center', [], ...
+                              'normal', [0, 0, 1], ...
+                              'drawPlane', true, ...
+                              'drawWidget', false, ...
+                              'widgetSize', 0.75, ...
+                              'color', [0.90, 0.35, 0.55], ...
+                              'gridColor', [1, 1, 1], ...
+                              'transparency', 0.45, ...
+                              'cullWholeElements', false);
+            fields = fieldnames(defaults);
+            % Legacy scalar slice options -> wrap into planes(1)
+            if ~isfield(s, 'planes')
+                plane = defaults;
+                for k = 1:numel(fields)
+                    f = fields{k};
+                    if isfield(s, f) && ~isempty(s.(f))
+                        plane.(f) = s.(f);
+                    end
+                end
+                s.planes = plane;
+            end
+            if isempty(s.planes)
+                obj.Opts.slice = s;
                 return;
             end
-            obj.gui_.sliceShow = obj.getOptField_(obj.Opts.slice, 'show', false);
-            obj.gui_.sliceDrawPlane = obj.getOptField_(obj.Opts.slice, 'drawPlane', true);
-            obj.gui_.sliceDrawWidget = obj.getOptField_(obj.Opts.slice, 'drawWidget', false);
-            obj.gui_.sliceCenter = obj.resolveSliceCenter_();
-            obj.gui_.sliceNormal = obj.Opts.slice.normal;
-            obj.gui_.sliceWidgetSize = obj.getOptField_(obj.Opts.slice, 'widgetSize', 0.75);
-            obj.gui_.sliceTransparency = obj.getOptField_(obj.Opts.slice, 'transparency', 0.45);
-            obj.gui_.sliceColor = plotter.polyscope.utils.colorToRgb(obj.Opts.slice.color);
-            obj.gui_.sliceGridColor = plotter.polyscope.utils.colorToRgb( ...
-                obj.getOptField_(obj.Opts.slice, 'gridColor', [1, 1, 1]));
-            obj.gui_.sliceCullWholeElements = obj.getOptField_(obj.Opts.slice, ...
-                'cullWholeElements', false);
+            % Ensure every plane has all fields and a valid name
+            for i = 1:numel(s.planes)
+                for k = 1:numel(fields)
+                    f = fields{k};
+                    if ~isfield(s.planes(i), f) || isempty(s.planes(i).(f))
+                        s.planes(i).(f) = defaults.(f);
+                    end
+                end
+                nm = char(string(s.planes(i).name));
+                if isempty(nm)
+                    s.planes(i).name = sprintf('Slice plane %d', i);
+                else
+                    s.planes(i).name = nm;
+                end
+            end
+            obj.Opts.slice = s;
         end
 
         function r = absRadius_(obj, rel)
@@ -752,70 +922,96 @@ classdef (Abstract) ViewerBase < handle
                     end
                 end
             else
-                lineNames = plotter.polyscope.ModelAdapter.lineFamilyNames();
-                for k = 1:numel(lineNames)
-                    edges = plotter.polyscope.ModelAdapter.lineEdges(obj.ModelInfo, lineNames{k});
-                    stats.nElements = stats.nElements + size(edges, 1);
-                end
-                surfaceNames = plotter.polyscope.ModelAdapter.surfaceFamilyNames();
-                for k = 1:numel(surfaceNames)
-                    [~, F] = plotter.polyscope.ModelAdapter.surfaceMesh(obj.ModelInfo, surfaceNames{k});
-                    stats.nElements = stats.nElements + size(F, 1);
-                end
-                volumeNames = plotter.polyscope.ModelAdapter.volumeFamilyNames();
-                for k = 1:numel(volumeNames)
-                    [~, tets, hexes] = plotter.polyscope.ModelAdapter.volumeMesh(obj.ModelInfo, volumeNames{k});
-                    stats.nElements = stats.nElements + size(tets, 1) + size(hexes, 1);
+                fam = plotter.polyscope.ModelAdapter.families(obj.ModelInfo);
+                familyNames = [plotter.polyscope.ModelAdapter.lineFamilyNames(), ...
+                               plotter.polyscope.ModelAdapter.surfaceFamilyNames(), ...
+                               plotter.polyscope.ModelAdapter.volumeFamilyNames()];
+                for k = 1:numel(familyNames)
+                    name = familyNames{k};
+                    if isfield(fam, name) && isstruct(fam.(name)) && ...
+                            isfield(fam.(name), 'Cells') && ~isempty(fam.(name).Cells)
+                        stats.nElements = stats.nElements + size(fam.(name).Cells, 1);
+                    end
                 end
             end
         end
 
-        function registerSlicePlane_(obj)
-            if ~isfield(obj.Opts, 'slice')
+        function registerSlicePlanes_(obj)
+            if ~isfield(obj.Opts, 'slice') || isempty(obj.Opts.slice)
                 return;
             end
+            obj.normalizeSliceOpts_();
             try
                 ps = obj.App.polyscopeHandle();
-                name = obj.Opts.slice.name;
-                hasPlane = ps.has_slice_plane(name);
-                if ~obj.Opts.slice.show && ~hasPlane
-                    return;
+                planes = obj.Opts.slice.planes;
+                desiredNames = cell(numel(planes), 1);
+                for i = 1:numel(planes)
+                    name = char(string(planes(i).name));
+                    if isempty(name)
+                        name = sprintf('Slice plane %d', i);
+                    end
+                    desiredNames{i} = name;
+                    hasPlane = ps.has_slice_plane(name);
+                    if ~planes(i).show && ~hasPlane
+                        continue;
+                    end
+                    if hasPlane
+                        sp = ps.get_slice_plane(name);
+                    else
+                        sp = ps.add_slice_plane(name);
+                    end
+                    obj.configureSlicePlane_(sp, planes(i));
                 end
-                if hasPlane
-                    sp = ps.get_slice_plane(name);
-                else
-                    sp = ps.add_slice_plane(name);
+                % Remove Polyscope planes that are no longer in our list
+                if ~isfield(obj.handles_, 'SlicePlanes')
+                    obj.handles_.SlicePlanes = {};
                 end
-                obj.configureSlicePlane_(sp);
-                obj.handles_.SlicePlane = sp;
+                toRemove = {};
+                for k = 1:numel(obj.handles_.SlicePlanes)
+                    oldName = obj.handles_.SlicePlanes{k}{1};
+                    if ~ismember(oldName, desiredNames)
+                        toRemove{end+1} = oldName; %#ok<AGROW>
+                    end
+                end
+                for k = 1:numel(toRemove)
+                    try ps.remove_slice_plane(toRemove{k}); catch, end
+                end
+                % Rebuild handles list
+                obj.handles_.SlicePlanes = {};
+                for i = 1:numel(planes)
+                    name = desiredNames{i};
+                    if ps.has_slice_plane(name)
+                        obj.handles_.SlicePlanes{end+1} = {name, ps.get_slice_plane(name)};
+                    end
+                end
             catch
             end
         end
 
-        function configureSlicePlane_(obj, sp)
-            sp.set_enabled(logical(obj.Opts.slice.show));
-            center = obj.resolveSliceCenter_();
-            normal = double(obj.Opts.slice.normal(:)).';
+        function configureSlicePlane_(obj, sp, planeOpts)
+            sp.set_enabled(logical(planeOpts.show));
+            center = obj.resolveSliceCenterForPlane_(planeOpts);
+            normal = double(planeOpts.normal(:)).';
             if ~all(isfinite(normal)) || norm(normal) <= 1e-12
                 normal = [0, 0, 1];
             end
             sp.set_pose(center, normal);
-            sp.set_draw_plane(logical(obj.Opts.slice.drawPlane));
-            sp.set_draw_widget(logical(obj.Opts.slice.drawWidget));
+            sp.set_draw_plane(logical(planeOpts.drawPlane));
+            sp.set_draw_widget(logical(planeOpts.drawWidget));
             try
-                sp.set_widget_size(double(obj.getOptField_(obj.Opts.slice, 'widgetSize', 0.75)));
+                sp.set_widget_size(double(obj.getOptField_(planeOpts, 'widgetSize', 0.75)));
             catch
             end
-            sp.set_color(obj.asRgb_(plotter.polyscope.utils.colorToRgb(obj.Opts.slice.color)));
-            sp.set_grid_line_color(obj.asRgb_(plotter.polyscope.utils.colorToRgb(obj.Opts.slice.gridColor)));
-            sp.set_transparency(double(obj.Opts.slice.transparency));
+            sp.set_color(obj.asRgb_(plotter.polyscope.utils.colorToRgb(planeOpts.color)));
+            sp.set_grid_line_color(obj.asRgb_(plotter.polyscope.utils.colorToRgb(planeOpts.gridColor)));
+            sp.set_transparency(double(planeOpts.transparency));
         end
 
         function applySlicePlane_(obj)
-            if ~isfield(obj.Opts, 'slice')
+            if ~isfield(obj.Opts, 'slice') || isempty(obj.Opts.slice)
                 return;
             end
-            obj.registerSlicePlane_();
+            obj.registerSlicePlanes_();
             obj.applySliceCullWholeElements_();
             try
                 obj.App.polyscopeHandle().request_redraw();
@@ -826,79 +1022,135 @@ classdef (Abstract) ViewerBase < handle
         function sliceDirty = drawSlicePlaneGui_(obj, idSuffix)
             if nargin < 2 || isempty(idSuffix), idSuffix = ''; end
             sliceDirty = false;
-            if ~isfield(obj.Opts, 'slice')
+            if ~isfield(obj.Opts, 'slice') || isempty(obj.Opts.slice)
                 return;
             end
+            obj.normalizeSliceOpts_();
             GB = plotter.polyscope.GuiBuilder;
-            if ~GB.collapsingHeader(['Slice plane' char(string(idSuffix))], int32(0))
+            suffix = char(string(idSuffix));
+            if startsWith(suffix, '##')
+                suffix = suffix(3:end);
+            end
+            if isempty(suffix)
+                tag = '';
+            else
+                tag = ['_' suffix];
+            end
+            if ~GB.collapsingHeader(['Slice planes##slice_header' tag], int32(0))
                 return;
             end
-            tf = GB.checkbox(['Enable slice' char(string(idSuffix))], obj.gui_.sliceShow);
-            if tf ~= obj.gui_.sliceShow
-                obj.gui_.sliceShow = tf;
-                obj.Opts.slice.show = tf;
+            n = numel(obj.Opts.slice.planes);
+            % Add / Remove buttons
+            if GB.button(['Add plane##slice_add' tag])
+                obj.addSlicePlane_();
+                sliceDirty = true;
+                n = numel(obj.Opts.slice.planes);
+                if obj.gui_.slicePlaneIdx > n
+                    obj.gui_.slicePlaneIdx = n;
+                end
+            end
+            if n > 0
+                GB.sameLine();
+                if GB.button(['Remove plane##slice_remove' tag])
+                    obj.removeSlicePlaneByIdx_(obj.gui_.slicePlaneIdx);
+                    sliceDirty = true;
+                    n = numel(obj.Opts.slice.planes);
+                    if obj.gui_.slicePlaneIdx > n
+                        obj.gui_.slicePlaneIdx = max(1, n);
+                    end
+                end
+            end
+            if n == 0
+                return;
+            end
+            % Active-plane selector
+            names = cell(n, 1);
+            for i = 1:n
+                names{i} = char(string(obj.Opts.slice.planes(i).name));
+            end
+            oldIdx = obj.gui_.slicePlaneIdx;
+            if oldIdx < 1 || oldIdx > n
+                oldIdx = 1;
+                obj.gui_.slicePlaneIdx = 1;
+            end
+            obj.gui_.slicePlaneIdx = GB.combo(['Active plane##slice_active' tag], obj.gui_.slicePlaneIdx, names);
+            if obj.gui_.slicePlaneIdx ~= oldIdx
+                obj.syncGuiSlicePlaneFromOpts_(obj.gui_.slicePlaneIdx);
+            end
+            idx = obj.gui_.slicePlaneIdx;
+            g = obj.gui_.slicePlanes(idx);
+            % ---- per-plane controls ----
+            tf = GB.checkbox(['Enable##slice_enable' tag], g.show);
+            if tf ~= g.show
+                g.show = tf;
                 sliceDirty = true;
             end
-            tf = GB.checkbox(['Draw plane' char(string(idSuffix))], obj.gui_.sliceDrawPlane);
-            if tf ~= obj.gui_.sliceDrawPlane
-                obj.gui_.sliceDrawPlane = tf;
-                obj.Opts.slice.drawPlane = tf;
+            GB.sameLine();
+            tf = GB.checkbox(['Draw plane##slice_drawplane' tag], g.drawPlane);
+            if tf ~= g.drawPlane
+                g.drawPlane = tf;
                 sliceDirty = true;
             end
-            tf = GB.checkbox(['Draw widget' char(string(idSuffix))], obj.gui_.sliceDrawWidget);
-            if tf ~= obj.gui_.sliceDrawWidget
-                obj.gui_.sliceDrawWidget = tf;
-                obj.Opts.slice.drawWidget = tf;
+            GB.sameLine();
+            tf = GB.checkbox(['Draw widget##slice_drawwidget' tag], g.drawWidget);
+            if tf ~= g.drawWidget
+                g.drawWidget = tf;
                 sliceDirty = true;
             end
-            c = GB.inputFloat3(['Center' char(string(idSuffix))], obj.gui_.sliceCenter);
-            if any(abs(c - obj.gui_.sliceCenter) > eps)
-                obj.gui_.sliceCenter = c;
-                obj.Opts.slice.center = c;
+            c = GB.inputFloat3(['Center##slice_center' tag], g.center);
+            if any(abs(c - g.center) > eps)
+                g.center = c;
                 sliceDirty = true;
             end
-            if GB.button(['Center at model' char(string(idSuffix))])
-                obj.gui_.sliceCenter = obj.defaultSliceCenter_();
-                obj.Opts.slice.center = obj.gui_.sliceCenter;
+            if GB.button(['Center at model##slice_centermodel' tag])
+                g.center = obj.defaultSliceCenter_();
                 sliceDirty = true;
             end
-            n = GB.inputFloat3(['Normal' char(string(idSuffix))], obj.gui_.sliceNormal);
-            if any(abs(n - obj.gui_.sliceNormal) > eps)
-                obj.gui_.sliceNormal = n;
-                obj.Opts.slice.normal = n;
+            nrm = GB.inputFloat3(['Normal##slice_normal' tag], g.normal);
+            if any(abs(nrm - g.normal) > eps)
+                g.normal = nrm;
                 sliceDirty = true;
             end
-            sz = GB.sliderFloat(['Widget size' char(string(idSuffix))], obj.gui_.sliceWidgetSize, 0.25, 2.00);
-            if abs(sz - obj.gui_.sliceWidgetSize) > eps
-                obj.gui_.sliceWidgetSize = sz;
-                obj.Opts.slice.widgetSize = sz;
+            sz = GB.sliderFloat(['Widget size##slice_widget' tag], g.widgetSize, 0.25, 2.00);
+            if abs(sz - g.widgetSize) > eps
+                g.widgetSize = sz;
                 sliceDirty = true;
             end
-            a = GB.sliderFloat(['Slice alpha' char(string(idSuffix))], obj.gui_.sliceTransparency, 0.0, 1.0);
-            if abs(a - obj.gui_.sliceTransparency) > eps
-                obj.gui_.sliceTransparency = a;
-                obj.Opts.slice.transparency = a;
+            a = GB.sliderFloat(['Slice alpha##slice_alpha' tag], g.transparency, 0.0, 1.0);
+            if abs(a - g.transparency) > eps
+                g.transparency = a;
                 sliceDirty = true;
             end
-            [cchg, obj.gui_.sliceColor] = GB.colorEdit3(['Slice color' char(string(idSuffix))], obj.gui_.sliceColor);
-            obj.gui_.sliceColor = obj.asRgb_(obj.gui_.sliceColor);
+            [cchg, g.color] = GB.colorEdit3(['Slice color##slice_color' tag], g.color);
             if cchg
-                obj.Opts.slice.color = obj.gui_.sliceColor;
                 sliceDirty = true;
             end
-            tf = GB.checkbox(['Cull whole elements' char(string(idSuffix))], obj.gui_.sliceCullWholeElements);
-            if tf ~= obj.gui_.sliceCullWholeElements
-                obj.gui_.sliceCullWholeElements = tf;
-                obj.Opts.slice.cullWholeElements = tf;
+            [cchg, g.gridColor] = GB.colorEdit3(['Grid color##slice_gridcolor' tag], g.gridColor);
+            if cchg
                 sliceDirty = true;
             end
+            tf = GB.checkbox(['Cull whole elements##slice_cull' tag], g.cullWholeElements);
+            if tf ~= g.cullWholeElements
+                g.cullWholeElements = tf;
+                sliceDirty = true;
+            end
+            % Write back
+            obj.gui_.slicePlanes(idx) = g;
+            obj.syncOptsSlicePlaneFromGui_(idx);
         end
 
         function applySliceCullWholeElements_(obj)
-            if ~isfield(obj.Opts, 'slice')
+            if ~isfield(obj.Opts, 'slice') || isempty(obj.Opts.slice)
                 return;
             end
-            val = logical(obj.getOptField_(obj.Opts.slice, 'cullWholeElements', false));
+            obj.normalizeSliceOpts_();
+            val = false;
+            for i = 1:numel(obj.Opts.slice.planes)
+                if logical(obj.getOptField_(obj.Opts.slice.planes(i), 'cullWholeElements', false))
+                    val = true;
+                    break;
+                end
+            end
             names = fieldnames(obj.handles_);
             ps = obj.App.polyscopeHandle();
             for k = 1:numel(names)
@@ -1055,18 +1307,29 @@ classdef (Abstract) ViewerBase < handle
         % ------------------------------------------------------------------
 
         function center = resolveSliceCenter_(obj)
-            center = [];
-            if isfield(obj.Opts, 'slice') && isfield(obj.Opts.slice, 'center')
-                center = obj.Opts.slice.center;
-            end
-            if isempty(center) || numel(center) < 3
-                center = obj.defaultSliceCenter_();
+            if isfield(obj.Opts, 'slice') && isfield(obj.Opts.slice, 'planes') && ...
+                    ~isempty(obj.Opts.slice.planes)
+                center = obj.resolveSliceCenterForPlane_(obj.Opts.slice.planes(1));
             else
-                center = double(center(:)).';
-                center = center(1:3);
-                if ~all(isfinite(center))
-                    center = obj.defaultSliceCenter_();
+                center = obj.defaultSliceCenter_();
+            end
+        end
+
+        function center = resolveSliceCenterForPlane_(obj, p)
+            center = [];
+            if isfield(p, 'center') && ~isempty(p.center)
+                center = double(p.center(:)).';
+                if numel(center) >= 3
+                    center = center(1:3);
+                    if ~all(isfinite(center))
+                        center = [];
+                    end
+                else
+                    center = [];
                 end
+            end
+            if isempty(center)
+                center = obj.defaultSliceCenter_();
             end
         end
 
@@ -1086,12 +1349,129 @@ classdef (Abstract) ViewerBase < handle
 
         function removeSlicePlane_(obj)
             try
-                if isfield(obj.Opts, 'slice') && isfield(obj.Opts.slice, 'name') && ...
-                        obj.App.polyscopeHandle().has_slice_plane(obj.Opts.slice.name)
-                    obj.App.polyscopeHandle().remove_slice_plane(obj.Opts.slice.name);
+                ps = obj.App.polyscopeHandle();
+                if isfield(obj.handles_, 'SlicePlanes')
+                    for k = 1:numel(obj.handles_.SlicePlanes)
+                        try ps.remove_slice_plane(obj.handles_.SlicePlanes{k}{1}); catch, end
+                    end
+                    obj.handles_.SlicePlanes = {};
+                end
+                if isfield(obj.Opts, 'slice') && isfield(obj.Opts.slice, 'planes')
+                    for i = 1:numel(obj.Opts.slice.planes)
+                        name = char(string(obj.Opts.slice.planes(i).name));
+                        if ps.has_slice_plane(name)
+                            try ps.remove_slice_plane(name); catch, end
+                        end
+                    end
                 end
             catch
             end
+        end
+
+        function removeSlicePlaneByIdx_(obj, idx)
+            if ~isfield(obj.Opts, 'slice') || ~isfield(obj.Opts.slice, 'planes')
+                return;
+            end
+            n = numel(obj.Opts.slice.planes);
+            if idx < 1 || idx > n
+                return;
+            end
+            name = char(string(obj.Opts.slice.planes(idx).name));
+            try
+                ps = obj.App.polyscopeHandle();
+                if ps.has_slice_plane(name)
+                    ps.remove_slice_plane(name);
+                end
+            catch
+            end
+            obj.Opts.slice.planes(idx) = [];
+            if isfield(obj.gui_, 'slicePlanes') && numel(obj.gui_.slicePlanes) >= idx
+                obj.gui_.slicePlanes(idx) = [];
+            end
+            if isfield(obj.handles_, 'SlicePlanes')
+                keep = {};
+                for k = 1:numel(obj.handles_.SlicePlanes)
+                    if ~strcmp(obj.handles_.SlicePlanes{k}{1}, name)
+                        keep{end+1} = obj.handles_.SlicePlanes{k}; %#ok<AGROW>
+                    end
+                end
+                obj.handles_.SlicePlanes = keep;
+            end
+        end
+
+        function addSlicePlane_(obj)
+            obj.normalizeSliceOpts_();
+            planes = obj.Opts.slice.planes;
+            if isempty(planes)
+                defaults = struct('name', 'Slice plane', ...
+                                  'show', true, ...
+                                  'center', [], ...
+                                  'normal', [0, 0, 1], ...
+                                  'drawPlane', true, ...
+                                  'drawWidget', false, ...
+                                  'widgetSize', 0.75, ...
+                                  'color', [0.90, 0.35, 0.55], ...
+                                  'gridColor', [1, 1, 1], ...
+                                  'transparency', 0.45, ...
+                                  'cullWholeElements', false);
+                newPlane = defaults;
+                newIdx = 1;
+            else
+                newIdx = numel(planes) + 1;
+                newPlane = planes(end);
+                newPlane.show = true;
+            end
+            newPlane.name = obj.uniqueSlicePlaneName_();
+            planes(newIdx) = newPlane;
+            obj.Opts.slice.planes = planes;
+            if ~isfield(obj.gui_, 'slicePlanes')
+                obj.gui_.slicePlanes = repmat(obj.emptySliceGuiPlane_(), 0);
+            end
+            obj.gui_.slicePlanes(newIdx) = obj.slicePlaneOptsToGui_(newPlane);
+            obj.gui_.slicePlaneIdx = newIdx;
+        end
+
+        function name = uniqueSlicePlaneName_(obj)
+            existing = {};
+            if isfield(obj.Opts, 'slice') && isfield(obj.Opts.slice, 'planes')
+                for i = 1:numel(obj.Opts.slice.planes)
+                    existing{end+1} = char(string(obj.Opts.slice.planes(i).name)); %#ok<AGROW>
+                end
+            end
+            k = 1;
+            while true
+                name = sprintf('Slice plane %d', k);
+                if ~ismember(name, existing)
+                    return;
+                end
+                k = k + 1;
+            end
+        end
+
+        function syncGuiSlicePlaneFromOpts_(obj, idx)
+            if idx < 1 || idx > numel(obj.Opts.slice.planes)
+                return;
+            end
+            obj.gui_.slicePlanes(idx) = obj.slicePlaneOptsToGui_(obj.Opts.slice.planes(idx));
+        end
+
+        function syncOptsSlicePlaneFromGui_(obj, idx)
+            if idx < 1 || idx > numel(obj.gui_.slicePlanes)
+                return;
+            end
+            g = obj.gui_.slicePlanes(idx);
+            p = obj.Opts.slice.planes(idx);
+            p.show = g.show;
+            p.drawPlane = g.drawPlane;
+            p.drawWidget = g.drawWidget;
+            p.center = g.center;
+            p.normal = g.normal;
+            p.widgetSize = g.widgetSize;
+            p.transparency = g.transparency;
+            p.color = g.color;
+            p.gridColor = g.gridColor;
+            p.cullWholeElements = g.cullWholeElements;
+            obj.Opts.slice.planes(idx) = p;
         end
 
         function [axisPts, labelPts, labelEdges, ok] = screenAxes3DGeometry_(obj)
@@ -1280,6 +1660,26 @@ classdef (Abstract) ViewerBase < handle
                     ps.set_enable_vsync(obj.getOptField_(obj.Opts.polyscope, 'enableVsync', true));
                 end
             catch
+            end
+        end
+
+        function val = cachedRange_(obj, namespace, key, computeFcn)
+            %CACHEDRANGE_ Generic [lo, hi] / scalar cache with namespace/key invalidation.
+            if isfield(obj.rangeCache_, namespace)
+                slot = obj.rangeCache_.(namespace);
+                if isfield(slot, 'key') && isfield(slot, 'value') && ...
+                        strcmp(char(string(slot.key)), char(string(key)))
+                    val = slot.value;
+                    return;
+                end
+            end
+            val = computeFcn();
+            obj.rangeCache_.(namespace) = struct('key', key, 'value', val);
+        end
+
+        function invalidateCachedRange_(obj, namespace)
+            if isfield(obj.rangeCache_, namespace)
+                obj.rangeCache_.(namespace).key = '';
             end
         end
 

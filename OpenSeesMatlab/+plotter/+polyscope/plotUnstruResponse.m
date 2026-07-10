@@ -16,19 +16,14 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
         eleTypes_ cell = {}
         respTypes_ cell = {}
         components_ cell = {}
-        lastAnimTic_ = []
         animDir_ double = 1
         meshData_ struct = struct()
         lineData_ struct = struct()
-        globalClimCache_ double = []
-        globalClimKey_ char = ''
         extremeStepCache_ struct = struct()
         historyCacheKey_ char = ''
         historyCacheX_ double = []
         historyCacheY_ double = []
         historyCacheLabel_ char = ''
-        globalDeformScaleCache_ double = NaN
-        globalDeformScaleKey_ char = ''
         initialOpts_ struct
     end
 
@@ -112,7 +107,7 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             end
             obj.configureAnimationRenderLoop_();
             obj.setStep(obj.currentStep_, true);
-            obj.registerSlicePlane_();
+            obj.registerSlicePlanes_();
             obj.applySliceCullWholeElements_();
             if firstBuild
                 obj.setCameraForPoints_(obj.P0_, obj.Opts.general.view);
@@ -174,7 +169,7 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
                     needsVisibility = needsVisibility || styleChanged;
                 end
                 if obj.drawSlicePlaneGui_('##unstru')
-                    obj.registerSlicePlane_();
+                    obj.registerSlicePlanes_();
                 end
                 if GB.collapsingHeader('Animation', int32(0))
                     if obj.drawAnimationGui_()
@@ -188,7 +183,7 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
 
                 GB.separator();
                 if GB.button('Redraw##unstru')
-                    needsRebuild = true;
+                    obj.App.polyscopeHandle().request_redraw();
                 end
                 GB.sameLine();
                 if GB.button('Reset##unstru')
@@ -278,7 +273,12 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             obj.gui_.historyAutoStep = true;
             obj.gui_.historyShowValue = true;
             obj.invalidateHistoryCache_();
-            obj.lastAnimTic_ = tic;
+        end
+
+        function configureAnimationRenderLoop_(obj)
+            isRunning = isfield(obj.gui_, 'animationMode') && obj.gui_.animationMode && obj.gui_.playing;
+            fps = max(1, double(obj.getOptField_(obj.gui_, 'fps', 12)));
+            configureAnimationRenderLoop_@plotter.polyscope.ViewerBase(obj, isRunning, fps);
         end
     end
 
@@ -362,6 +362,7 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             obj.gui_.autoScale = GB.checkbox('Auto scale##unstru_geometry', obj.gui_.autoScale);
             obj.gui_.deformScale = GB.sliderFloat('Deformation scale##unstru_geometry', obj.gui_.deformScale, 0, 100);
             obj.gui_.showUndeformed = GB.checkbox('Undeformed ghost##unstru_geometry', obj.gui_.showUndeformed);
+            obj.drawSsaaGui_('##unstru_geometry');
             obj.syncOptsFromGui_();
             changed = obj.guiChanged_(old, {'showMesh','showEdges','showNodes','showFixed', ...
                 'showLines','showDeform','autoScale','deformScale','showUndeformed'});
@@ -422,6 +423,11 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             if obj.gui_.animationMode
                 obj.gui_.autoScale = true;
                 obj.Opts.deform.autoScale = true;
+                if ~old.animationMode
+                    % Use a fixed color range during animation so variations are visible.
+                    obj.gui_.climIdx = obj.indexOf_({'step','range','global','absmax','absmin'}, 'global');
+                    obj.Opts.color.climMode = 'global';
+                end
                 if GB.button('Play / pause')
                     obj.gui_.playing = ~obj.gui_.playing;
                 end
@@ -429,7 +435,6 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
                 if GB.button('Restart')
                     obj.currentStep_ = 0;
                     obj.gui_.step = 0;
-                    obj.lastAnimTic_ = tic;
                 end
                 obj.gui_.playing = GB.checkbox('Playing', obj.gui_.playing);
                 obj.gui_.fps = GB.sliderFloat('FPS', obj.gui_.fps, 1, 240);
@@ -446,7 +451,10 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             obj.Opts.animation.pingpong = obj.gui_.pingpong;
             obj.Opts.animation.updateColors = obj.gui_.animUpdateColors;
             obj.configureAnimationRenderLoop_();
-            changed = obj.guiChanged_(old, {'animationMode','playing','fps','loop','pingpong','animUpdateColors'});
+            % FPS/loop/pingpong/playing only affect the animation loop; they do
+            % not require a full scalar-field recompute. Only animation mode
+            % and color-limit changes need a response update.
+            changed = obj.guiChanged_(old, {'animationMode','climIdx'});
         end
 
         function registerSegment_(obj, segIdx)
@@ -549,7 +557,7 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             obj.handles_.def_MeshEdges = h;
         end
 
-        function registerLineStructures_(obj, ps, segIdx, Pdef, Snode, clim)
+        function registerLineStructures_(obj, ps, segIdx, Pdef, ~, ~)
             fam = obj.families_(segIdx);
             if ~isfield(fam, 'Line') || ~isfield(fam.Line, 'Cells') || isempty(fam.Line.Cells)
                 return;
@@ -560,17 +568,17 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             else
                 types = repmat(3, size(cells, 1), 1);
             end
-            out = plotter.utils.VTKElementTriangulator.convertLineElements(Pdef, types, cells, 'Scalars', Snode);
+            out = plotter.utils.VTKElementTriangulator.convertLineElements(Pdef, types, cells);
             if isempty(out) || isempty(out.MeshPoints) || isempty(out.Segments), return; end
             h = ps.register_curve_network(obj.structName_('Line', 'def'), out.MeshPoints, out.Segments);
             h.set_radius(obj.Opts.polyscope.edgeRadius, true);
             h.set_color(obj.asRgb_(obj.Opts.color.solidColor));
             h.set_enabled(obj.Opts.line.show);
-            if isfield(out, 'MeshScalars') && ~isempty(out.MeshScalars)
-                qargs = obj.scalarArgs_(clim);
-                h.add_node_scalar_quantity(obj.scalarQuantityName_(), out.MeshScalars, qargs{:});
+            nodeIds = out.MeshPointNodeIds;
+            if isempty(nodeIds)
+                nodeIds = (1:size(out.MeshPoints, 1)).';
             end
-            obj.lineData_.Line = struct('cells', cells, 'types', types);
+            obj.lineData_.Line = struct('cells', cells, 'types', types, 'pointNodeIds', nodeIds);
             obj.handles_.def_Line = h;
         end
 
@@ -610,7 +618,7 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             end
             [nodes, edges] = plotter.polyscope.ModelAdapter.edgePointsToCurveNetwork(edgePoints);
             if isempty(nodes), return; end
-            h = ps.register_curve_network(obj.structName_('Ghost', 'ghost'), nodes, edges);
+            h = ps.register_curve_network(obj.structName_('Ghost'), nodes, edges);
             h.set_radius(obj.Opts.polyscope.edgeRadius * 0.75, true);
             h.set_color(obj.asRgb_(obj.Opts.color.undeformedColor));
             h.set_transparency(obj.Opts.color.undeformedAlpha);
@@ -620,14 +628,7 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
 
         function updateStep_(obj, segIdx, localStep)
             [Pdef, scale] = obj.deformedCoords_(segIdx, localStep);
-            if obj.isFastAnimationFrame_() && ~obj.gui_.animUpdateColors
-                Snode = [];
-                Sele = [];
-                clim = [];
-                nodeBased = true;
-            else
-                [Snode, Sele, clim, nodeBased] = obj.scalarField_(segIdx, localStep);
-            end
+            [Snode, Sele, clim, nodeBased] = obj.scalarField_(segIdx, localStep);
             qargs = obj.scalarArgs_(clim);
             qname = obj.scalarQuantityName_();
 
@@ -676,12 +677,12 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
         function updateLines_(obj, Pdef, Snode, clim)
             if ~isfield(obj.handles_, 'def_Line') || ~isfield(obj.lineData_, 'Line'), return; end
             data = obj.lineData_.Line;
-            out = plotter.utils.VTKElementTriangulator.convertLineElements(Pdef, data.types, data.cells, 'Scalars', Snode);
-            if isempty(out) || isempty(out.MeshPoints), return; end
-            obj.handles_.def_Line.update_node_positions(out.MeshPoints);
-            if isfield(out, 'MeshScalars') && ~isempty(out.MeshScalars)
+            ids = data.pointNodeIds(:);
+            Pline = Pdef(ids, :);
+            obj.handles_.def_Line.update_node_positions(Pline);
+            if ~isempty(Snode)
                 qargs = obj.scalarArgs_(clim);
-                obj.handles_.def_Line.add_node_scalar_quantity(obj.scalarQuantityName_(), out.MeshScalars, qargs{:});
+                obj.handles_.def_Line.add_node_scalar_quantity(obj.scalarQuantityName_(), Snode(ids), qargs{:});
             end
         end
 
@@ -1098,25 +1099,10 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             obj.Opts.polyscope.nodeRadius = double(obj.gui_.nodeRadius);
         end
 
-        function configureAnimationRenderLoop_(obj)
-            isRunning = isfield(obj.gui_, 'animationMode') && obj.gui_.animationMode && obj.gui_.playing;
-            fps = max(1, double(obj.getOptField_(obj.gui_, 'fps', 12)));
-            configureAnimationRenderLoop_@plotter.polyscope.ViewerBase(obj, isRunning, fps);
-        end
-
         function advanceAnimation_(obj)
             if ~isfield(obj.gui_, 'animationMode') || ~obj.gui_.animationMode || ~obj.gui_.playing
                 return;
             end
-            fps = max(1, double(obj.gui_.fps));
-            if isempty(obj.lastAnimTic_)
-                obj.lastAnimTic_ = tic;
-                return;
-            end
-            if toc(obj.lastAnimTic_) < 1 / fps
-                return;
-            end
-            obj.lastAnimTic_ = tic;
             step = obj.currentStep_ + obj.animDir_;
             if step >= obj.nSteps_
                 if obj.gui_.pingpong
@@ -1142,11 +1128,6 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             obj.currentStep_ = step;
             obj.gui_.step = step;
             obj.setStep(step, false);
-        end
-
-        function tf = isFastAnimationFrame_(obj)
-            tf = isfield(obj.gui_, 'animationMode') && obj.gui_.animationMode && ...
-                isfield(obj.gui_, 'playing') && obj.gui_.playing;
         end
 
         function [Pdef, scale] = deformedCoords_(obj, segIdx, localStep)
@@ -1465,16 +1446,7 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             if any(strcmp(mode, {'global','range','absmax','absmin'}))
                 key = sprintf('%s|%s|%s|%s|%d', obj.Opts.eleType, obj.Opts.respType, ...
                     obj.Opts.component, obj.Opts.responseLocation, obj.nSteps_);
-                if isempty(obj.globalClimCache_) || ~strcmp(obj.globalClimKey_, key)
-                    allv = [];
-                    for g = 0:obj.nSteps_ - 1
-                        [s, l] = obj.resolveGlobalStep_(g);
-                        allv = [allv; obj.rawStepScalar_(s, l)]; %#ok<AGROW>
-                    end
-                    obj.globalClimCache_ = obj.localClim_(allv);
-                    obj.globalClimKey_ = key;
-                end
-                clim = obj.globalClimCache_;
+                clim = obj.cachedRange_('unstruClim', key, @() obj.computeGlobalClim_());
             else
                 clim = obj.localClim_(vals);
             end
@@ -1488,6 +1460,15 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
                 m = min(abs(clim));
                 clim = [-m, m];
             end
+        end
+
+        function clim = computeGlobalClim_(obj)
+            allv = [];
+            for g = 0:obj.nSteps_ - 1
+                [s, l] = obj.resolveGlobalStep_(g);
+                allv = [allv; obj.rawStepScalar_(s, l)]; %#ok<AGROW>
+            end
+            clim = obj.localClim_(allv);
         end
 
         function clim = localClim_(~, vals)
@@ -1511,7 +1492,7 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             args = {'enabled', logical(obj.gui_.showField && obj.Opts.color.useColormap), ...
                 'cmap', char(string(obj.Opts.polyscope.scalarColorMap))};
             if ~isempty(clim) && all(isfinite(clim))
-                args = [args, {'vminmax', double(clim(:).')}];
+                args = [args, {'map_range', double(clim(:).')}];
             end
             cb = obj.colorbarArgs_();
             if ~isempty(cb)
@@ -1830,20 +1811,18 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
         end
 
         function invalidateScalarCaches_(obj)
-            obj.globalClimCache_ = [];
-            obj.globalClimKey_ = '';
+            obj.invalidateCachedRange_('unstruClim');
+            obj.invalidateCachedRange_('unstruDeform');
             obj.extremeStepCache_ = struct();
-            obj.globalDeformScaleCache_ = NaN;
-            obj.globalDeformScaleKey_ = '';
         end
 
         function umax = globalDeformUmax_(obj)
             key = matlab.lang.makeValidName(sprintf('%s_%d_%s', ...
                 char(string(obj.Opts.deform.type)), obj.nSteps_, obj.deformShapeSignature_()));
-            if isfinite(obj.globalDeformScaleCache_) && strcmp(obj.globalDeformScaleKey_, key)
-                umax = obj.globalDeformScaleCache_;
-                return;
-            end
+            umax = obj.cachedRange_('unstruDeform', key, @() obj.computeGlobalDeformUmax_());
+        end
+
+        function umax = computeGlobalDeformUmax_(obj)
             umax = 0;
             for g = 0:obj.nSteps_ - 1
                 [segIdx, localStep] = obj.resolveGlobalStep_(g);
@@ -1857,8 +1836,6 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
                     umax = max(umax, m);
                 end
             end
-            obj.globalDeformScaleCache_ = umax;
-            obj.globalDeformScaleKey_ = key;
         end
 
         function sig = deformShapeSignature_(obj)

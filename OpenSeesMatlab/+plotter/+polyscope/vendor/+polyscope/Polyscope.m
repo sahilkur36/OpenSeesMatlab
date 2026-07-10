@@ -146,6 +146,10 @@ classdef Polyscope < handle
             obj.set_ssaa_factor(val);
         end
 
+        function val = get_ssaa_factor(~)
+            val = call_mex('get_ssaa_factor');
+        end
+
         function set_navigation_style(~, style)
             call_mex('set_navigation_style', char(string(style)));
         end

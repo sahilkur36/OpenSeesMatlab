@@ -74,7 +74,7 @@ classdef plotModel < plotter.polyscope.ViewerBase
             if ~obj.isOverlayScreenAxes_()
                 obj.registerScreenAxes3D_();
             end
-            obj.registerSlicePlane_();
+            obj.registerSlicePlanes_();
             obj.applySliceCullWholeElements_();
 
             if isfield(obj, 'gui_') && isstruct(obj.gui_)
@@ -433,6 +433,12 @@ classdef plotModel < plotter.polyscope.ViewerBase
                 GB.separator();
             end
 
+            % Render quality
+            if GB.collapsingHeader('Render quality', int32(0))
+                obj.drawSsaaGui_();
+                GB.separator();
+            end
+
             % Actions
             if GB.button('Redraw')
                 try
@@ -551,16 +557,7 @@ classdef plotModel < plotter.polyscope.ViewerBase
             obj.gui_.queryText = 'No selection.';
             obj.gui_.queryLastMouse = [NaN NaN];
             obj.gui_.queryPopupOpen = false;
-            obj.gui_.sliceShow = obj.Opts.slice.show;
-            obj.gui_.sliceCenter = obj.resolveSliceCenter_();
-            obj.gui_.sliceNormal = obj.Opts.slice.normal;
-            obj.gui_.sliceDrawPlane = obj.Opts.slice.drawPlane;
-            obj.gui_.sliceDrawWidget = obj.Opts.slice.drawWidget;
-            obj.gui_.sliceWidgetSize = obj.getOptField_(obj.Opts.slice, 'widgetSize', 0.75);
-            obj.gui_.sliceTransparency = obj.Opts.slice.transparency;
-            obj.gui_.sliceColor = obj.Opts.slice.color;
-            obj.gui_.sliceGridColor = obj.Opts.slice.gridColor;
-            obj.gui_.sliceCullWholeElements = obj.getOptField_(obj.Opts.slice, 'cullWholeElements', false);
+            obj.initSliceGuiState_();
         end
 
     end
@@ -581,7 +578,7 @@ classdef plotModel < plotter.polyscope.ViewerBase
             obj.handles_.Nodes = pc;
             tags = plotter.polyscope.ModelAdapter.nodeTags(obj.ModelInfo);
             rawP = plotter.polyscope.ModelAdapter.rawNodeCoords(obj.ModelInfo);
-            obj.query_.(obj.structName_('Nodes')) = struct( ...
+            obj.query_.(obj.structKey_('Nodes')) = struct( ...
                 'kind', 'node', 'family', 'Node', 'tags', tags(:), ...
                 'coords', P, 'rawCoords', rawP);
         end
@@ -599,7 +596,7 @@ classdef plotModel < plotter.polyscope.ViewerBase
             pc.set_enabled(obj.Opts.fixed.show);
             obj.handles_.Fixed = pc;
             rawFixed = obj.rawCoordsForTags_(fixedTags);
-            obj.query_.(obj.structName_('Fixed')) = struct( ...
+            obj.query_.(obj.structKey_('Fixed')) = struct( ...
                 'kind', 'node', 'family', 'Fixed', 'tags', fixedTags(:), ...
                 'coords', Pfixed, 'rawCoords', rawFixed);
         end
@@ -637,11 +634,16 @@ classdef plotModel < plotter.polyscope.ViewerBase
                     cn.set_enabled(classShow);
                     obj.handles_.(name) = cn;
                     qInfo = obj.classLineQueryInfo_(name, cells, tags, edges);
-                    obj.query_.(obj.structName_(name)) = qInfo;
+                    obj.query_.(obj.structKey_(name)) = qInfo;
                 elseif obj.isVolumeClass_(cellTypes)
+                    needWire = classShow && (wireframeOnly || obj.Opts.elements.showWireframeOnFaces);
                     try
                         vol = plotter.utils.VTKElementTriangulator.volumize(P, cellTypes, cells);
-                        surfOut = plotter.utils.VTKElementTriangulator.triangulate(P, cellTypes, cells);
+                        if needWire
+                            surfOut = plotter.utils.VTKElementTriangulator.triangulate(P, cellTypes, cells);
+                        else
+                            surfOut = [];
+                        end
                     catch
                         vol = [];
                         surfOut = [];
@@ -652,12 +654,12 @@ classdef plotModel < plotter.polyscope.ViewerBase
                     if ~hasVolume, continue; end
 
                     edgePoints = zeros(0, 3);
-                    if isfield(surfOut, 'EdgePoints')
+                    if ~isempty(surfOut) && isfield(surfOut, 'EdgePoints')
                         edgePoints = surfOut.EdgePoints;
                     end
-                    hasWire = ~isempty(edgePoints);
+                    hasWire = needWire && ~isempty(edgePoints);
                     meshEnabled = classShow && ~wireframeOnly;
-                    wireEnabled = classShow && (wireframeOnly || obj.Opts.elements.showWireframeOnFaces) && hasWire;
+                    wireEnabled = classShow && hasWire;
                     wireRenderColor = wireColor;
                     if wireframeOnly
                         wireRenderColor = rgb;
@@ -667,7 +669,7 @@ classdef plotModel < plotter.polyscope.ViewerBase
                     if isempty(vm), continue; end
                     obj.handles_.(name) = vm;
                     qInfo = obj.classVolumeQueryInfo_(name, cells, cellTypes, tags, vol);
-                    obj.query_.(obj.structName_(name)) = qInfo;
+                    obj.query_.(obj.structKey_(name)) = qInfo;
 
                     if hasWire
                         obj.registerElementWire_([name 'Wire'], edgePoints, wireRenderColor, wireRadius, ...
@@ -705,7 +707,7 @@ classdef plotModel < plotter.polyscope.ViewerBase
                     sm.set_enabled(meshEnabled);
                     obj.handles_.(name) = sm;
                     qInfo = obj.classSurfaceQueryInfo_(name, cells, cellTypes, tags, out);
-                    obj.query_.(obj.structName_(name)) = qInfo;
+                    obj.query_.(obj.structKey_(name)) = qInfo;
 
                     if hasWire
                         obj.registerElementWire_([name 'Wire'], edgePoints, wireRenderColor, wireRadius, ...
@@ -735,7 +737,7 @@ classdef plotModel < plotter.polyscope.ViewerBase
                 cn.set_enabled(showFlags(k));
                 obj.handles_.(name) = cn;
                 qInfo = obj.lineQueryInfo_(name, edges);
-                obj.query_.(obj.structName_(name)) = qInfo;
+                obj.query_.(obj.structKey_(name)) = qInfo;
             end
         end
 
@@ -757,7 +759,7 @@ classdef plotModel < plotter.polyscope.ViewerBase
                 if ~isfield(qInfo, 'edgeToElement') || isempty(qInfo.edgeToElement)
                     qInfo.edgeToElement = (1:size(edges, 1)).';
                 end
-                obj.query_.(wireName) = qInfo;
+                obj.query_.(obj.validQueryKey_(wireName)) = qInfo;
             end
         end
 
@@ -808,17 +810,18 @@ classdef plotModel < plotter.polyscope.ViewerBase
 
             for k = 1:numel(famNames)
                 name = famNames{k};
+                needWire = wireframeOnly || obj.Opts.elements.showWireframeOnFaces;
                 if strcmpi(name, 'Solid')
-                    [Vv, tets, hexes, ~, ~, EP] = plotter.polyscope.ModelAdapter.volumeMesh( ...
-                        obj.ModelInfo, name);
+                    [Vv, tets, hexes, ~, ~, EP, surfOut] = plotter.polyscope.ModelAdapter.volumeMesh( ...
+                        obj.ModelInfo, name, needWire);
                     hasVolume = ~isempty(Vv) && (~isempty(tets) || ~isempty(hexes));
-                    hasWire = ~isempty(EP);
+                    hasWire = needWire && ~isempty(EP);
                     if ~hasVolume && ~hasWire, continue; end
 
                     faceColor = obj.getStyleColor_(name, 'surface');
                     showFlag = showFlags(k);
                     meshEnabled = showFlag && ~wireframeOnly && hasVolume;
-                    wireEnabled = showFlag && (wireframeOnly || obj.Opts.elements.showWireframeOnFaces) && hasWire;
+                    wireEnabled = showFlag && hasWire;
                     wireRenderColor = wireColor;
                     if wireframeOnly
                         wireRenderColor = faceColor;
@@ -828,7 +831,7 @@ classdef plotModel < plotter.polyscope.ViewerBase
                         vm = obj.registerVolumeMesh_(name, Vv, tets, hexes, faceColor, meshEnabled);
                         if ~isempty(vm)
                             obj.handles_.(name) = vm;
-                            obj.query_.(obj.structName_(name)) = obj.volumeQueryInfo_(name);
+                            obj.query_.(obj.structKey_(name)) = obj.volumeQueryInfo_(name, surfOut);
                         end
                     end
 
@@ -844,22 +847,22 @@ classdef plotModel < plotter.polyscope.ViewerBase
                             cn.set_transparency(obj.Opts.polyscope.transparency);
                             cn.set_enabled(wireEnabled);
                             obj.handles_.([name 'Wire']) = cn;
-                            obj.query_.(wireName) = obj.surfaceWireQueryInfo_(name, edges);
+                            obj.query_.(obj.validQueryKey_(wireName)) = obj.surfaceWireQueryInfo_(name, edges, surfOut);
                         end
                     end
                     continue;
                 end
 
-                [V, F, ~, EP] = plotter.polyscope.ModelAdapter.surfaceMesh( ...
+                [V, F, ~, EP, out] = plotter.polyscope.ModelAdapter.surfaceMesh( ...
                     obj.ModelInfo, name);
                 hasMesh = ~isempty(V) && ~isempty(F);
-                hasWire = ~isempty(EP);
+                hasWire = needWire && ~isempty(EP);
                 if ~hasMesh && ~hasWire, continue; end
 
                 faceColor = obj.getStyleColor_(name, 'surface');
                 showFlag = showFlags(k);
                 meshEnabled = showFlag && ~wireframeOnly && hasMesh;
-                wireEnabled = showFlag && (wireframeOnly || obj.Opts.elements.showWireframeOnFaces) && hasWire;
+                wireEnabled = showFlag && hasWire;
                 wireRenderColor = wireColor;
                 if wireframeOnly
                     wireRenderColor = faceColor;
@@ -876,8 +879,7 @@ classdef plotModel < plotter.polyscope.ViewerBase
                     sm.set_edge_width(0);
                     sm.set_enabled(meshEnabled);
                     obj.handles_.(name) = sm;
-                    qInfo = obj.surfaceQueryInfo_(name);
-                    obj.query_.(obj.structName_(name)) = qInfo;
+                    obj.query_.(obj.structKey_(name)) = obj.surfaceQueryInfo_(name, out);
                 end
 
                 if hasWire
@@ -892,7 +894,7 @@ classdef plotModel < plotter.polyscope.ViewerBase
                         cn.set_transparency(obj.Opts.polyscope.transparency);
                         cn.set_enabled(wireEnabled);
                         obj.handles_.([name 'Wire']) = cn;
-                        obj.query_.(wireName) = obj.surfaceWireQueryInfo_(name, edges);
+                        obj.query_.(obj.validQueryKey_(wireName)) = obj.surfaceWireQueryInfo_(name, edges, out);
                     end
                 end
             end
@@ -910,7 +912,7 @@ classdef plotModel < plotter.polyscope.ViewerBase
             cn.set_transparency(obj.Opts.polyscope.transparency);
             cn.set_enabled(obj.Opts.mpConstraint.show);
             obj.handles_.MPConstraint = cn;
-            obj.query_.(name) = struct( ...
+            obj.query_.(obj.validQueryKey_(name)) = struct( ...
                 'kind', 'mp', 'family', 'MPConstraint', 'tags', (1:size(edges, 1)).', ...
                 'cells', edges, 'edgeToElement', (1:size(edges, 1)).');
         end
@@ -1236,12 +1238,24 @@ classdef plotModel < plotter.polyscope.ViewerBase
         end
 
         function edges = classCellsToEdges_(obj, cells, nNode)
-            edges = zeros(0, 2);
-            for i = 1:size(cells, 1)
+            n = size(cells, 1);
+            segCounts = zeros(n, 1);
+            for i = 1:n
                 ids = obj.cellNodeIds_(cells(i, :), nNode);
-                if numel(ids) >= 2
-                    edges = [edges; [ids(1:end-1).', ids(2:end).']]; %#ok<AGROW>
-                end
+                segCounts(i) = max(0, numel(ids) - 1);
+            end
+            total = sum(segCounts);
+            if total == 0
+                edges = zeros(0, 2);
+                return;
+            end
+            edges = zeros(total, 2);
+            pos = 0;
+            for i = 1:n
+                if segCounts(i) == 0, continue; end
+                ids = obj.cellNodeIds_(cells(i, :), nNode);
+                edges(pos + 1:pos + segCounts(i), :) = [ids(1:end-1).', ids(2:end).'];
+                pos = pos + segCounts(i);
             end
         end
 
@@ -1318,7 +1332,7 @@ classdef plotModel < plotter.polyscope.ViewerBase
                 'centers', obj.cellCenters_(cells));
         end
 
-        function info = surfaceQueryInfo_(obj, familyName)
+        function info = surfaceQueryInfo_(obj, familyName, out)
             fam = plotter.polyscope.ModelAdapter.families(obj.ModelInfo);
             tags = zeros(0, 1);
             cells = zeros(0, 0);
@@ -1327,6 +1341,7 @@ classdef plotModel < plotter.polyscope.ViewerBase
             typeNames = strings(0, 1);
             triCellIds = zeros(0, 1);
             edgeCellIds = zeros(0, 1);
+            computeOut = nargin < 3 || isempty(out);
             if isfield(fam, familyName) && isstruct(fam.(familyName))
                 S = fam.(familyName);
                 if isfield(S, 'Tags'), tags = double(S.Tags(:)); end
@@ -1334,10 +1349,12 @@ classdef plotModel < plotter.polyscope.ViewerBase
                 if isfield(S, 'CellTypes'), cellTypes = double(S.CellTypes(:)); end
                 classTags = obj.familyClassTags_(S);
                 typeNames = obj.familyTypeNames_(S, classTags);
-                if isfield(S, 'CellTypes') && ~isempty(S.CellTypes) && ~isempty(cells)
+                if computeOut && isfield(S, 'CellTypes') && ~isempty(S.CellTypes) && ~isempty(cells)
                     P = plotter.polyscope.ModelAdapter.nodeCoords(obj.ModelInfo);
                     out = plotter.utils.VTKElementTriangulator.triangulate( ...
                         P, double(S.CellTypes), cells);
+                end
+                if ~isempty(out)
                     if isfield(out, 'TriCellIds')
                         triCellIds = double(out.TriCellIds(:));
                     end
@@ -1353,15 +1370,19 @@ classdef plotModel < plotter.polyscope.ViewerBase
                 'centers', obj.cellCenters_(cells));
         end
 
-        function info = surfaceWireQueryInfo_(obj, familyName, edges)
-            info = obj.surfaceQueryInfo_(familyName);
+        function info = surfaceWireQueryInfo_(obj, familyName, edges, out)
+            if nargin < 4
+                info = obj.surfaceQueryInfo_(familyName);
+            else
+                info = obj.surfaceQueryInfo_(familyName, out);
+            end
             info.kind = 'surfaceWire';
             if ~isfield(info, 'edgeToElement') || isempty(info.edgeToElement)
                 info.edgeToElement = (1:size(edges, 1)).';
             end
         end
 
-        function info = volumeQueryInfo_(obj, familyName)
+        function info = volumeQueryInfo_(obj, familyName, out)
             fam = plotter.polyscope.ModelAdapter.families(obj.ModelInfo);
             tags = zeros(0, 1);
             cells = zeros(0, 0);
@@ -1369,6 +1390,7 @@ classdef plotModel < plotter.polyscope.ViewerBase
             classTags = zeros(0, 1);
             typeNames = strings(0, 1);
             volumeCellIds = zeros(0, 1);
+            computeOut = nargin < 3 || isempty(out);
             if isfield(fam, familyName) && isstruct(fam.(familyName))
                 S = fam.(familyName);
                 if isfield(S, 'Tags'), tags = double(S.Tags(:)); end
@@ -1376,10 +1398,12 @@ classdef plotModel < plotter.polyscope.ViewerBase
                 if isfield(S, 'CellTypes'), cellTypes = double(S.CellTypes(:)); end
                 classTags = obj.familyClassTags_(S);
                 typeNames = obj.familyTypeNames_(S, classTags);
-                if isfield(S, 'CellTypes') && ~isempty(S.CellTypes) && ~isempty(cells)
+                if computeOut && isfield(S, 'CellTypes') && ~isempty(S.CellTypes) && ~isempty(cells)
                     P = plotter.polyscope.ModelAdapter.nodeCoords(obj.ModelInfo);
                     out = plotter.utils.VTKElementTriangulator.volumize( ...
                         P, double(S.CellTypes), cells);
+                end
+                if ~isempty(out)
                     if isfield(out, 'RegisterCellIds')
                         volumeCellIds = double(out.RegisterCellIds(:));
                     elseif isfield(out, 'CellIds')
@@ -1576,10 +1600,11 @@ classdef plotModel < plotter.polyscope.ViewerBase
             sName = obj.charField_(sel, 'structure_name');
             idx = round(obj.doubleField_(sel, 'local_index'));
             pos = obj.vectorField_(sel, 'position');
-            if ~isfield(obj.query_, sName) || ~isfinite(idx) || idx < 1
+            key = obj.validQueryKey_(sName);
+            if ~isfield(obj.query_, key) || ~isfinite(idx) || idx < 1
                 return;
             end
-            info = obj.query_.(sName);
+            info = obj.query_.(key);
             switch info.kind
                 case 'node'
                     obj.highlightNode_(info, idx);
@@ -1755,8 +1780,9 @@ classdef plotModel < plotter.polyscope.ViewerBase
             idx = round(obj.doubleField_(sel, 'local_index'));
             pos = obj.vectorField_(sel, 'position');
 
-            if isfield(obj.query_, sName)
-                lines = obj.describeMappedSelection_(obj.query_.(sName), idx, pos);
+            key = obj.validQueryKey_(sName);
+            if isfield(obj.query_, key)
+                lines = obj.describeMappedSelection_(obj.query_.(key), idx, pos);
             else
                 lines = "No OpenSees mapping.";
             end

@@ -56,6 +56,16 @@ classdef PolyscopeApp < handle
             end
         end
 
+        function val = getSSAAFactor(obj)
+            obj.ensureInit();
+            try
+                val = obj.ps_.get_ssaa_factor();
+            catch
+                % Older bundled MEX builds may not expose this command.
+                val = 1;
+            end
+        end
+
         function tf = isInitialized(obj)
             tf = obj.initialized_;
         end

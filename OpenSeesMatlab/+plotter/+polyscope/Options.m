@@ -11,7 +11,7 @@ classdef Options
             opts = plotter.PlotModel.defaultOptions();
             opts.polyscope = plotter.polyscope.Options.polyscopeCommon();
             opts.general.view = '3D';
-            opts.polyscope.name = 'model';
+            opts.polyscope.name = '';
             opts.polyscope.nodeRadius   = 0.003;   % relative to scene length
             opts.polyscope.edgeRadius   = 0.0012;  % relative to scene length
             opts.polyscope.pointRenderMode = 'sphere';
@@ -30,7 +30,7 @@ classdef Options
             opts.polyscope.screenAxesMode = 'overlay';
             opts.slice = struct();
             opts.slice.show = false;
-            opts.slice.name = 'model_SlicePlane';
+            opts.slice.name = 'Slice plane';
             opts.slice.center = [];  % empty means model bounding-box center
             opts.slice.normal = [0, 0, 1];
             opts.slice.drawPlane = true;
@@ -45,7 +45,7 @@ classdef Options
         function opts = defaultEigenOptions()
             opts = plotter.PlotEigen.defaultOptions();
             opts.polyscope = plotter.polyscope.Options.polyscopeCommon();
-            opts.polyscope.name = 'eigen';
+            opts.polyscope.name = '';
             opts.polyscope.nodeRadius   = 0.003;
             opts.polyscope.edgeRadius   = 0.001;
             opts.polyscope.pointRenderMode = 'sphere';
@@ -59,7 +59,6 @@ classdef Options
             opts.polyscope.screenAxesMode = 'overlay';
             opts.polyscope.ghostColor       = [0.82 0.82 0.82];
             opts.polyscope.ghostTransparency = 0.35;
-            opts.polyscope.scalarColorMap   = 'viridis';
             opts.polyscope.scalarSymmetry   = false;
             opts.polyscope.onscreenColorbar = false;
             opts.polyscope.onscreenColorbarLocation = [];  % empty = auto, placed near top center
@@ -67,7 +66,7 @@ classdef Options
             opts.polyscope.colorbarTitle = '';  % custom title for the onscreen colorbar
             opts.slice = struct();
             opts.slice.show = false;
-            opts.slice.name = 'eigen_SlicePlane';
+            opts.slice.name = 'Slice plane';
             opts.slice.center = [];
             opts.slice.normal = [0, 0, 1];
             opts.slice.drawPlane = true;
@@ -83,14 +82,13 @@ classdef Options
         function opts = defaultNodalResponseOptions()
             opts = plotter.PlotNodalResp.defaultOptions();
             opts.polyscope = plotter.polyscope.Options.polyscopeCommon();
-            opts.polyscope.name = 'resp';
+            opts.polyscope.name = '';
             opts.polyscope.nodeRadius   = 0.0025;
             opts.polyscope.edgeRadius   = 0.00075;
             opts.polyscope.pointRenderMode = 'sphere';
             opts.polyscope.surfaceMaterial = 'flat';
             opts.polyscope.lineMaterial    = 'flat';
             opts.polyscope.surfaceSmoothShade = false;
-            opts.polyscope.scalarColorMap   = 'viridis';
             opts.polyscope.onscreenColorbar = false;
             opts.polyscope.onscreenColorbarLocation = [1200, 800];
             opts.polyscope.colorbarTitle = '';
@@ -102,7 +100,7 @@ classdef Options
                                     'updateColors', true, 'updateVectors', false);
             opts.slice = struct();
             opts.slice.show = false;
-            opts.slice.name = 'resp_SlicePlane';
+            opts.slice.name = 'Slice plane';
             opts.slice.center = [];
             opts.slice.normal = [0, 0, 1];
             opts.slice.drawPlane = true;
@@ -118,14 +116,13 @@ classdef Options
         function opts = defaultUnstructuredResponseOptions()
             opts = plotter.PlotUnstruResponse.defaultOptions();
             opts.polyscope = plotter.polyscope.Options.polyscopeCommon();
-            opts.polyscope.name = 'unstru_resp';
+            opts.polyscope.name = '';
             opts.polyscope.nodeRadius   = 0.0025;
             opts.polyscope.edgeRadius   = 0.00075;
             opts.polyscope.pointRenderMode = 'sphere';
             opts.polyscope.surfaceMaterial = 'flat';
             opts.polyscope.lineMaterial    = 'flat';
             opts.polyscope.surfaceSmoothShade = false;
-            opts.polyscope.scalarColorMap   = 'viridis';
             opts.polyscope.onscreenColorbar = false;
             opts.polyscope.onscreenColorbarLocation = [1200, 800];
             opts.polyscope.colorbarTitle = '';
@@ -136,7 +133,7 @@ classdef Options
             opts.nodes = struct('show', false);
             opts.slice = struct();
             opts.slice.show = false;
-            opts.slice.name = 'unstru_resp_SlicePlane';
+            opts.slice.name = 'Slice plane';
             opts.slice.center = [];
             opts.slice.normal = [0, 0, 1];
             opts.slice.drawPlane = true;
@@ -156,14 +153,13 @@ classdef Options
         function opts = defaultFrameResponseOptions()
             opts = plotter.PlotFrameResp.defaultOptions();
             opts.polyscope = plotter.polyscope.Options.polyscopeCommon();
-            opts.polyscope.name = 'frame_resp';
+            opts.polyscope.name = '';
             opts.polyscope.edgeRadius = 0.0009;
             opts.polyscope.modelRadius = 0.0008;
             opts.polyscope.zeroRadius = 0.00055;
             opts.polyscope.diagramRadius = 0.0010;
             opts.polyscope.surfaceMaterial = 'flat';
             opts.polyscope.surfaceSmoothShade = false;
-            opts.polyscope.scalarColorMap = 'jet';
             opts.polyscope.onscreenColorbar = false;
             opts.polyscope.onscreenColorbarLocation = [1200, 800];
             opts.polyscope.colorbarTitle = '';
@@ -176,7 +172,7 @@ classdef Options
             opts.showMaxMinLabel = 'none';
             opts.slice = struct();
             opts.slice.show = false;
-            opts.slice.name = 'frame_resp_SlicePlane';
+            opts.slice.name = 'Slice plane';
             opts.slice.center = [];
             opts.slice.normal = [0, 0, 1];
             opts.slice.drawPlane = true;
@@ -214,10 +210,29 @@ classdef Options
             p.frameTickLimitFpsMode = 'auto';
             p.headless = false;              % true -> force openGL_mock backend, skip window creation
             p.autoShow = true;               % false -> init but call frameTick() instead of show()
-            p.groundPlaneMode = 'shadow_only'; % 'shadow_only', 'tile', or 'none'
+            p.groundPlaneMode = 'none'; % 'shadow_only', 'tile', or 'none'
             p.backFacePolicy = 'identical'; % 'identical', 'different', 'custom', or 'cull'
             p.showModelInfo = false; % show the Model Info window (nodes, elements)
-            p.displayNames = struct(); % user-friendly Polyscope structure names, e.g. displayNames.ElasticBeam3d = 'Line mesh';
+            p.scalarColorMap = 'coolwarm';   % default scalar color map for all viewers
+            p.displayNames = struct(...       % user-friendly names for non-element structures in the left panel
+                'Nodes', 'Nodes', ...
+                'Fixed', 'Fixed supports', ...
+                'MPConstraint', 'MP constraints', ...
+                'Outline', 'Outline', ...
+                'NodalLoads', 'Nodal loads', ...
+                'ElementLoads', 'Element loads', ...
+                'BeamAxes', 'Beam axes', ...
+                'LinkAxes', 'Link axes', ...
+                'Diagram', 'Diagram', ...
+                'DiagramWire', 'Diagram wireframe', ...
+                'Model', 'Model', ...
+                'ZeroLine', 'Zero line', ...
+                'Response', 'Response mesh', ...
+                'MeshEdges', 'Mesh edges', ...
+                'Line', 'Line elements', ...
+                'InterpLine', 'Interpolated lines', ...
+                'Vectors', 'Nodal vectors', ...
+                'Ghost', 'Undeformed mesh');
             p.planeViewFov = 82.5; % orthographic plane-view zoom sensitivity; midpoint of Polyscope's 5..160 deg range
             p.perspectiveViewFov = 45.0;
         end

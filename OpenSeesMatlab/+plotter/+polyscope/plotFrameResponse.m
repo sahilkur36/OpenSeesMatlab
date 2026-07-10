@@ -16,13 +16,9 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
         components_ cell = {}
         meshData_ struct = struct()
         modelData_ struct = struct()
-        lastAnimTic_ = []
         animDir_ double = 1
-        globalClimCache_ double = []
-        globalClimKey_ char = ''
-        globalScaleCache_ double = NaN
-        globalScaleKey_ char = ''
         extremeStepCache_ struct = struct()
+        initialOpts_ struct
     end
 
     methods
@@ -52,6 +48,7 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
             obj.Opts.respType = obj.pickExisting_(obj.respTypes_, obj.Opts.respType);
             obj.components_ = obj.componentsForResponse_(obj.Opts.respType);
             obj.Opts.component = obj.pickExisting_(obj.components_, obj.Opts.component);
+            obj.initialOpts_ = obj.Opts;
             obj.currentStep_ = obj.resolveStepArg_(obj.getOptField_(obj.Opts, 'stepIdx', 'absmax'));
 
             if obj.isHeadless_()
@@ -82,7 +79,7 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
             if isempty(fieldnames(obj.gui_)), obj.initGuiState_(); end
             obj.configureAnimationRenderLoop_();
             obj.setStep(obj.currentStep_, true);
-            obj.registerSlicePlane_();
+            obj.registerSlicePlanes_();
             obj.applySliceCullWholeElements_();
             if firstBuild
                 obj.setCameraForPoints_(obj.P0_, obj.Opts.general.view);
@@ -147,10 +144,14 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
             obj.gui_.fps = obj.getOptField_(obj.Opts.animation, 'fps', 12);
             obj.gui_.loop = obj.getOptField_(obj.Opts.animation, 'loop', true);
             obj.gui_.pingpong = obj.getOptField_(obj.Opts.animation, 'pingpong', false);
-            obj.gui_.animUpdateColors = obj.getOptField_(obj.Opts.animation, 'updateColors', true);
             obj.initColorbarGuiState_(obj.scalarQuantityName_());
             obj.initSliceGuiState_();
-            obj.lastAnimTic_ = tic;
+        end
+
+        function configureAnimationRenderLoop_(obj)
+            isRunning = isfield(obj.gui_, 'animationMode') && obj.gui_.animationMode && obj.gui_.playing;
+            fps = max(1, double(obj.getOptField_(obj.gui_, 'fps', 12)));
+            configureAnimationRenderLoop_@plotter.polyscope.ViewerBase(obj, isRunning, fps);
         end
     end
 
@@ -186,10 +187,13 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
                     needsStyle = needsStyle || styleChanged;
                 end
                 if obj.drawSlicePlaneGui_('##frame_resp')
-                    obj.registerSlicePlane_();
+                    obj.registerSlicePlanes_();
                 end
                 if GB.collapsingHeader('Animation', int32(0))
                     if obj.drawAnimationGui_(), needsUpdate = true; end
+                end
+                if GB.collapsingHeader('Render quality##frame_resp', int32(0))
+                    obj.drawSsaaGui_('##frame_resp');
                 end
                 if GB.collapsingHeader('Debug', int32(0))
                     polyscope.ImGui.Text(sprintf('Step %d / %d', obj.currentStep_, obj.nSteps_ - 1));
@@ -242,7 +246,7 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
                 obj.gui_.step = obj.currentStep_;
             end
             changed = obj.guiChanged_(old, {'respIdx','compIdx','locIdx','stepModeIdx','step'});
-            rebuild = responseChanged || obj.gui_.compIdx ~= old.compIdx || obj.gui_.locIdx ~= old.locIdx;
+            rebuild = false;
             if changed, obj.invalidateCaches_(); end
         end
 
@@ -264,7 +268,7 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
             obj.gui_.scale = GB.sliderFloat('Scale##frame_geom', obj.gui_.scale, 0.01, 20);
             obj.gui_.heightFrac = GB.sliderFloat('Height fraction##frame_geom', obj.gui_.heightFrac, 0.005, 0.5);
             if GB.button('Redraw##frame_geom')
-                obj.setStep(obj.currentStep_, true);
+                obj.App.polyscopeHandle().request_redraw();
             end
             GB.sameLine();
             if GB.button('Defaults##frame_geom')
@@ -328,14 +332,12 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
                 if GB.button('Restart')
                     obj.currentStep_ = 0;
                     obj.gui_.step = 0;
-                    obj.lastAnimTic_ = tic;
                 end
                 obj.gui_.playing = GB.checkbox('Playing', obj.gui_.playing);
                 obj.gui_.fps = GB.sliderFloat('FPS', obj.gui_.fps, 1, 240);
                 obj.gui_.loop = GB.checkbox('Loop', obj.gui_.loop);
                 GB.sameLine();
                 obj.gui_.pingpong = GB.checkbox('Ping-pong', obj.gui_.pingpong);
-                obj.gui_.animUpdateColors = GB.checkbox('Update colors', obj.gui_.animUpdateColors);
                 obj.gui_.scale = GB.sliderFloat('Scale factor##frame_animation', obj.gui_.scale, 0.01, 20);
             else
                 obj.gui_.playing = false;
@@ -344,11 +346,12 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
             obj.Opts.animation.fps = obj.gui_.fps;
             obj.Opts.animation.loop = obj.gui_.loop;
             obj.Opts.animation.pingpong = obj.gui_.pingpong;
-            obj.Opts.animation.updateColors = obj.gui_.animUpdateColors;
             obj.Opts.scale = double(obj.gui_.scale);
             obj.configureAnimationRenderLoop_();
-            changed = obj.guiChanged_(old, {'animationMode','playing','fps','loop','pingpong','animUpdateColors', ...
-                'scaleModeIdx','scale','climIdx'});
+            % FPS/loop/pingpong/playing only affect the animation loop; they do
+            % not require a full diagram recompute. Only changes that alter the
+            % displayed data need a response update.
+            changed = obj.guiChanged_(old, {'animationMode','scaleModeIdx','scale','climIdx'});
         end
 
         function registerSegment_(obj, segIdx, localStep)
@@ -381,22 +384,18 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
                 if strcmp(obj.meshData_.style, 'surface')
                     if size(data.surfacePts, 1) == obj.meshData_.nSurfacePts
                         obj.handles_.def_Diagram.update_vertex_positions(data.surfacePts);
-                        if obj.gui_.animUpdateColors
-                            qargs = obj.scalarArgs_(data.clim);
-                            obj.handles_.def_Diagram.add_vertex_scalar_quantity(obj.scalarQuantityName_(), ...
-                                data.surfaceScalars, qargs{:});
-                        end
+                        qargs = obj.scalarArgs_(data.clim);
+                        obj.handles_.def_Diagram.add_vertex_scalar_quantity(obj.scalarQuantityName_(), ...
+                            data.surfaceScalars, qargs{:});
                     else
                         needRebuild = true;
                     end
                 else
                     if size(data.wirePts, 1) == obj.meshData_.nWirePts
                         obj.handles_.def_Diagram.update_node_positions(data.wirePts);
-                        if obj.gui_.animUpdateColors
-                            qargs = obj.scalarArgs_(data.clim);
-                            obj.handles_.def_Diagram.add_node_scalar_quantity(obj.scalarQuantityName_(), ...
-                                data.wireScalars, qargs{:});
-                        end
+                        qargs = obj.scalarArgs_(data.clim);
+                        obj.handles_.def_Diagram.add_node_scalar_quantity(obj.scalarQuantityName_(), ...
+                            data.wireScalars, qargs{:});
                     else
                         needRebuild = true;
                     end
@@ -514,7 +513,7 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
 
         function resetPlotDefaults_(obj)
             old = obj.Opts;
-            opts = plotter.polyscope.Options.defaultFrameResponseOptions();
+            opts = obj.initialOpts_;
             opts.respType = old.respType;
             opts.component = old.component;
             opts.responseLocation = old.responseLocation;
@@ -826,27 +825,25 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
         end
 
         function scale = diagramScale_(obj, segIdx, localStep, valPerEle)
-            key = sprintf('%s|scale=%0.12g|height=%0.12g', obj.responseKey_(), ...
-                double(obj.Opts.scale), double(obj.Opts.heightFrac));
             if strcmpi(char(string(obj.Opts.scaleMode)), 'global')
-                if isfinite(obj.globalScaleCache_) && strcmp(obj.globalScaleKey_, key)
-                    scale = obj.globalScaleCache_;
-                    return;
-                end
-                vals = [];
-                for g = 0:obj.nSteps_-1
-                    [s, l] = obj.resolveGlobalStep_(g);
-                    info = obj.beamInfo_(s, obj.nodeCoords_(s));
-                    vals = [vals; obj.flattenCell_(obj.respPerEle_(s, l, info))]; %#ok<AGROW>
-                end
-                maxAbs = max(abs(vals(isfinite(vals))), [], 'omitnan');
-                if isempty(maxAbs) || ~isfinite(maxAbs) || maxAbs <= 0, maxAbs = 1; end
-                scale = obj.Opts.heightFrac * obj.L_ / maxAbs * obj.Opts.scale;
-                obj.globalScaleCache_ = scale;
-                obj.globalScaleKey_ = key;
+                key = sprintf('%s|scale=%0.12g|height=%0.12g', obj.responseKey_(), ...
+                    double(obj.Opts.scale), double(obj.Opts.heightFrac));
+                scale = obj.cachedRange_('frameScale', key, @() obj.computeGlobalDiagramScale_());
                 return;
             end
             vals = obj.flattenCell_(valPerEle);
+            maxAbs = max(abs(vals(isfinite(vals))), [], 'omitnan');
+            if isempty(maxAbs) || ~isfinite(maxAbs) || maxAbs <= 0, maxAbs = 1; end
+            scale = obj.Opts.heightFrac * obj.L_ / maxAbs * obj.Opts.scale;
+        end
+
+        function scale = computeGlobalDiagramScale_(obj)
+            vals = [];
+            for g = 0:obj.nSteps_-1
+                [s, l] = obj.resolveGlobalStep_(g);
+                info = obj.beamInfo_(s, obj.nodeCoords_(s));
+                vals = [vals; obj.flattenCell_(obj.respPerEle_(s, l, info))]; %#ok<AGROW>
+            end
             maxAbs = max(abs(vals(isfinite(vals))), [], 'omitnan');
             if isempty(maxAbs) || ~isfinite(maxAbs) || maxAbs <= 0, maxAbs = 1; end
             scale = obj.Opts.heightFrac * obj.L_ / maxAbs * obj.Opts.scale;
@@ -862,24 +859,21 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
                 return;
             end
             mode = lower(char(string(obj.Opts.color.climMode)));
-            key = obj.responseKey_();
             if strcmp(mode, 'global')
-                if ~isempty(obj.globalClimCache_) && strcmp(obj.globalClimKey_, key)
-                    clim = obj.globalClimCache_;
-                    return;
-                end
-                allv = [];
-                for g = 0:obj.nSteps_-1
-                    [s, l] = obj.resolveGlobalStep_(g);
-                    info = obj.beamInfo_(s, obj.nodeCoords_(s));
-                    allv = [allv; obj.flattenCell_(obj.respPerEle_(s, l, info))]; %#ok<AGROW>
-                end
-                clim = obj.rangeFromVals_(allv);
-                obj.globalClimCache_ = clim;
-                obj.globalClimKey_ = key;
+                clim = obj.cachedRange_('frameClim', obj.responseKey_(), @() obj.computeGlobalClim_());
             else
                 clim = obj.rangeFromVals_(vals);
             end
+        end
+
+        function clim = computeGlobalClim_(obj)
+            allv = [];
+            for g = 0:obj.nSteps_-1
+                [s, l] = obj.resolveGlobalStep_(g);
+                info = obj.beamInfo_(s, obj.nodeCoords_(s));
+                allv = [allv; obj.flattenCell_(obj.respPerEle_(s, l, info))]; %#ok<AGROW>
+            end
+            clim = obj.rangeFromVals_(allv);
         end
 
         function args = scalarArgs_(obj, clim)
@@ -890,7 +884,7 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
             args = {'enabled', logical(obj.Opts.color.useColormap), ...
                 'cmap', char(string(obj.Opts.polyscope.scalarColorMap))};
             if ~isempty(clim) && all(isfinite(clim))
-                args = [args, {'vminmax', double(clim(:).')}];
+                args = [args, {'map_range', double(clim(:).')}];
             end
             if obj.getOptField_(obj.Opts.polyscope, 'onscreenColorbar', false)
                 cb = obj.colorbarArgs_();
@@ -910,11 +904,6 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
             if ~isfield(obj.gui_, 'animationMode') || ~obj.gui_.animationMode || ~obj.gui_.playing
                 return;
             end
-            if isempty(obj.lastAnimTic_), obj.lastAnimTic_ = tic; return; end
-            dt = toc(obj.lastAnimTic_);
-            fps = max(1, double(obj.gui_.fps));
-            if dt < 1 / fps, return; end
-            obj.lastAnimTic_ = tic;
             nextStep = obj.currentStep_ + obj.animDir_;
             if nextStep >= obj.nSteps_
                 if obj.gui_.pingpong
@@ -938,12 +927,6 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
                 end
             end
             obj.setStep(nextStep, false);
-        end
-
-        function configureAnimationRenderLoop_(obj)
-            isRunning = isfield(obj.gui_, 'animationMode') && obj.gui_.animationMode && obj.gui_.playing;
-            fps = max(1, double(obj.getOptField_(obj.gui_, 'fps', 12)));
-            configureAnimationRenderLoop_@plotter.polyscope.ViewerBase(obj, isRunning, fps);
         end
 
         function buildStepIndex_(obj)
@@ -1384,10 +1367,8 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
         end
 
         function invalidateCaches_(obj)
-            obj.globalClimCache_ = [];
-            obj.globalClimKey_ = '';
-            obj.globalScaleCache_ = NaN;
-            obj.globalScaleKey_ = '';
+            obj.invalidateCachedRange_('frameClim');
+            obj.invalidateCachedRange_('frameScale');
             obj.extremeStepCache_ = struct();
         end
 

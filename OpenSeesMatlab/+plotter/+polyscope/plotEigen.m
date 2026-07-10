@@ -91,7 +91,7 @@ classdef plotEigen < plotter.polyscope.ViewerBase
             if ~obj.isOverlayScreenAxes_()
                 obj.registerScreenAxes3D_();
             end
-            obj.registerSlicePlane_();
+            obj.registerSlicePlanes_();
             obj.applySliceCullWholeElements_();
 
             obj.built_ = true;
@@ -209,17 +209,7 @@ classdef plotEigen < plotter.polyscope.ViewerBase
             obj.gui_.showHelp = false;
             obj.gui_.modelStats = obj.computeModelStats_();
 
-            % Slice-plane GUI state
-            obj.gui_.sliceShow = obj.getOptField_(obj.Opts.slice, 'show', false);
-            obj.gui_.sliceDrawPlane = obj.getOptField_(obj.Opts.slice, 'drawPlane', true);
-            obj.gui_.sliceDrawWidget = obj.getOptField_(obj.Opts.slice, 'drawWidget', false);
-            obj.gui_.sliceCenter = obj.resolveSliceCenter_();
-            obj.gui_.sliceNormal = obj.Opts.slice.normal;
-            obj.gui_.sliceWidgetSize = obj.getOptField_(obj.Opts.slice, 'widgetSize', 0.75);
-            obj.gui_.sliceTransparency = obj.getOptField_(obj.Opts.slice, 'transparency', 0.45);
-            obj.gui_.sliceColor = plotter.polyscope.utils.colorToRgb(obj.Opts.slice.color);
-            obj.gui_.sliceGridColor = plotter.polyscope.utils.colorToRgb(obj.Opts.slice.gridColor);
-            obj.gui_.sliceCullWholeElements = obj.getOptField_(obj.Opts.slice, 'cullWholeElements', false);
+            obj.initSliceGuiState_();
         end
 
     end
@@ -1381,6 +1371,8 @@ classdef plotEigen < plotter.polyscope.ViewerBase
                     obj.Opts.mpConstraint.show = tf;
                     needsRebuild = needsRebuild || obj.applyVisibility_();
                 end
+
+                obj.drawSsaaGui_('##eigen_geometry');
 
                 GB.separator();
                 GB.subtitle('Scale && Style');

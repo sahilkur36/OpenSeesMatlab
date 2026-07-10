@@ -212,6 +212,18 @@ classdef plotEigen < plotter.polyscope.ViewerBase
             obj.initSliceGuiState_();
         end
 
+        function cb = colorbarArgs_(obj)
+            cb = {};
+            if ~obj.getOptField_(obj.Opts.polyscope, 'onscreenColorbar', false)
+                return;
+            end
+            cb = {'onscreen_colorbar_enabled', true};
+            loc = obj.getOptField_(obj.Opts.polyscope, 'onscreenColorbarLocation', []);
+            if ~isempty(loc) && numel(loc) == 2 && all(isfinite(loc))
+                cb = [cb, {'onscreen_colorbar_location', double(loc(:).')}];
+            end
+        end
+
     end
 
     methods (Access = private)
@@ -981,18 +993,6 @@ classdef plotEigen < plotter.polyscope.ViewerBase
                     'datatype', datatype, ...
                     'map_range', [smin, smax], ...
                     'enabled', obj.Opts.color.useColormap};
-        end
-
-        function cb = colorbarArgs_(obj)
-            cb = {};
-            if ~obj.getOptField_(obj.Opts.polyscope, 'onscreenColorbar', false)
-                return;
-            end
-            cb = {'onscreen_colorbar_enabled', true};
-            loc = obj.getOptField_(obj.Opts.polyscope, 'onscreenColorbarLocation', []);
-            if ~isempty(loc) && numel(loc) == 2 && all(isfinite(loc))
-                cb = [cb, {'onscreen_colorbar_location', double(loc(:).')}];
-            end
         end
 
         function resolveColorbarLocation_(obj)

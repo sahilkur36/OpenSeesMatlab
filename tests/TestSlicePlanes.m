@@ -7,6 +7,15 @@ classdef TestSlicePlanes < matlab.unittest.TestCase
             testCase.applyFixture(matlab.unittest.fixtures.PathFixture( ...
                 fullfile(repoRoot, 'OpenSeesMatlab')));
         end
+
+        function assumeMexAvailable(testCase)
+            repoRoot = fileparts(fileparts(mfilename('fullpath')));
+            mexDir = fullfile(repoRoot, 'OpenSeesMatlab', '+plotter', '+polyscope', ...
+                              'vendor', '+polyscope', 'private');
+            files = dir(fullfile(mexDir, 'polyscope_mex.mex*'));
+            testCase.assumeTrue(~isempty(files), ...
+                'polyscope MEX not available; skipping Polyscope tests.');
+        end
     end
 
     methods (Test)

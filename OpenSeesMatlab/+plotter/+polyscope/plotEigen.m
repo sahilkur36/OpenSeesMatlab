@@ -224,6 +224,11 @@ classdef plotEigen < plotter.polyscope.ViewerBase
             end
         end
 
+        function names = colormapNames_(~)
+            names = {'viridis', 'blues', 'reds', 'coolwarm', 'pink-green', ...
+                     'phase', 'spectral', 'rainbow', 'jet', 'turbo'};
+        end
+
     end
 
     methods (Access = private)
@@ -1152,11 +1157,6 @@ classdef plotEigen < plotter.polyscope.ViewerBase
                     labels{i} = sprintf('%g  (T %.4g s)', tags(i), 1/freqs(i));
                 end
             end
-        end
-
-        function names = colormapNames_(~)
-            names = {'viridis', 'blues', 'reds', 'coolwarm', 'pink-green', ...
-                     'phase', 'spectral', 'rainbow', 'jet', 'turbo'};
         end
 
         function lines = modeSummary_(obj, modeTag)

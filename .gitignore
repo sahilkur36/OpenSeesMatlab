@@ -16,6 +16,7 @@ dist/
 *.a
 *.pyc
 *.hdf5
+*.ini
 *.mpco
 .DS_Store
 

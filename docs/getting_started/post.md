@@ -2,6 +2,8 @@
 
 OpenSeesMatlab provides a comprehensive set of pre- and post-processing tools that work seamlessly with OpenSees. This guide covers the essential workflows for model visualization, response retrieval, and result export.
 
+This is a topic guide rather than a first tutorial. New users should begin with [OpenSeesMatlab at a glance](overview.md) and [Your first analysis](quickstart.md). For command syntax and model construction, see the [OpenSees command interface](opensees.md).
+
 ---
 
 ## Table of Contents
@@ -27,12 +29,13 @@ opsMAT = OpenSeesMatlab();
 ops = opsMAT.opensees;
 ```
 
-The `opsMAT` object provides three main namespaces:
+The `opsMAT` object provides the following main namespaces:
 
 | Namespace | Purpose |
 |-----------|---------|
-| `opsMAT.opensees` | Native OpenSees Tcl commands |
+| `opsMAT.opensees` | OpenSees-compatible modelling and analysis commands |
 | `opsMAT.pre` | Preprocessing helpers (sections, loads, units, etc.) |
+| `opsMAT.anlys` | Higher-level analysis workflows and helpers |
 | `opsMAT.post` | Post-processing (ODB creation, saved model/eigen data, response retrieval) |
 | `opsMAT.vis` | Visualization (model, eigen modes, deformation, response plots, GUIs) |
 
@@ -152,7 +155,6 @@ sectionDefos  = frameResp.sectionDeformations;
 % Shell/Plane/Solid element responses
 eleResp = opsMAT.post.getElementResponse("myODB", eleType="Shell");
 ```
-
 
 ---
 
@@ -295,50 +297,76 @@ Selectors are case-insensitive in the plotters, but the examples use the canonic
 
 ## Interactive GUI Plotters
 
-The `opsMAT.vis` interface includes interactive plotters. Model, eigen, and nodal-response visualisation use Polyscope's in-window ImGui/ImPlot controls. Frame, shell, and continuum responses still provide MATLAB GUI wrappers that return an `app` struct containing the figure, axes, controls, and helper callbacks such as `app.getOptions()`, `app.refresh()`, and `app.reset()`.
+OpenSeesMatlab provides two GUI visualization families. They use the same model and response data but target different workflows.
 
-### Available GUI Entry Points
+| GUI family | Best suited to | Result display |
+|---|---|---|
+| MATLAB GUI (`opsMAT.vis.*GUI`) | Inspecting and configuring a publication-style MATLAB plot at one selected step | Static MATLAB figure; one step is displayed at a time |
+| Polyscope (`opsMAT.vis.polyscope.*`) | Interactive model inspection, static result exploration, mode-shape animation, and response-history animation | Interactive 3-D viewer with in-window controls |
 
-| GUI | Typical input | Purpose |
-|-----|---------------|---------|
-| `opsMAT.vis.polyscope.plotModel()` | current OpenSees model | Interactive Polyscope window with model display options |
-| `opsMAT.vis.polyscope.plotEigen(1, eigenData)` | eigen data struct | Switch mode number, component, deformation scale, colors, and view |
-| `opsMAT.vis.polyscope.plotNodalResponse(nodeResp)` | nodal response from `getNodalResponse` | Explore nodal fields, deformation, vectors, colormap, and mesh display |
-| `plotFrameResponseGUI(frameResp)` | frame element response from `getElementResponse(..., eleType="Frame")` | Explore section/basic/local frame diagrams and step selection |
-| `plotShellResponseGUI(shellResp)` | shell response from `getElementResponse(..., eleType="Shell")` | Explore shell section force/deformation, stress, or strain fields |
-| `plotContinuumResponseGUI(planeOrSolidResp)` | plane/solid response from `getElementResponse` | Explore plane/solid stress, strain, and stress-measure fields |
+!!! tip "Recommended GUI"
 
-### GUI Examples
+    Use the **Polyscope GUI** for new interactive visualization workflows. It
+    supports both static display and animation and provides a consistent viewer
+    for models, eigenmodes, nodal responses, frame responses, shells, planes,
+    and solids. Use the MATLAB GUI when you specifically need a MATLAB figure or
+    want to tune a single-step static plot.
+
+### MATLAB GUI: Single-Step Static Plots
+
+The MATLAB GUI functions wrap the regular `.vis` plotters. A response GUI can select a step or an envelope step such as `absMax`, but the axes show one static state at a time. Each function returns an `app` struct with the figure, axes, controls, and callbacks such as `app.getOptions()`, `app.refresh()`, and `app.reset()`.
+
+| Function | Input | Use |
+|---|---|---|
+| `opsMAT.vis.plotModelGUI()` | Current OpenSees model | Inspect model geometry, labels, supports, loads, and display styles |
+| `opsMAT.vis.plotEigenGUI(eigenData)` | Eigen data | Select a mode and configure a static mode-shape plot |
+| `opsMAT.vis.plotNodalResponseGUI(nodeResp)` | Nodal response | Select a step, response field/component, deformation, vectors, and colors |
+| `opsMAT.vis.plotFrameResponseGUI(frameResp)` | Frame response | Select a step and inspect section, basic, or local frame diagrams |
+| `opsMAT.vis.plotShellResponseGUI(shellResp)` | Shell response | Inspect shell force, deformation, stress, or strain fields |
+| `opsMAT.vis.plotContinuumResponseGUI(respData)` | Plane or solid response | Inspect continuum stress, strain, and related scalar fields |
 
 ```matlab
-% Polyscope model/eigen/nodal windows
-opsMAT.vis.polyscope.plotModel();
-opsMAT.vis.polyscope.plotEigen(1, eigenData);
-opsMAT.vis.polyscope.plotNodalResponse(nodeResp);
-
-appFrame = opsMAT.vis.plotFrameResponseGUI(frameResp);
-
-appShell = opsMAT.vis.plotShellResponseGUI(shellResp);
-
-appPlane = opsMAT.vis.plotContinuumResponseGUI(planeResp);
+modelApp = opsMAT.vis.plotModelGUI();
+eigenApp = opsMAT.vis.plotEigenGUI(eigenData);
+nodalApp = opsMAT.vis.plotNodalResponseGUI(nodeResp);
+frameApp = opsMAT.vis.plotFrameResponseGUI(frameResp);
+shellApp = opsMAT.vis.plotShellResponseGUI(shellResp);
+solidApp = opsMAT.vis.plotContinuumResponseGUI(solidResp);
 ```
 
-### Common GUI Controls
+Common MATLAB GUI controls include step and view selectors, colormap selection, axes visibility, plot-specific color editors, and option help. Some control panels are scrollable; use the mouse wheel or panel scrollbar to reach controls below the visible area.
 
-The response GUIs share a common set of controls:
+### Polyscope GUI: Static and Animated Visualization
 
-- Step selector: explicit 0-based step, `absMax`, `absMin`, `Max`, or `Min`.
-- View selector: `auto`, `iso`, `xy`, `xz`, `yz`, `yx`, `zx`, and `zy`.
-- Colormap selector: `jet`, `parula`, `turbo`, `hot`, `cool`, `spring`, `summer`, `autumn`, `winter`, and `gray`.
-- `Axes off`: hide all axis ticks, labels, and box/grid decorations.
-- `Colors...`: edit solid, edge, fixed-node, vector, model, or diagram colors, depending on the plotter.
-- `Help`: show the option help text from the underlying plotter.
+The Polyscope functions open a dedicated interactive viewer with ImGui controls. Response viewers can browse individual steps and animate the response history; the eigen viewer can animate mode shapes. Viewer options include visibility and style controls, deformation scale, colormaps and scalar ranges, camera views, axes overlays, SSAA, and slice planes where applicable.
 
-Some GUI control panels are scrollable. Use the mouse wheel or the panel scrollbar to reach controls below the visible area.
+| Function | Input | Use |
+|---|---|---|
+| `opsMAT.vis.polyscope.plotModel()` | Current OpenSees model | Interactive model geometry and display inspection |
+| `opsMAT.vis.polyscope.plotEigen()` | Current model | Collect and display the first mode |
+| `opsMAT.vis.polyscope.plotEigen(eigenData)` | Eigen data | Select, inspect, and animate mode shapes |
+| `opsMAT.vis.polyscope.plotNodalResponse(nodeResp)` | Nodal response | Display and animate nodal fields, deformation, vectors, and histories |
+| `opsMAT.vis.polyscope.plotFrameResponse(frameResp)` | Frame response | Display and animate frame response diagrams |
+| `opsMAT.vis.polyscope.plotShellResponse(shellResp)` | Shell response | Display and animate shell response fields |
+| `opsMAT.vis.polyscope.plotContinuumResponse(respData)` | Plane or solid response | Display and animate continuum response fields |
 
-!!! note
+`plotFrameResp` is retained as an alias of `plotFrameResponse`; use the full `plotFrameResponse` name in new scripts.
 
-    Response GUI functions read model information from the ODB tag stored in the response struct. For shell and continuum response GUIs, the GUI also reads nodal displacement (`respType="disp"`) from the same ODB so deformed geometry and interpolation can be displayed.
+```matlab
+% Geometry and modes
+opsMAT.vis.polyscope.plotModel();
+opsMAT.vis.polyscope.plotEigen(eigenData);
+
+% Response histories
+opsMAT.vis.polyscope.plotNodalResponse(nodeResp);
+opsMAT.vis.polyscope.plotFrameResponse(frameResp);
+opsMAT.vis.polyscope.plotShellResponse(shellResp);
+opsMAT.vis.polyscope.plotContinuumResponse(solidResp);
+```
+
+### Response Data Requirements
+
+Response GUI functions read model information using the ODB tag stored in the response struct. Shell and continuum viewers also retrieve nodal displacement (`respType="disp"`) from the same ODB so that deformed geometry and interpolated response fields can be displayed. Create and complete the ODB recording before retrieving the response structs and opening a viewer.
 
 ---
 
@@ -352,6 +380,7 @@ opsMAT.post.writeResponsePVD("myODB");
 ```
 
 Output structure:
+
 ```
 paraview_output/
 ├── nodal/

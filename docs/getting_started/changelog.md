@@ -5,10 +5,9 @@
 - Add ``post.transformResponseStruct`` to convert model-update response struct arrays from ``getNodalResponse`` and ``getElementResponse`` into one scalar struct, merging ``time``, ``nodeTags`` and ``eleTags`` while padding missing response data with ``NaN``.
 - Add ``ops.updateMaterials`` as a MATLAB wrapper for the OpenSees ``UpdateMaterials`` command.
 - Add support for ``Link`` element response queries in ``post.getElementResponse``.
-- Add GUI wrapper utilities for model and eigen visualization.
+- Add a [Polyscope](https://polyscope.run/)-based GUI visualization backend for interactive model, eigenmode, frame-response, nodal-response and unstructured-response viewing.
 - Extend frame, nodal and unstructured response plotters to support custom response fields and explicit response-location handling.
 - Response GUIs now list user-defined response fields and components directly from response data, including scalar fields, ``.data``/``.dofs`` layouts and Layout-C numeric subfields.
-- Add clearer English walkthrough text to the example Live Scripts so users can follow the modelling, analysis, post-processing and visualization steps more easily.
 - Update post-processing documentation and examples, including ODB response retrieval, quick plotting and visualization workflows.
 
 ## v3.8.0.1

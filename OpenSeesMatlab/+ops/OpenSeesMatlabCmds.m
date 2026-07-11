@@ -2170,7 +2170,7 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
             % Parameters
             % ----------
             % eleTag : numeric scalar
-            %   The tag of the element.
+            %     The tag of the element.
             %
             % Returns
             % -------
@@ -2383,9 +2383,9 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
             % eleTag : numeric scalar
             %   The tag of the element.
             % secNum : numeric scalar
-            %   The section number, 1-based.
+            %     The section number, 1-based.
             % dof : numeric scalar, optional
-            %   The degree of freedom, 1-based.
+            %     The degree of freedom, 1-based.
             %
             % Returns
             % -------
@@ -2419,7 +2419,7 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
             % Returns
             % -------
             % result : numeric scalar | numeric vector
-            %   The section deformation, if dof is not specified, scalar; otherwise, numeric vector.
+            %     The section deformation, if dof is not specified, scalar; otherwise, numeric vector.
             arguments
                 obj
                 eleTag (1,1) {mustBeNumeric}
@@ -2439,14 +2439,14 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
             % Parameters
             % ----------
             % eleTag : numeric scalar
-            %   The tag of the element.
+            %     The tag of the element.
             % secNum : numeric scalar
-            %   The section number, 1-based.
+            %     The section number, 1-based.
             %
             % Returns
             % -------
             % result : numeric vector
-            %   The section stiffness matrix, flattened in row order.
+            %     The section stiffness matrix, flattened in row order.
             arguments
                 obj
                 eleTag (1,1) {mustBeNumeric}
@@ -2461,14 +2461,14 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
             % Parameters
             % ----------
             % eleTag : numeric scalar
-            %   The tag of the element.
+            %     The tag of the element.
             % secNum : numeric scalar
-            %   The section number, 1-based.
+            %     The section number, 1-based.
             %
             % Returns
             % -------
             % result : numeric vector
-            %   The section flexibility matrix, flattened in row order.
+            %     The section flexibility matrix, flattened in row order.
             arguments
                 obj
                 eleTag (1,1) {mustBeNumeric}
@@ -2483,14 +2483,14 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
             % Parameters
             % ----------
             % eleTag : numeric scalar
-            %   The tag of the element.
+            %     The tag of the element.
             % secNum : numeric scalar, optional
-            %   The section number, 1-based. If not provided, returns the location of all sections.
+            %     The section number, 1-based. If not provided, returns the location of all sections.
             %
             % Returns
             % -------
             % result : numeric vector | numeric scalar
-            %   The section location, flattened in row order. If secNum is not provided, returns the location of all sections.
+            %     The section location, flattened in row order. If secNum is not provided, returns the location of all sections.
             arguments
                 obj
                 eleTag (1,1) {mustBeNumeric}
@@ -2509,14 +2509,14 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
             % Parameters
             % ----------
             % eleTag : numeric scalar
-            %   The tag of the element.
+            %     The tag of the element.
             % secNum : numeric scalar, optional
-            %   The section number, 1-based. If not provided, returns the weight of all sections.
+            %     The section number, 1-based. If not provided, returns the weight of all sections.
             %
             % Returns
             % -------
             % result : numeric scalar | numeric vector
-            %   The section weight. If secNum is not provided, returns the weight of all sections.
+            %     The section weight. If secNum is not provided, returns the weight of all sections.
             arguments
                 obj
                 eleTag (1,1) {mustBeNumeric}

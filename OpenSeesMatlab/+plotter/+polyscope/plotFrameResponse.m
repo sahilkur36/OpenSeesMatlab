@@ -19,6 +19,7 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
         animDir_ double = 1
         extremeStepCache_ struct = struct()
         initialOpts_ struct
+        beamInfoCache_ struct = struct()
     end
 
     methods
@@ -222,13 +223,14 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
         function [changed, rebuild] = drawResponseGui_(obj)
             GB = plotter.polyscope.GuiBuilder;
             old = obj.gui_;
-            obj.respTypes_ = obj.collectResponseTypes_();
             obj.gui_.respIdx = min(obj.gui_.respIdx, numel(obj.respTypes_));
             obj.gui_.respIdx = GB.combo('Response##frame_resp', obj.gui_.respIdx, obj.respTypes_);
             obj.Opts.respType = obj.respTypes_{obj.gui_.respIdx};
             responseChanged = obj.gui_.respIdx ~= old.respIdx;
-            obj.components_ = obj.componentsForResponse_(obj.Opts.respType);
-            if responseChanged, obj.gui_.compIdx = obj.indexOf_(obj.components_, obj.pickDefaultComponent_(obj.Opts.respType)); end
+            if responseChanged || isempty(obj.components_)
+                obj.components_ = obj.componentsForResponse_(obj.Opts.respType);
+                obj.gui_.compIdx = obj.indexOf_(obj.components_, obj.pickDefaultComponent_(obj.Opts.respType));
+            end
             obj.gui_.compIdx = min(obj.gui_.compIdx, numel(obj.components_));
             obj.gui_.compIdx = GB.combo('Component##frame_resp', obj.gui_.compIdx, obj.components_);
             obj.Opts.component = obj.components_{obj.gui_.compIdx};
@@ -245,9 +247,13 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
                 obj.currentStep_ = obj.resolveStepArg_(modes{obj.gui_.stepModeIdx});
                 obj.gui_.step = obj.currentStep_;
             end
-            changed = obj.guiChanged_(old, {'respIdx','compIdx','locIdx','stepModeIdx','step'});
+            polyscope.ImGui.ProgressBar((obj.currentStep_ + 1) / max(1, obj.nSteps_), [0, 0], ...
+                sprintf('%d / %d', obj.currentStep_, max(0, obj.nSteps_ - 1)));
+            dataChanged = obj.guiChanged_(old, {'respIdx','compIdx','locIdx','stepModeIdx'});
+            stepChanged = obj.gui_.step ~= old.step;
+            changed = dataChanged || stepChanged;
             rebuild = false;
-            if changed, obj.invalidateCaches_(); end
+            if dataChanged, obj.invalidateCaches_(); end
         end
 
         function [changed, styleOnly] = drawDiagramGui_(obj)
@@ -339,6 +345,8 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
                 GB.sameLine();
                 obj.gui_.pingpong = GB.checkbox('Ping-pong', obj.gui_.pingpong);
                 obj.gui_.scale = GB.sliderFloat('Scale factor##frame_animation', obj.gui_.scale, 0.01, 20);
+                polyscope.ImGui.ProgressBar((obj.currentStep_ + 1) / max(1, obj.nSteps_), [0, 0], ...
+                    sprintf('%d / %d', obj.currentStep_, max(0, obj.nSteps_ - 1)));
             else
                 obj.gui_.playing = false;
             end
@@ -347,7 +355,10 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
             obj.Opts.animation.loop = obj.gui_.loop;
             obj.Opts.animation.pingpong = obj.gui_.pingpong;
             obj.Opts.scale = double(obj.gui_.scale);
-            obj.configureAnimationRenderLoop_();
+            % Only reconfigure the render loop when animation state/fps change.
+            if obj.guiChanged_(old, {'animationMode','playing','fps'})
+                obj.configureAnimationRenderLoop_();
+            end
             % FPS/loop/pingpong/playing only affect the animation loop; they do
             % not require a full diagram recompute. Only changes that alter the
             % displayed data need a response update.
@@ -531,7 +542,12 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
 
         function data = diagramData_(obj, segIdx, localStep)
             P = obj.nodeCoords_(segIdx);
-            info = obj.beamInfo_(segIdx, P);
+            if isfield(obj.beamInfoCache_, 'segIdx') && obj.beamInfoCache_.segIdx == segIdx
+                info = obj.beamInfoCache_.info;
+            else
+                info = obj.beamInfo_(segIdx, P);
+                obj.beamInfoCache_ = struct('segIdx', segIdx, 'info', info);
+            end
             vals = obj.respPerEle_(segIdx, localStep, info);
             locs = obj.secLocs_(segIdx, localStep, info, vals);
             scale = obj.diagramScale_(segIdx, localStep, vals);

@@ -21,6 +21,12 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
         responseStatsCache_ struct = struct()
         initialOpts_ struct
         beamInfoCache_ struct = struct()
+        historyCacheKey_ char = ''
+        historyCacheX_ double = []
+        historyCacheY_ double = []
+        historyRawKey_ char = ''
+        historyRawX_ double = []
+        historyRawValues_ cell = {}
     end
 
     methods
@@ -148,6 +154,14 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
                 obj.defaultAnimationFps_(obj.nSteps_));
             obj.gui_.loop = obj.getOptField_(obj.Opts.animation, 'loop', true);
             obj.gui_.pingpong = obj.getOptField_(obj.Opts.animation, 'pingpong', false);
+            info = obj.beamInfo_(1, obj.nodeCoords_(1));
+            obj.gui_.showHistory = false;
+            obj.gui_.historyUseTag = true;
+            obj.gui_.historyEleIndex = 1;
+            obj.gui_.historyEleTag = 1;
+            if ~isempty(info.tags), obj.gui_.historyEleTag = info.tags(1); end
+            obj.gui_.historyShowValue = true;
+            obj.gui_.historySampleMode = 'absMax';
             obj.initColorbarGuiState_(obj.scalarQuantityName_());
             obj.initSliceGuiState_();
         end
@@ -178,6 +192,7 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
                     [chg, rebuild] = obj.drawResponseGui_();
                     needsUpdate = needsUpdate || chg;
                     needsRebuild = needsRebuild || rebuild;
+                    obj.gui_.showHistory = GB.checkbox('Show response history', obj.gui_.showHistory);
                 end
                 if GB.collapsingHeader('Diagram', int32(0))
                     [chg, styleOnly] = obj.drawDiagramGui_();
@@ -205,6 +220,9 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
                 obj.drawScreenAxesOverlay_();
                 obj.updateScreenAxes3D_();
                 clear cleanup
+                if obj.gui_.showHistory
+                    obj.drawResponseHistoryWindow_(ws);
+                end
 
                 if needsRebuild
                     obj.invalidateCaches_();
@@ -256,6 +274,104 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
             changed = dataChanged || stepChanged;
             rebuild = false;
             if dataChanged, obj.invalidateCaches_(); end
+        end
+
+        function drawResponseHistoryWindow_(obj, ws)
+            w = min(520, max(380, ws(1) * 0.34));
+            h = min(390, max(300, ws(2) * 0.36));
+            x0 = max(12, ws(1) - 390 - w - 18);
+            y0 = max(42, ws(2) - h - 18);
+            polyscope.ImGui.SetNextWindowPos([x0, y0], ...
+                int32(polyscope.ImGui.get_constant('ImGuiCond_FirstUseEver')));
+            polyscope.ImGui.SetNextWindowSize([w, h], ...
+                int32(polyscope.ImGui.get_constant('ImGuiCond_FirstUseEver')));
+            visible = polyscope.ImGui.Begin('Frame response history');
+            cleanup = onCleanup(@() polyscope.ImGui.End()); %#ok<NASGU>
+            if ~visible, return; end
+
+            GB = plotter.polyscope.GuiBuilder;
+            info = obj.beamInfo_(max(1, obj.currentSeg_), obj.nodeCoords_(max(1, obj.currentSeg_)));
+            tags = info.tags(:);
+            if isempty(tags)
+                polyscope.ImGui.TextDisabled('No frame elements are available.');
+                return;
+            end
+            polyscope.ImGui.Text(sprintf('Selected: %s / %s', ...
+                char(string(obj.Opts.respType)), char(string(obj.Opts.component))));
+            obj.gui_.historyUseTag = GB.checkbox('Use element tag', obj.gui_.historyUseTag);
+            if obj.gui_.historyUseTag
+                [changed, val] = polyscope.ImGui.InputInt('Element tag##frame_history', ...
+                    int32(round(obj.gui_.historyEleTag)), int32(1), int32(100));
+                if changed
+                    obj.gui_.historyEleTag = double(val);
+                    hit = find(tags == obj.gui_.historyEleTag, 1);
+                    if ~isempty(hit), obj.gui_.historyEleIndex = hit; end
+                    obj.invalidateHistoryCache_();
+                end
+            else
+                [changed, val] = polyscope.ImGui.InputInt('Element index##frame_history', ...
+                    int32(round(obj.gui_.historyEleIndex)), int32(1), int32(10));
+                if changed
+                    obj.gui_.historyEleIndex = max(1, min(numel(tags), double(val)));
+                    obj.gui_.historyEleTag = tags(obj.gui_.historyEleIndex);
+                    obj.invalidateHistoryCache_();
+                end
+            end
+            if GB.button('Previous##frame_history')
+                obj.gui_.historyEleIndex = max(1, obj.historyElementIndex_(tags) - 1);
+                obj.gui_.historyEleTag = tags(obj.gui_.historyEleIndex);
+                obj.invalidateHistoryCache_();
+            end
+            GB.sameLine();
+            if GB.button('Next##frame_history')
+                obj.gui_.historyEleIndex = min(numel(tags), obj.historyElementIndex_(tags) + 1);
+                obj.gui_.historyEleTag = tags(obj.gui_.historyEleIndex);
+                obj.invalidateHistoryCache_();
+            end
+            [sampleChoices, sampleLabel] = obj.historySampleChoices_(info, tags);
+            sampleIdx = obj.indexOf_(sampleChoices, obj.gui_.historySampleMode);
+            newSampleIdx = GB.combo([sampleLabel '##frame_history'], sampleIdx, sampleChoices);
+            if newSampleIdx ~= sampleIdx
+                obj.gui_.historySampleMode = sampleChoices{newSampleIdx};
+                obj.invalidateHistoryReducedCache_();
+            elseif ~strcmp(obj.gui_.historySampleMode, sampleChoices{sampleIdx})
+                obj.gui_.historySampleMode = sampleChoices{sampleIdx};
+                obj.invalidateHistoryReducedCache_();
+            end
+            obj.gui_.historyShowValue = GB.checkbox('Show current value', obj.gui_.historyShowValue);
+
+            [x, y] = obj.responseHistorySeries_();
+            finite = isfinite(x) & isfinite(y);
+            if ~any(finite)
+                polyscope.ImGui.TextDisabled('No response values for this element.');
+                return;
+            end
+            xmin = min(x(finite)); xmax = max(x(finite));
+            ymin = min(y(finite)); ymax = max(y(finite));
+            if xmin == xmax, xmin = xmin - 0.5; xmax = xmax + 0.5; end
+            if ymin == ymax, ymin = ymin - max(1, abs(ymin))*0.05; ymax = ymax + max(1, abs(ymax))*0.05; end
+            xp = 0.03 * (xmax - xmin); yp = 0.08 * (ymax - ymin);
+            ip = polyscope.ImPlot;
+            flags = int32(polyscope.ImPlot.get_constant('ImPlotFlags_NoLegend'));
+            if ip.BeginPlot('##frame_response_history_plot', [-1, 220], flags)
+                ip.SetupAxes('time / step', 'Response');
+                ip.SetupAxesLimits(xmin-xp, xmax+xp, ymin-yp, ymax+yp, ...
+                    int32(polyscope.ImPlot.get_constant('ImPlotCond_Always')));
+                ip.PlotLineXY('response##frame_history_line', x(:), y(:));
+                k = obj.currentStep_ + 1;
+                if k >= 1 && k <= numel(y) && isfinite(y(k))
+                    ip.PlotScatterXY('current##frame_history_current', x(k), y(k));
+                end
+                ip.EndPlot();
+            end
+            if obj.gui_.historyShowValue
+                k = obj.currentStep_ + 1;
+                if k >= 1 && k <= numel(y) && isfinite(y(k))
+                    polyscope.ImGui.Text(sprintf('%s / %s / %s | element %g | Response: %.6g', ...
+                        char(string(obj.Opts.respType)), char(string(obj.Opts.component)), ...
+                        obj.gui_.historySampleMode, obj.gui_.historyEleTag, y(k)));
+                end
+            end
         end
 
         function [changed, styleOnly] = drawDiagramGui_(obj)
@@ -1505,6 +1621,134 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
             obj.invalidateCachedRange_('frameScale');
             obj.extremeStepCache_ = struct();
             obj.responseStatsCache_ = struct();
+            obj.invalidateHistoryCache_();
+        end
+
+        function invalidateHistoryCache_(obj)
+            obj.invalidateHistoryReducedCache_();
+            obj.historyRawKey_ = '';
+            obj.historyRawX_ = [];
+            obj.historyRawValues_ = {};
+        end
+
+        function invalidateHistoryReducedCache_(obj)
+            obj.historyCacheKey_ = '';
+            obj.historyCacheX_ = [];
+            obj.historyCacheY_ = [];
+        end
+
+        function idx = historyElementIndex_(obj, tags)
+            idx = round(obj.getOptField_(obj.gui_, 'historyEleIndex', 1));
+            if obj.getOptField_(obj.gui_, 'historyUseTag', true)
+                hit = find(tags == obj.getOptField_(obj.gui_, 'historyEleTag', NaN), 1);
+                if ~isempty(hit), idx = hit; end
+            end
+            idx = max(1, min(numel(tags), idx));
+        end
+
+        function [choices, label] = historySampleChoices_(obj, info, tags)
+            nValue = 1;
+            row = obj.historyElementIndex_(tags);
+            values = obj.respPerEle_(obj.currentSeg_, obj.currentLocalStep_, info);
+            if row <= numel(values), nValue = max(1, numel(values{row})); end
+            indexChoices = cellstr(string(1:nValue));
+            choices = [indexChoices(:).', {'max','min','absMax','absMin'}];
+            rt = obj.normalizeRespType_(obj.currentSeg_, obj.Opts.respType);
+            if obj.usesRecordedSectionLocs_(rt) || nValue > 2
+                label = 'Section index / reduce';
+            elseif nValue == 2
+                label = 'Element end / reduce';
+            else
+                label = 'Value / reduce';
+            end
+        end
+
+        function value = reduceHistoryValues_(~, values, mode)
+            value = NaN;
+            values = double(values(:));
+            mode = char(string(mode));
+            numericIndex = str2double(mode);
+            if isfinite(numericIndex)
+                idx = round(numericIndex);
+                if idx >= 1 && idx <= numel(values) && isfinite(values(idx))
+                    value = values(idx);
+                end
+                return;
+            end
+            valid = find(isfinite(values));
+            if isempty(valid), return; end
+            switch lower(mode)
+                case 'max'
+                    [~, k] = max(values(valid));
+                case 'min'
+                    [~, k] = min(values(valid));
+                case 'absmin'
+                    [~, k] = min(abs(values(valid)));
+                otherwise % absMax
+                    [~, k] = max(abs(values(valid)));
+            end
+            value = values(valid(k));
+        end
+
+        function [x, y] = responseHistorySeries_(obj)
+            key = sprintf('%s|%s|%s|tag:%g|idx:%g|useTag:%d|n:%d', ...
+                char(string(obj.Opts.respType)), char(string(obj.Opts.component)), ...
+                char(string(obj.gui_.historySampleMode)), ...
+                obj.gui_.historyEleTag, obj.gui_.historyEleIndex, ...
+                logical(obj.gui_.historyUseTag), obj.nSteps_);
+            if strcmp(obj.historyCacheKey_, key) && ~isempty(obj.historyCacheX_)
+                x = obj.historyCacheX_; y = obj.historyCacheY_;
+                return;
+            end
+            rawKey = sprintf('%s|%s|tag:%g|idx:%g|useTag:%d|n:%d', ...
+                char(string(obj.Opts.respType)), char(string(obj.Opts.component)), ...
+                obj.gui_.historyEleTag, obj.gui_.historyEleIndex, ...
+                logical(obj.gui_.historyUseTag), obj.nSteps_);
+            if strcmp(obj.historyRawKey_, rawKey) && numel(obj.historyRawValues_) == obj.nSteps_
+                x = obj.historyRawX_;
+                rawValues = obj.historyRawValues_;
+            else
+                [x, rawValues] = obj.extractResponseHistoryRaw_();
+                obj.historyRawKey_ = rawKey;
+                obj.historyRawX_ = x;
+                obj.historyRawValues_ = rawValues;
+            end
+            y = NaN(obj.nSteps_, 1);
+            for k = 1:obj.nSteps_
+                y(k) = obj.reduceHistoryValues_(rawValues{k}, obj.gui_.historySampleMode);
+            end
+            obj.historyCacheKey_ = key;
+            obj.historyCacheX_ = x;
+            obj.historyCacheY_ = y;
+        end
+
+        function [x, rawValues] = extractResponseHistoryRaw_(obj)
+            x = NaN(obj.nSteps_, 1);
+            rawValues = cell(obj.nSteps_, 1);
+            targetTag = obj.gui_.historyEleTag;
+            targetIndex = round(obj.gui_.historyEleIndex);
+            for si = 1:numel(obj.segStepCounts_)
+                fr = obj.FrameResp(si);
+                P = obj.nodeCoords_(si);
+                info = obj.beamInfo_(si, P);
+                if isempty(info.tags), continue; end
+                row = [];
+                if obj.gui_.historyUseTag, row = find(info.tags == targetTag, 1);
+                else, row = min(max(1, targetIndex), numel(info.tags));
+                end
+                nLocal = obj.segStepCounts_(si);
+                offset = obj.segOffsets_(si);
+                tv = [];
+                if isfield(fr, 'time') && ~isempty(fr.time), tv = double(fr.time(:)); end
+                for ls = 1:nLocal
+                    g = offset + ls - 1;
+                    x(g + 1) = g;
+                    if ls <= numel(tv), x(g + 1) = tv(ls); end
+                    if isempty(row), continue; end
+                    values = obj.respPerEle_(si, ls, info);
+                    if row <= numel(values), rawValues{g + 1} = double(values{row}(:)); end
+                end
+            end
         end
 
         function setEnabled_(obj, name, val)

@@ -18,6 +18,7 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
         modelData_ struct = struct()
         animDir_ double = 1
         extremeStepCache_ struct = struct()
+        responseStatsCache_ struct = struct()
         initialOpts_ struct
         beamInfoCache_ struct = struct()
     end
@@ -91,13 +92,14 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
             if nargin < 3, force = false; end
             step = obj.resolveStepArg_(stepArg);
             [segIdx, localStep] = obj.resolveGlobalStep_(step);
-            camState = obj.animationPlaneCameraState_();
-            if force || segIdx ~= obj.currentSeg_ || ~isfield(obj.handles_, 'def_Diagram')
+            rebuild = force || segIdx ~= obj.currentSeg_ || ~isfield(obj.handles_, 'def_Diagram');
+            if rebuild
+                camState = obj.animationPlaneCameraState_();
                 obj.registerSegment_(segIdx, localStep);
+                obj.restoreCameraState_(camState);
             else
                 obj.updateStep_(segIdx, localStep);
             end
-            obj.restoreCameraState_(camState);
             obj.currentStep_ = step;
             obj.currentSeg_ = segIdx;
             obj.currentLocalStep_ = localStep;
@@ -142,7 +144,8 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
             obj.gui_.zeroColor = plotter.polyscope.utils.colorToRgb(obj.Opts.color.zeroLineColor);
             obj.gui_.playing = obj.getOptField_(obj.Opts.animation, 'play', false);
             obj.gui_.animationMode = obj.gui_.playing;
-            obj.gui_.fps = obj.getOptField_(obj.Opts.animation, 'fps', 12);
+            obj.gui_.fps = obj.getOptField_(obj.Opts.animation, 'fps', ...
+                obj.defaultAnimationFps_(obj.nSteps_));
             obj.gui_.loop = obj.getOptField_(obj.Opts.animation, 'loop', true);
             obj.gui_.pingpong = obj.getOptField_(obj.Opts.animation, 'pingpong', false);
             obj.initColorbarGuiState_(obj.scalarQuantityName_());
@@ -169,8 +172,7 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
                 needsRebuild = false;
                 needsUpdate = false;
                 needsStyle = false;
-                polyscope.ImGui.Text('OpenSeesMatlab - Frame response');
-                GB.separator();
+                GB.header('Frame response');
 
                 if GB.collapsingHeader('Response', int32(0))
                     [chg, rebuild] = obj.drawResponseGui_();
@@ -329,6 +331,11 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
             old = obj.gui_;
             obj.gui_.animationMode = GB.checkbox('Enter animation mode', obj.gui_.animationMode);
             if obj.gui_.animationMode
+                if ~old.animationMode
+                    % Preserve the registered topology and current segment.
+                    obj.gui_.step = obj.currentStep_;
+                    obj.animDir_ = 1;
+                end
                 obj.gui_.scaleModeIdx = obj.indexOf_({'current','global'}, 'global');
                 obj.Opts.scaleMode = 'global';
                 obj.gui_.climIdx = obj.indexOf_({'current','global','range'}, 'global');
@@ -376,8 +383,10 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
             obj.L_ = obj.modelLength_(obj.P0_);
             ps = obj.App.polyscopeHandle();
             data = obj.diagramData_(segIdx, localStep);
-            obj.registerDiagram_(ps, data);
+            % Register the reference model first so the response diagram is
+            % the foreground layer for coplanar 2-D views.
             obj.registerModel_(ps, data);
+            obj.registerDiagram_(ps, data);
             obj.applyStyle_();
             obj.applyVisibility_();
         end
@@ -426,8 +435,8 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
             if isfield(obj.handles_, 'def_ZeroLine') && size(data.zeroPts, 1) == obj.modelData_.nZeroPts
                 obj.handles_.def_ZeroLine.update_node_positions(data.zeroPts);
             end
-            obj.applyStyle_();
-            obj.applyVisibility_();
+            % Geometry and scalar data changed, but style/visibility did not.
+            % Avoid redundant MEX calls on every animation frame.
         end
 
         function registerDiagram_(obj, ps, data)
@@ -561,13 +570,77 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
             data.surfacePts = surfacePts;
             data.surfaceFaces = surfaceFaces;
             data.surfaceScalars = surfaceScalars;
+            data.surfaceScalars(~isfinite(data.surfaceScalars)) = 0;
             data.wirePts = wirePts;
             data.wireEdges = wireEdges;
             data.wireScalars = wireScalars;
+            data.wireScalars(~isfinite(data.wireScalars)) = 0;
             data.clim = obj.colorLimits_(valVec);
-            data.modelPts = P;
-            data.modelEdges = info.conn;
+            [data.modelPts, data.modelEdges] = obj.modelWireframe_(segIdx);
             [data.zeroPts, data.zeroEdges] = obj.zeroNetwork_(basePts, eleStart, eleEnd);
+        end
+
+        function [pts, edges] = modelWireframe_(obj, segIdx)
+            % Build the complete model as a curve network.  Passing every
+            % model node with only beam edges makes unreferenced continuum
+            % nodes appear as a point cloud in Polyscope.
+            pts = zeros(0, 3);
+            edges = zeros(0, 2);
+            mi = obj.ModelInfo(min(max(1, segIdx), numel(obj.ModelInfo)));
+            P = plotter.polyscope.ModelAdapter.nodeCoords(mi);
+
+            lineNames = plotter.polyscope.ModelAdapter.lineFamilyNames([]);
+            for k = 1:numel(lineNames)
+                e = plotter.polyscope.ModelAdapter.lineEdges(mi, lineNames{k});
+                [pts, edges] = obj.appendNetwork_(pts, edges, P, e);
+            end
+
+            surfaceNames = plotter.polyscope.ModelAdapter.surfaceFamilyNames([]);
+            for k = 1:numel(surfaceNames)
+                [~, ~, ~, edgePoints] = ...
+                    plotter.polyscope.ModelAdapter.surfaceMesh(mi, surfaceNames{k});
+                [p, e] = plotter.polyscope.ModelAdapter.edgePointsToCurveNetwork(edgePoints);
+                [pts, edges] = obj.appendNetwork_(pts, edges, p, e);
+            end
+
+            volumeNames = plotter.polyscope.ModelAdapter.volumeFamilyNames([]);
+            for k = 1:numel(volumeNames)
+                [~, ~, ~, ~, ~, edgePoints] = ...
+                    plotter.polyscope.ModelAdapter.volumeMesh(mi, volumeNames{k}, true);
+                [p, e] = plotter.polyscope.ModelAdapter.edgePointsToCurveNetwork(edgePoints);
+                [pts, edges] = obj.appendNetwork_(pts, edges, p, e);
+            end
+
+            % Some ODBs store the continuum part in one mixed
+            % Elements.Families.Unstructured block.
+            fam = plotter.polyscope.ModelAdapter.families(mi);
+            if isfield(fam, 'Unstructured')
+                U = fam.Unstructured;
+                if isstruct(U) && isfield(U, 'Cells') && isfield(U, 'CellTypes') && ...
+                        ~isempty(U.Cells)
+                    out = plotter.utils.VTKElementTriangulator.triangulate( ...
+                        P, double(U.CellTypes), double(U.Cells));
+                    if isstruct(out) && isfield(out, 'EdgePoints')
+                        [p, e] = plotter.polyscope.ModelAdapter.edgePointsToCurveNetwork(out.EdgePoints);
+                        [pts, edges] = obj.appendNetwork_(pts, edges, p, e);
+                    end
+                end
+            end
+        end
+
+        function [pts, edges] = appendNetwork_(~, pts, edges, newPts, newEdges)
+            if isempty(newPts) || isempty(newEdges), return; end
+            newEdges = double(newEdges);
+            valid = all(isfinite(newEdges), 2) & all(newEdges >= 1, 2) & ...
+                all(newEdges <= size(newPts, 1), 2);
+            newEdges = round(newEdges(valid, :));
+            if isempty(newEdges), return; end
+            used = unique(newEdges(:), 'stable');
+            remap = zeros(size(newPts, 1), 1);
+            remap(used) = 1:numel(used);
+            offset = size(pts, 1);
+            pts = [pts; newPts(used, :)]; %#ok<AGROW>
+            edges = [edges; remap(newEdges) + offset]; %#ok<AGROW>
         end
 
         function [basePts, tipPts, vals, eleStart, eleEnd] = diagramSamples_(obj, P, info, valPerEle, locPerEle, scale)
@@ -854,13 +927,8 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
         end
 
         function scale = computeGlobalDiagramScale_(obj)
-            vals = [];
-            for g = 0:obj.nSteps_-1
-                [s, l] = obj.resolveGlobalStep_(g);
-                info = obj.beamInfo_(s, obj.nodeCoords_(s));
-                vals = [vals; obj.flattenCell_(obj.respPerEle_(s, l, info))]; %#ok<AGROW>
-            end
-            maxAbs = max(abs(vals(isfinite(vals))), [], 'omitnan');
+            stats = obj.responseStats_();
+            maxAbs = stats.globalMaxAbs;
             if isempty(maxAbs) || ~isfinite(maxAbs) || maxAbs <= 0, maxAbs = 1; end
             scale = obj.Opts.heightFrac * obj.L_ / maxAbs * obj.Opts.scale;
         end
@@ -883,13 +951,14 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
         end
 
         function clim = computeGlobalClim_(obj)
-            allv = [];
-            for g = 0:obj.nSteps_-1
-                [s, l] = obj.resolveGlobalStep_(g);
-                info = obj.beamInfo_(s, obj.nodeCoords_(s));
-                allv = [allv; obj.flattenCell_(obj.respPerEle_(s, l, info))]; %#ok<AGROW>
+            stats = obj.responseStats_();
+            clim = [stats.globalMin, stats.globalMax];
+            if any(~isfinite(clim))
+                clim = [-1, 1];
+            elseif clim(1) == clim(2)
+                d = max(1, abs(clim(1))) * 1e-9;
+                clim = clim + [-d, d];
             end
-            clim = obj.rangeFromVals_(allv);
         end
 
         function args = scalarArgs_(obj, clim)
@@ -1001,18 +1070,11 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
                 step = obj.extremeStepCache_.(key);
                 return;
             end
-            vals = NaN(obj.nSteps_, 1);
-            for g = 0:obj.nSteps_-1
-                [s, l] = obj.resolveGlobalStep_(g);
-                info = obj.beamInfo_(s, obj.nodeCoords_(s));
-                v = obj.flattenCell_(obj.respPerEle_(s, l, info));
-                v = v(isfinite(v));
-                if isempty(v), continue; end
-                switch mode
-                    case {'absmax','absmin'}, vals(g+1) = max(abs(v), [], 'omitnan');
-                    case 'max', vals(g+1) = max(v, [], 'omitnan');
-                    case 'min', vals(g+1) = min(v, [], 'omitnan');
-                end
+            stats = obj.responseStats_();
+            switch mode
+                case {'absmax','absmin'}, vals = stats.stepMaxAbs;
+                case 'max', vals = stats.stepMax;
+                case 'min', vals = stats.stepMin;
             end
             if all(~isfinite(vals)), step = 0;
             elseif strcmp(mode, 'min') || strcmp(mode, 'absmin')
@@ -1023,6 +1085,62 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
                 step = idx - 1;
             end
             obj.extremeStepCache_.(key) = step;
+        end
+
+        function stats = responseStats_(obj)
+            % Vectorized statistics avoid a MATLAB loop over every time step.
+            key = matlab.lang.makeValidName(obj.responseKey_());
+            if isfield(obj.responseStatsCache_, key)
+                stats = obj.responseStatsCache_.(key);
+                return;
+            end
+            stepMaxAbs = NaN(obj.nSteps_, 1);
+            stepMax = NaN(obj.nSteps_, 1);
+            stepMin = NaN(obj.nSteps_, 1);
+            globalMin = Inf;
+            globalMax = -Inf;
+            globalMaxAbs = 0;
+            for s = 1:numel(obj.FrameResp)
+                A = obj.selectedResponseArray_(s);
+                if isempty(A), continue; end
+                n = min(obj.segStepCounts_(s), size(A, 1));
+                B = reshape(double(A(1:n,:,:,:)), n, []);
+                B(~isfinite(B)) = NaN;
+                rows = obj.segOffsets_(s) + (1:n);
+                stepMaxAbs(rows) = max(abs(B), [], 2, 'omitnan');
+                stepMax(rows) = max(B, [], 2, 'omitnan');
+                stepMin(rows) = min(B, [], 2, 'omitnan');
+                lo = min(B, [], 'all', 'omitnan');
+                hi = max(B, [], 'all', 'omitnan');
+                ma = max(abs(B), [], 'all', 'omitnan');
+                if isfinite(lo), globalMin = min(globalMin, lo); end
+                if isfinite(hi), globalMax = max(globalMax, hi); end
+                if isfinite(ma), globalMaxAbs = max(globalMaxAbs, ma); end
+            end
+            if ~isfinite(globalMin), globalMin = NaN; end
+            if ~isfinite(globalMax), globalMax = NaN; end
+            stats = struct('stepMaxAbs', stepMaxAbs, 'stepMax', stepMax, ...
+                'stepMin', stepMin, 'globalMin', globalMin, ...
+                'globalMax', globalMax, 'globalMaxAbs', globalMaxAbs);
+            obj.responseStatsCache_.(key) = stats;
+        end
+
+        function A = selectedResponseArray_(obj, segIdx)
+            rt = obj.normalizeRespType_(segIdx, obj.Opts.respType);
+            A = obj.getRespData_(segIdx, rt);
+            if isempty(A), return; end
+            dofs = obj.getRespDofs_(segIdx, rt);
+            ci = obj.componentIndex_(rt, obj.Opts.component, dofs);
+            if ndims(A) == 3
+                pair = obj.componentEndPair_(rt, obj.Opts.component, dofs, size(A, 3));
+                if numel(pair) == 2 && all(pair > 0) && all(pair <= size(A, 3))
+                    A = A(:, :, pair);
+                elseif ci > 0 && ci <= size(A, 3)
+                    A = A(:, :, ci);
+                end
+            elseif ndims(A) >= 4 && ci > 0 && ci <= size(A, 4)
+                A = A(:, :, :, ci);
+            end
         end
 
         function names = collectResponseTypes_(obj)
@@ -1386,6 +1504,7 @@ classdef plotFrameResponse < plotter.polyscope.ViewerBase
             obj.invalidateCachedRange_('frameClim');
             obj.invalidateCachedRange_('frameScale');
             obj.extremeStepCache_ = struct();
+            obj.responseStatsCache_ = struct();
         end
 
         function setEnabled_(obj, name, val)

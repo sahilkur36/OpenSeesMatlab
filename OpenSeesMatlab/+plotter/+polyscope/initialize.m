@@ -50,6 +50,7 @@ function initialize(ps, opts, varargin)
             tryCall_(ps, 'set_SSAA_factor', ssaa);
             tryCall_(ps, 'set_ssaa_factor', ssaa);
             applyProgramOptions_(ps, psOpts);
+            applyUiStyle_();
             if ~is2D
                 tryCall_(ps, 'set_up_dir', 'z_up', false);
             end
@@ -72,6 +73,31 @@ function initialize(ps, opts, varargin)
         case 'postupdate'
             tryCall_(ps, 'set_program_name', programName);
             applyProgramOptions_(ps, psOpts);
+    end
+end
+
+function applyUiStyle_()
+    % Apply one shared, compact visual language to every viewer. This runs
+    % once after ImGui initialization rather than on every callback frame.
+    try
+        style = polyscope.ImGui.GetStyle();
+        style.WindowPadding = [12, 10];
+        style.WindowRounding = 7;
+        style.ChildRounding = 5;
+        style.PopupRounding = 5;
+        style.FramePadding = [8, 4];
+        style.FrameRounding = 4;
+        style.ItemSpacing = [8, 6];
+        style.ItemInnerSpacing = [6, 4];
+        style.IndentSpacing = 18;
+        style.ScrollbarSize = 13;
+        style.ScrollbarRounding = 7;
+        style.GrabMinSize = 10;
+        style.GrabRounding = 4;
+        style.TabRounding = 4;
+        style.SeparatorTextPadding = [10, 4];
+    catch
+        % Older bundled MEX builds may not expose every style field.
     end
 end
 

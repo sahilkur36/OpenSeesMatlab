@@ -95,7 +95,7 @@ classdef Options
             opts.polyscope.vectorColor      = [0.85 0.33 0.10];
             opts.polyscope.vectorLength     = 0.05;  % relative
             opts.polyscope.vectorRadius     = 0.001; % relative
-            opts.animation = struct('play', false, 'fps', 12, ...
+            opts.animation = struct('play', false, 'fps', [], ...
                                     'loop', true, 'pingpong', false, ...
                                     'updateColors', true, 'updateVectors', false);
             opts.slice = struct();
@@ -126,7 +126,7 @@ classdef Options
             opts.polyscope.onscreenColorbar = false;
             opts.polyscope.onscreenColorbarLocation = [1200, 800];
             opts.polyscope.colorbarTitle = '';
-            opts.animation = struct('play', false, 'fps', 12, ...
+            opts.animation = struct('play', false, 'fps', [], ...
                                     'loop', true, 'pingpong', false, ...
                                     'updateColors', true);
             opts.color.climMode = 'step';
@@ -163,7 +163,7 @@ classdef Options
             opts.polyscope.onscreenColorbar = false;
             opts.polyscope.onscreenColorbarLocation = [1200, 800];
             opts.polyscope.colorbarTitle = '';
-            opts.animation = struct('play', false, 'fps', 12, ...
+            opts.animation = struct('play', false, 'fps', [], ...
                                     'loop', true, 'pingpong', false, ...
                                     'updateColors', true);
             opts.stepIdx = 'absmax';
@@ -204,7 +204,7 @@ classdef Options
             p.backgroundColor = [1, 1, 1];
             p.transparency = 1.0;   % Polyscope opacity: 1 = opaque, 0 = transparent
             p.ssaaFactor = 2;       % supersampling anti-aliasing, valid range 1..4
-            p.maxFps = 30;
+            p.maxFps = 60;
             p.enableVsync = true;
             p.alwaysRedraw = false;
             p.frameTickLimitFpsMode = 'auto';
@@ -233,7 +233,7 @@ classdef Options
                 'InterpLine', 'Interpolated lines', ...
                 'Vectors', 'Nodal vectors', ...
                 'Ghost', 'Undeformed mesh');
-            p.planeViewFov = 82.5; % orthographic plane-view zoom sensitivity; midpoint of Polyscope's 5..160 deg range
+            p.planeViewFov = 35; % tighter default framing for orthographic plane views
             p.perspectiveViewFov = 45.0;
         end
 

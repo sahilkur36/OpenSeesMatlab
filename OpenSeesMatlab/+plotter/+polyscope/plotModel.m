@@ -96,8 +96,7 @@ classdef plotModel < plotter.polyscope.ViewerBase
             panelH = max(420, ws(2));
             GB.begin('Model controls', [max(0, ws(1) - panelW), 0], [panelW, panelH]);
 
-            polyscope.ImGui.Text('OpenSeesMatlab - by Yexiang Yan');
-            GB.separator();
+            GB.header('Model');
 
             needsRebuild = false;
             sliceDirty = false;

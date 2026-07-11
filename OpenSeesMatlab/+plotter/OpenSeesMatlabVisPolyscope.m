@@ -1,20 +1,17 @@
 classdef OpenSeesMatlabVisPolyscope < handle
-    %OPENSEESMATLABVISPOLYSCOPE Polyscope visualisation interface for OpenSeesMatlab.
+    % Polyscope visualisation interface for OpenSeesMatlab.
     %
-    %   This object is attached to the main vis interface as vis.polyscope,
-    %   so users can write:
+    % This object is attached to the main vis interface as vis.polyscope,
+    % so users can write:
     %
-    %       opsmat.vis.polyscope.plotModel();
-    %       opsmat.vis.polyscope.plotEigen(1, eigenData);
-    %       opsmat.vis.polyscope.plotNodalResponse(nodeRespData);
+    %     opsmat.vis.polyscope.plotModel();
+    %     opsmat.vis.polyscope.plotEigen(eigenData);
+    %     opsmat.vis.polyscope.plotNodalResponse(nodeRespData);
     %
-    %   Each function opens an interactive Polyscope window with in-window
-    %   ImGui controls (and ImPlot for nodal-response histories). The
-    %   default backend is 'openGL3_glfw'; use opts.polyscope.backend =
-    %   'openGL_mock' for headless rendering or automated tests.
-    %
-    %   It simply forwards to the plotter.polyscope package, supplying the
-    %   current model/response data from the parent OpenSeesMatlab object.
+    % Each function opens an interactive Polyscope window with in-window
+    % ImGui controls (and ImPlot for nodal-response histories). The
+    % default backend is 'openGL3_glfw'; use opts.polyscope.backend =
+    % 'openGL_mock' for headless rendering or automated tests.
 
     properties (Access = public)
         parent  % Reference to plotter.OpenSeesMatlabVis
@@ -30,6 +27,11 @@ classdef OpenSeesMatlabVisPolyscope < handle
         end
 
         function h = plotModel(obj, options)
+            % Open the Polyscope model viewer.
+            %
+            % Usage:
+            % --------
+            %     vis.polyscope.plotModel();
             arguments
                 obj (1,1) plotter.OpenSeesMatlabVisPolyscope
                 options.opts (1,1) struct = struct()
@@ -39,18 +41,15 @@ classdef OpenSeesMatlabVisPolyscope < handle
         end
 
         function h = plotEigen(obj, varargin)
-            %PLOTEIGEN Open the Polyscope eigen-mode viewer.
+            % Open the Polyscope eigen-mode viewer.
             %
-            %   Flexible signatures:
-            %       vis.polyscope.plotEigen()
-            %       vis.polyscope.plotEigen(eigenData)
-            %       vis.polyscope.plotEigen(modeTag, eigenData)
-            %       vis.polyscope.plotEigen(eigenData, opts)
-            %       vis.polyscope.plotEigen(modeTag, eigenData, opts)
+            % Usage:
+            % --------
+            %     vis.polyscope.plotEigen(eigenData);
             %
-            %   If eigenData is omitted it is collected from the current model.
-            %   The mode number can be picked directly in the GUI; modeTag only
-            %   selects the mode shown on startup.
+            % If eigenData is omitted it is collected from the current model.
+            % The mode number can be picked directly in the GUI; modeTag only
+            % selects the mode shown on startup.
 
             modeTag = [];
             eigenData = [];
@@ -103,6 +102,19 @@ classdef OpenSeesMatlabVisPolyscope < handle
         end
 
         function h = plotNodalResponse(obj, nodeRespData, options)
+            % Open the Polyscope nodal-response viewer.
+            %
+            % Usage:
+            % --------
+            %     vis.polyscope.plotNodalResponse(nodeRespData);
+            %
+            % Parameters
+            % ----------
+            % nodeRespData : struct
+            %     Nodal response data, typically obtained from
+            %     ``opsmat.post.getNodalResponse(odbTag)``. The struct must include an
+            %     odbTag field so the corresponding model information can be
+            %     loaded.
             arguments
                 obj (1,1) plotter.OpenSeesMatlabVisPolyscope
                 nodeRespData struct
@@ -110,26 +122,22 @@ classdef OpenSeesMatlabVisPolyscope < handle
             end
             odbTag = nodeRespData(1).odbTag;
             modelInfo = post.ODB.readModelInfo(obj.parent.parent.opensees, odbTag);
-            h = plotter.polyscope.plotNodalResponse(modelInfo, nodeRespData(1), options.opts);
-        end
-
-        function h = plotUnstruResponse(obj, nodeRespData, eleRespData, options)
-            arguments
-                obj (1,1) plotter.OpenSeesMatlabVisPolyscope
-                nodeRespData struct
-                eleRespData struct
-                options.opts (1,1) struct = struct()
-            end
-            if isfield(eleRespData(1), 'odbTag')
-                odbTag = eleRespData(1).odbTag;
-            else
-                odbTag = nodeRespData(1).odbTag;
-            end
-            modelInfo = post.ODB.readModelInfo(obj.parent.parent.opensees, odbTag);
-            h = plotter.polyscope.plotUnstruResponse(modelInfo, nodeRespData(1), eleRespData(1), options.opts);
+            h = plotter.polyscope.plotNodalResponse(modelInfo, nodeRespData, options.opts);
         end
 
         function h = plotFrameResponse(obj, frameRespData, options)
+            % Open the Polyscope frame-response viewer.
+            % Usage:
+            % --------
+            %     vis.polyscope.plotFrameResponse(frameRespData);
+            %
+            % Parameters
+            % ----------
+            % frameRespData : struct
+            %     Frame response data, typically obtained from
+            %     ``opsmat.post.getFrameResponse(odbTag)``. The struct must include an
+            %     odbTag field so the corresponding model information can be
+            %     loaded.
             arguments
                 obj (1,1) plotter.OpenSeesMatlabVisPolyscope
                 frameRespData struct
@@ -158,22 +166,20 @@ classdef OpenSeesMatlabVisPolyscope < handle
             h = plotter.polyscope.plotFrameResponse(modelInfo, frameRespData, options.opts);
         end
 
-        function h = plotFrameResp(obj, frameRespData, options)
-            arguments
-                obj (1,1) plotter.OpenSeesMatlabVisPolyscope
-                frameRespData struct
-                options.respType {mustBeTextScalar} = ""
-                options.respComponent {mustBeTextScalar} = ""
-                options.responseLocation {mustBeTextScalar} = ""
-                options.stepIdx = "absMax"
-                options.opts (1,1) struct = struct()
-            end
-            h = obj.plotFrameResponse(frameRespData, respType=options.respType, ...
-                respComponent=options.respComponent, responseLocation=options.responseLocation, ...
-                stepIdx=options.stepIdx, opts=options.opts);
-        end
-
         function h = plotShellResponse(obj, respData, options)
+            % Open the Polyscope shell-response viewer.
+            %
+            % Usage:
+            % --------
+            %     vis.polyscope.plotShellResponse(respData);
+            %
+            % Parameters
+            % ------------
+            % respData : struct
+            %     Shell response data, typically obtained from
+            %     ``opsmat.post.getShellResponse(odbTag)``. The struct must include an
+            %     odbTag field so the corresponding model information can be
+            %     loaded.
             arguments
                 obj (1,1) plotter.OpenSeesMatlabVisPolyscope
                 respData struct
@@ -193,10 +199,23 @@ classdef OpenSeesMatlabVisPolyscope < handle
             options.opts.fiberPoint = options.fiberPoint;
             options.opts.responseLocation = char(string(options.responseLocation));
             options.opts.stepIdx = options.stepIdx;
-            h = plotter.polyscope.plotUnstruResponse(modelInfo, nodalResp(1), respData(1), options.opts);
+            h = plotter.polyscope.plotUnstruResponse(modelInfo, nodalResp, respData, options.opts);
         end
 
         function h = plotContinuumResponse(obj, respData, options)
+            % Open the Polyscope continuum-response viewer.
+            %
+            % Usage:
+            % --------
+            %     vis.polyscope.plotContinuumResponse(respData);
+            %
+            % Parameters
+            % ------------
+            % respData : struct
+            %     Continuum response data, typically obtained from
+            %     ``opsmat.post.getContinuumResponse(odbTag)``. The struct
+            %     must include an odbTag field so the corresponding model information
+            %     can be loaded.
             arguments
                 obj (1,1) plotter.OpenSeesMatlabVisPolyscope
                 respData struct
@@ -227,7 +246,7 @@ classdef OpenSeesMatlabVisPolyscope < handle
             options.opts.component = char(string(options.respComponent));
             options.opts.responseLocation = char(string(options.responseLocation));
             options.opts.stepIdx = options.stepIdx;
-            h = plotter.polyscope.plotUnstruResponse(modelInfo, nodalResp(1), respData(1), options.opts);
+            h = plotter.polyscope.plotUnstruResponse(modelInfo, nodalResp, respData, options.opts);
         end
     end
 end

@@ -20,6 +20,9 @@ classdef (Abstract) ViewerBase < handle
         query_      struct = struct()
         highlight_  struct = struct()
         rangeCache_ struct = struct()
+        windowSizeCache_ double = zeros(0, 2)
+        windowSizeCacheTimer_ = []
+        screenAxesUpdateTimer_ = []
     end
 
     methods
@@ -243,6 +246,18 @@ classdef (Abstract) ViewerBase < handle
             if nargin < 2 || isempty(fallback)
                 fallback = [1280, 720];
             end
+            % Several GUI helpers request the window size during the same
+            % frame. Cache briefly to avoid repeated MATLAB/MEX crossings while
+            % retaining responsive resize behaviour.
+            if ~isempty(obj.windowSizeCache_) && ~isempty(obj.windowSizeCacheTimer_)
+                try
+                    if toc(obj.windowSizeCacheTimer_) < 0.05
+                        ws = obj.windowSizeCache_;
+                        return;
+                    end
+                catch
+                end
+            end
             ws = double(fallback(:).');
             try
                 raw = double(obj.App.polyscopeHandle().get_window_size());
@@ -254,6 +269,8 @@ classdef (Abstract) ViewerBase < handle
             end
             ws(1) = max(640, ws(1));
             ws(2) = max(420, ws(2));
+            obj.windowSizeCache_ = ws;
+            obj.windowSizeCacheTimer_ = tic;
         end
 
         function rgb = asRgb_(~, c)
@@ -274,6 +291,12 @@ classdef (Abstract) ViewerBase < handle
         function names = colormapNames_(~)
             names = {'viridis', 'blues', 'reds', 'coolwarm', 'pink-green', ...
                      'phase', 'spectral', 'rainbow', 'jet', 'turbo'};
+        end
+
+        function fps = defaultAnimationFps_(~, nSteps)
+            % Target roughly a 20-second pass, bounded for usability and by
+            % the default interactive render-loop limit.
+            fps = max(5, min(60, round(double(max(1, nSteps)) / 20)));
         end
 
         function initColorbarGuiState_(obj, defaultTitle)
@@ -1208,6 +1231,19 @@ classdef (Abstract) ViewerBase < handle
             if obj.isOverlayScreenAxes_()
                 return;
             end
+            % Updating the six axis/label curve networks is relatively costly
+            % because each operation crosses the MEX boundary. Camera motion is
+            % still visually smooth at 30 Hz, even when the main UI renders at
+            % 60 Hz.
+            if ~isempty(obj.screenAxesUpdateTimer_)
+                try
+                    if toc(obj.screenAxesUpdateTimer_) < (1 / 30)
+                        return;
+                    end
+                catch
+                end
+            end
+            obj.screenAxesUpdateTimer_ = tic;
             if isempty(fieldnames(obj.handles_)), return; end
             showAxes = obj.guiScreenAxesEnabled_();
             if isfield(obj.handles_, 'ScreenAxesGizmo')
@@ -1609,9 +1645,9 @@ classdef (Abstract) ViewerBase < handle
 
         function setPlaneViewFov_(obj)
             try
-                fov = double(obj.getOptField_(obj.Opts.polyscope, 'planeViewFov', 82.5));
+                fov = double(obj.getOptField_(obj.Opts.polyscope, 'planeViewFov', 62.0));
                 if ~isfinite(fov)
-                    fov = 82.5;
+                    fov = 62.0;
                 end
                 fov = max(5.0, min(160.0, fov));
                 obj.App.polyscopeHandle().set_vertical_fov_degrees(fov);

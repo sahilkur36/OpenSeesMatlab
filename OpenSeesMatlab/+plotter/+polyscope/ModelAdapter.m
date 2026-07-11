@@ -15,16 +15,20 @@ classdef ModelAdapter
         end
 
         function P = rawNodeCoords(modelInfo)
+            modelInfo = plotter.polyscope.ModelAdapter.modelSnapshot_(modelInfo);
             P = zeros(0, 3);
-            if isfield(modelInfo, 'Nodes') && isfield(modelInfo.Nodes, 'Coords')
+            if isstruct(modelInfo) && isfield(modelInfo, 'Nodes') && ...
+                    isstruct(modelInfo.Nodes) && isfield(modelInfo.Nodes, 'Coords')
                 P = double(modelInfo.Nodes.Coords);
             end
             P = plotter.polyscope.ModelAdapter.pad3(P);
         end
 
         function tags = nodeTags(modelInfo)
+            modelInfo = plotter.polyscope.ModelAdapter.modelSnapshot_(modelInfo);
             P = plotter.polyscope.ModelAdapter.nodeCoords(modelInfo);
-            if isfield(modelInfo, 'Nodes') && isfield(modelInfo.Nodes, 'Tags')
+            if isstruct(modelInfo) && isfield(modelInfo, 'Nodes') && ...
+                    isstruct(modelInfo.Nodes) && isfield(modelInfo.Nodes, 'Tags')
                 tags = double(modelInfo.Nodes.Tags(:));
             else
                 tags = (1:size(P,1))';
@@ -32,8 +36,9 @@ classdef ModelAdapter
         end
 
         function fam = families(modelInfo)
+            modelInfo = plotter.polyscope.ModelAdapter.modelSnapshot_(modelInfo);
             fam = struct();
-            if isfield(modelInfo, 'Elements') && ~isempty(modelInfo.Elements)
+            if isstruct(modelInfo) && isfield(modelInfo, 'Elements') && ~isempty(modelInfo.Elements)
                 E = modelInfo.Elements;
                 if isfield(E, 'Families') && isstruct(E.Families)
                     fam = E.Families;
@@ -187,6 +192,7 @@ classdef ModelAdapter
         end
 
         function [Pfixed, fixedTags] = fixedNodes(modelInfo)
+            modelInfo = plotter.polyscope.ModelAdapter.modelSnapshot_(modelInfo);
             P = plotter.polyscope.ModelAdapter.nodeCoords(modelInfo);
             tags = plotter.polyscope.ModelAdapter.nodeTags(modelInfo);
             Pfixed = zeros(0, 3);
@@ -224,6 +230,7 @@ classdef ModelAdapter
         end
 
         function edges = mpConstraintEdges(modelInfo)
+            modelInfo = plotter.polyscope.ModelAdapter.modelSnapshot_(modelInfo);
             edges = zeros(0, 2);
             if ~isfield(modelInfo, 'MPConstraint') || ~isstruct(modelInfo.MPConstraint)
                 return;
@@ -343,6 +350,15 @@ classdef ModelAdapter
     end
 
     methods (Static, Access = private)
+
+        function modelInfo = modelSnapshot_(modelInfo)
+            % A response with model updates stores one ModelInfo per segment.
+            % Geometry helpers operate on a single segment; callers that need
+            % another segment already pass that snapshot explicitly.
+            if numel(modelInfo) > 1
+                modelInfo = modelInfo(1);
+            end
+        end
 
         function edges = keepValidEdges_(edges, nNode)
             if isempty(edges), return; end

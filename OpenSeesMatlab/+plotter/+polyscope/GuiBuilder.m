@@ -22,6 +22,12 @@ classdef GuiBuilder
             polyscope.ImGui.End();
         end
 
+        function header(title)
+            %HEADER Draw the shared viewer panel heading.
+            polyscope.ImGui.Text(['OpenSeesMatlab | ' char(string(title))]);
+            polyscope.ImGui.Separator();
+        end
+
         function val = sliderInt(label, val, vMin, vMax)
             [~, val] = polyscope.ImGui.SliderInt(label, val, vMin, vMax);
         end

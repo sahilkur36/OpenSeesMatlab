@@ -148,8 +148,9 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
                 needsRebuild = false;
                 needsUpdate = false;
                 needsVisibility = false;
-                polyscope.ImGui.Text('OpenSeesMatlab - Unstructured response');
-                GB.separator();
+                GB.header('Unstructured response');
+                polyscope.ImGui.ProgressBar((obj.currentStep_ + 1) / max(1, obj.nSteps_), [0, 0], ...
+                    sprintf('%d / %d', obj.currentStep_, max(0, obj.nSteps_ - 1)));
 
                 if GB.collapsingHeader('Response', int32(0))
                     [rchg, topoChg] = obj.drawResponseGui_();
@@ -255,7 +256,8 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             obj.gui_.gpIndex = obj.Opts.surf.gpIndex;
             obj.gui_.playing = obj.getOptField_(obj.Opts.animation, 'play', false);
             obj.gui_.animationMode = obj.gui_.playing;
-            obj.gui_.fps = obj.getOptField_(obj.Opts.animation, 'fps', 12);
+            obj.gui_.fps = obj.getOptField_(obj.Opts.animation, 'fps', ...
+                obj.defaultAnimationFps_(obj.nSteps_));
             obj.gui_.loop = obj.getOptField_(obj.Opts.animation, 'loop', true);
             obj.gui_.pingpong = obj.getOptField_(obj.Opts.animation, 'pingpong', false);
             obj.gui_.animUpdateColors = obj.getOptField_(obj.Opts.animation, 'updateColors', true);
@@ -424,6 +426,9 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
                 obj.gui_.autoScale = true;
                 obj.Opts.deform.autoScale = true;
                 if ~old.animationMode
+                    % Start from the currently displayed model snapshot.
+                    obj.gui_.step = obj.currentStep_;
+                    obj.animDir_ = 1;
                     % Use a fixed color range during animation so variations are visible.
                     obj.gui_.climIdx = obj.indexOf_({'step','range','global','absmax','absmin'}, 'global');
                     obj.Opts.color.climMode = 'global';
@@ -1194,6 +1199,10 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
             else
                 clim = obj.colorLimits_(segIdx, localStep, vals);
             end
+            % Preserve NaN while calculating limits, then replace missing
+            % values before uploading them to Polyscope's finite buffers.
+            Snode(~isfinite(Snode)) = 0;
+            Sele(~isfinite(Sele)) = 0;
         end
 
         function [Snode, Sele, nodeBased] = scalarValues_(obj, segIdx, localStep)
@@ -1643,20 +1652,24 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
         end
 
         function fam = families_(obj, segIdx)
+            segIdx = min(max(1, segIdx), numel(obj.ModelInfo));
             fam = plotter.polyscope.ModelAdapter.families(obj.ModelInfo(segIdx));
         end
 
         function P = nodeCoords_(obj, segIdx)
+            segIdx = min(max(1, segIdx), numel(obj.ModelInfo));
             P = plotter.polyscope.ModelAdapter.nodeCoords(obj.ModelInfo(segIdx));
         end
 
         function [P, tags] = nodeStepData_(obj, segIdx)
             P = obj.nodeCoords_(segIdx);
+            segIdx = min(max(1, segIdx), numel(obj.ModelInfo));
             tags = plotter.polyscope.ModelAdapter.nodeTags(obj.ModelInfo(segIdx));
         end
 
         function [Pfix, rows] = fixedNodes_(obj, segIdx, P)
             if nargin < 3 || isempty(P), P = obj.nodeCoords_(segIdx); end
+            segIdx = min(max(1, segIdx), numel(obj.ModelInfo));
             [~, fixedTags] = plotter.polyscope.ModelAdapter.fixedNodes(obj.ModelInfo(segIdx));
             tags = plotter.polyscope.ModelAdapter.nodeTags(obj.ModelInfo(segIdx));
             [tf, rows] = ismember(double(fixedTags(:)), double(tags(:)));
@@ -2028,10 +2041,13 @@ classdef plotUnstruResponse < plotter.polyscope.ViewerBase
         end
 
         function S = safeSeg_(~, A, idx)
-            if isempty(A) || idx > numel(A)
+            if isempty(A)
                 S = struct();
             else
-                S = A(idx);
+                % Match the MATLAB response viewers: a scalar input is a
+                % topology/response fallback for every segment, while a
+                % shorter array keeps using its latest available snapshot.
+                S = A(min(max(1, idx), numel(A)));
             end
         end
 

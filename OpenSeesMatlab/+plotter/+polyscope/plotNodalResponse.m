@@ -108,7 +108,9 @@ classdef plotNodalResponse < plotter.polyscope.ViewerBase
             step = obj.resolveStepArg_(stepArg);
             [segIdx, localStep] = obj.resolveGlobalStep_(step);
             camState = obj.animationPlaneCameraState_();
-            if force || segIdx ~= obj.currentSeg_
+            targetP = obj.nodeCoords_(segIdx);
+            topologySizeChanged = size(targetP, 1) ~= size(obj.P0_, 1);
+            if force || segIdx ~= obj.currentSeg_ || topologySizeChanged
                 obj.registerSegment_(segIdx);
             end
             obj.currentStep_ = step;
@@ -135,7 +137,8 @@ classdef plotNodalResponse < plotter.polyscope.ViewerBase
             obj.gui_.stepModeIdx = obj.indexOf_(stepModes, obj.getOptField_(obj.Opts, 'stepIdx', 'absmax'));
             obj.gui_.playing = obj.getOptField_(obj.Opts.animation, 'play', false);
             obj.gui_.animationMode = obj.gui_.playing;
-            obj.gui_.fps = obj.getOptField_(obj.Opts.animation, 'fps', 12);
+            obj.gui_.fps = obj.getOptField_(obj.Opts.animation, 'fps', ...
+                obj.defaultAnimationFps_(obj.nSteps_));
             obj.gui_.loop = obj.getOptField_(obj.Opts.animation, 'loop', true);
             obj.gui_.pingpong = obj.getOptField_(obj.Opts.animation, 'pingpong', false);
             obj.gui_.animUpdateColors = obj.getOptField_(obj.Opts.animation, 'updateColors', true);
@@ -213,8 +216,7 @@ classdef plotNodalResponse < plotter.polyscope.ViewerBase
                 needsRebuild = false;
                 needsUpdate = false;
 
-                polyscope.ImGui.Text('OpenSeesMatlab - Nodal response');
-                GB.separator();
+                GB.header('Nodal response');
                 if GB.collapsingHeader('Response', int32(0))
                     if obj.drawStepGui_()
                         needsUpdate = true;
@@ -343,6 +345,11 @@ classdef plotNodalResponse < plotter.polyscope.ViewerBase
                 if GB.button('Enter animation')
                     obj.gui_.animationMode = true;
                     obj.gui_.playing = true;
+                    obj.gui_.animDir = 1;
+                    % Keep the displayed step and its registered topology.
+                    % Changing only the segment index is invalid when a model
+                    % update changes the number of nodes.
+                    obj.gui_.step = obj.currentStep_;
                     obj.gui_.autoScale = true;
                     obj.Opts.deform.autoScale = true;
                     obj.gui_.climIdx = obj.indexOf_({'step','global','range','absmax','absmin'}, 'global');
@@ -1373,6 +1380,9 @@ classdef plotNodalResponse < plotter.polyscope.ViewerBase
                 U = obj.respSlice_(segIdx, obj.Opts.field.type, localStep);
                 S = obj.scalarFromComp_(U, obj.Opts.field.component, obj.dofsForField_(segIdx, obj.Opts.field.type));
                 clim = obj.resolveClim_(S);
+                % NaN marks nodes which do not exist in this model-update
+                % segment. Polyscope buffers must nevertheless be finite.
+                S(~isfinite(S)) = 0;
             else
                 S = [];
                 clim = [];

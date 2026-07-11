@@ -35,8 +35,7 @@ tasks = [
     "verify",       "", "verify_beam";
 ];
 
-scriptDir = fileparts(mfilename('fullpath'));
-rootDir = fullfile(scriptDir, "..", "docs", "examples");
+rootDir = "../docs/examples";
 forceRebuild = false;
 
 if ~exist(rootDir, "dir")
@@ -46,7 +45,7 @@ end
 % =========================================================================
 % Copy utils folder
 % =========================================================================
-srcUtilsDir = fullfile(scriptDir, "utils");
+srcUtilsDir = "utils";
 dstUtilsDir = fullfile(rootDir, "utils");
 
 if exist(srcUtilsDir, "dir")
@@ -61,16 +60,11 @@ else
 end
 
 % =========================================================================
-% Precompute absolute source/destination paths for parallel export
+% Create all export folders before parfor
 % =========================================================================
-nTasks = size(tasks, 1);
-mlxFiles = cell(nTasks, 1);
-outFiles = cell(nTasks, 1);
-
-for i = 1:nTasks
+for i = 1:size(tasks, 1)
     category = tasks(i, 1);
     subgroup = tasks(i, 2);
-    name     = tasks(i, 3);
 
     if strlength(subgroup) > 0
         outDir = fullfile(rootDir, category, subgroup);
@@ -81,25 +75,26 @@ for i = 1:nTasks
     if ~isfolder(outDir)
         mkdir(outDir);
     end
-
-    mlxFiles{i} = fullfile(scriptDir, name + ".mlx");
-    outFiles{i} = fullfile(outDir, name + ".md");
 end
 
 % =========================================================================
 % Export .mlx files to Markdown
 % =========================================================================
-parfor i = 1:nTasks
-    mlxFile = mlxFiles{i};
-    outFile = outFiles{i};
+parfor i = 1:size(tasks, 1)
+    category = tasks(i, 1);
+    subgroup = tasks(i, 2);
+    name     = tasks(i, 3);
+
+    if strlength(subgroup) > 0
+        outDir = fullfile(rootDir, category, subgroup);
+    else
+        outDir = fullfile(rootDir, category);
+    end
+
+    mlxFile = name + ".mlx";
+    outFile = fullfile(outDir, name + ".md");
 
     if localNeedExport(mlxFile, outFile, forceRebuild)
-        % Remove any stale destination so export() does not trip on
-        % read-only/locked existing files when overwriting.
-        if exist(outFile, "file")
-            delete(outFile);
-        end
-
         export(mlxFile, outFile, ...
             Format="markdown", ...
             EmbedImages=true, ...
@@ -109,7 +104,11 @@ parfor i = 1:nTasks
 
         fprintf("Exported: %s -> %s\n", mlxFile, outFile);
     else
-        fprintf("Skipped : %s\n", mlxFile);
+        % The exporter may already be up to date while the post-processing
+        % rules in this script have changed. Re-run the inexpensive Markdown
+        % normalization so existing files receive the latest fixes as well.
+        localPostProcessMarkdown(outFile);
+        fprintf("Updated : %s\n", outFile);
     end
 end
 
@@ -277,9 +276,25 @@ function localPostProcessMarkdown(mdFile)
 
     txt = replace(txt, "\[", "[");
     txt = replace(txt, "\]", "]");
+    txt = regexprep(txt, '[ \t]+(?=\r?\n)', '');
+
+    % MATLAB Live Editor export may duplicate blank lines inside code fences.
+    % Normalize only fenced code blocks so normal Markdown paragraph spacing is
+    % not affected.
+    txt = localNormalizeBlankLinesInCodeFences(txt);
+
+    % Keep the post-processed Markdown as a char vector before regexp-based
+    % positional slicing. MATLAB string scalars use element indexing, not
+    % character indexing, which can trigger "Index exceeds the number of array
+    % elements" when start/end positions from regexp are used.
+    txt = char(txt);
 
     txt = localReplaceMatlabTextOutputBlocks(txt);
-    txt = localNormalizeCodeBlankLines(txt);
+
+    % Run the fence normalization once more after output-block replacement.
+    % This makes the final Markdown invariant explicit: ordinary code fences
+    % never contain more than one consecutive blank line.
+    txt = localNormalizeBlankLinesInCodeFences(txt);
 
     fid = fopen(mdFile, "w");
     if fid == -1
@@ -290,7 +305,111 @@ function localPostProcessMarkdown(mdFile)
     fwrite(fid, txt, "char");
 end
 
+function txt = localNormalizeBlankLinesInCodeFences(txt)
+    % Collapse duplicated blank lines only inside fenced code blocks.
+    %
+    % Problem:
+    % MATLAB export(..., Format="markdown") can convert one blank line in a
+    % source code cell into two blank lines in the generated Markdown code
+    % fence. This function fixes that by changing two or more consecutive
+    % blank lines inside normal fenced code blocks into one blank line.
+    %
+    % Important:
+    % - This function does not change text outside code fences.
+    % - matlabTextOutput fences are skipped because they are handled later by
+    %   localReplaceMatlabTextOutputBlocks().
+    % - The fence delimiter line itself is preserved.
+
+    lines = splitlines(string(txt));
+    outLines = strings(0, 1);
+
+    inFence = false;
+    currentFenceInfo = "";
+    fenceBuffer = strings(0, 1);
+
+    for i = 1:numel(lines)
+        line = lines(i);
+        trimmed = strtrim(line);
+
+        isFenceLine = startsWith(trimmed, "```");
+
+        if ~inFence
+            if isFenceLine
+                inFence = true;
+                currentFenceInfo = extractAfter(trimmed, 3);
+                fenceBuffer = line;
+            else
+                outLines(end + 1, 1) = line;
+            end
+        else
+            fenceBuffer(end + 1, 1) = line;
+
+            if isFenceLine
+                % Close fence and normalize the buffered fence block.
+                normalizedFence = localNormalizeOneFenceBlock( ...
+                    fenceBuffer, currentFenceInfo);
+
+                outLines = [outLines; normalizedFence]; %#ok<AGROW>
+
+                inFence = false;
+                currentFenceInfo = "";
+                fenceBuffer = strings(0, 1);
+            end
+        end
+    end
+
+    % If the file has an unclosed fence, keep it safely and normalize it.
+    if inFence && ~isempty(fenceBuffer)
+        normalizedFence = localNormalizeOneFenceBlock( ...
+            fenceBuffer, currentFenceInfo);
+        outLines = [outLines; normalizedFence]; %#ok<AGROW>
+    end
+
+    txt = char(strjoin(outLines, newline));
+end
+
+function block = localNormalizeOneFenceBlock(block, fenceInfo)
+    % Keep matlabTextOutput unchanged. These blocks are converted separately.
+    if startsWith(strtrim(fenceInfo), "matlabTextOutput")
+        return;
+    end
+
+    if numel(block) <= 2
+        return;
+    end
+
+    firstLine = block(1);
+    lastLine = block(end);
+    body = block(2:end-1);
+
+    normalizedBody = strings(0, 1);
+    blankRun = 0;
+
+    for i = 1:numel(body)
+        line = body(i);
+
+        if strlength(strtrim(line)) == 0
+            blankRun = blankRun + 1;
+
+            % Keep only one blank line for each blank-line run.
+            if blankRun == 1
+                normalizedBody(end + 1, 1) = "";
+            end
+        else
+            blankRun = 0;
+            normalizedBody(end + 1, 1) = line;
+        end
+    end
+
+    block = [firstLine; normalizedBody; lastLine];
+end
+
 function txt = localReplaceMatlabTextOutputBlocks(txt)
+    % This function uses regexp start/end indices for slicing, so txt must be
+    % a char vector. If txt is a MATLAB string scalar, txt(a:b) indexes string
+    % array elements rather than characters.
+    txt = char(txt);
+
     pattern = '```matlabTextOutput\s*\r?\n([\s\S]*?)\r?\n```';
 
     [starts, ends, tokens] = regexp(txt, pattern, "start", "end", "tokens");
@@ -309,41 +428,6 @@ function txt = localReplaceMatlabTextOutputBlocks(txt)
 
         content = tokens{i}{1};
         pieces{p} = localFormatOutputBlock(content);
-        p = p + 1;
-
-        prevEnd = ends(i);
-    end
-
-    pieces{p} = txt(prevEnd + 1 : end);
-    txt = [pieces{1:p}];
-end
-
-function txt = localNormalizeCodeBlankLines(txt)
-    % Collapse runs of 3+ line endings inside ```matlab ... ``` blocks to
-    % exactly 2 line endings. The MATLAB live-script exporter sometimes
-    % turns a single intentional blank line into two blank lines.
-    pattern = '```matlab\s*\r?\n([\s\S]*?)\r?\n```';
-
-    [starts, ends, tokens] = regexp(txt, pattern, "start", "end", "tokens");
-
-    if isempty(starts)
-        return;
-    end
-
-    pieces = cell(numel(starts) * 2 + 1, 1);
-    prevEnd = 0;
-    p = 1;
-
-    for i = 1:numel(starts)
-        pieces{p} = txt(prevEnd + 1 : starts(i) - 1);
-        p = p + 1;
-
-        block = txt(starts(i) : ends(i));
-        content = tokens{i}{1};
-        normContent = regexprep(content, '(\r?\n)(\r?\n)(\r?\n)+', '$1$2');
-        block = strrep(block, content, normContent);
-
-        pieces{p} = block;
         p = p + 1;
 
         prevEnd = ends(i);

@@ -100,6 +100,10 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.caret
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.tilde
   - pymdownx.blocks.tab:
       alternate_style: true
       slugify: !!python/object/apply:pymdownx.slugs.slugify
@@ -138,6 +142,8 @@ markdown_extensions:
 
 plugins:
   - search
+  - autorefs:
+      resolve_closest: true
   - mkdocstrings:
       default_handler: matlab
       handlers:
@@ -157,8 +163,8 @@ plugins:
             show_root_members_full_path: false
             show_object_full_path: false
             show_category_heading: false
-            show_symbol_type_heading: false
-            show_symbol_type_toc: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
 
             hidden_members: false
             private_members: false
@@ -181,7 +187,7 @@ plugins:
 
             show_signature: true
             show_signature_types: true
-            separate_signature: true
+            separate_signature: false
 # hooks:
 #   - tools/mkdocs_hooks.py
 nav:

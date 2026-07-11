@@ -3,6 +3,46 @@
 --md-primary-fg-color--dark:  #002f5b;
 } */
 
+/* OpenSeesMatlab visual refinements shared by MkDocs and Zensical. */
+/* Use artwork designed for the active light or dark header. */
+[data-md-color-scheme="default"] .md-logo img {
+  content: url("../logo-light.png");
+  transform: scale(1.18);
+  transform-origin: left center;
+}
+
+[data-md-color-scheme="slate"] .md-logo img {
+  content: url("../logo-dark.png");
+}
+
+.md-header {
+  box-shadow: 0 0.15rem 0.6rem rgba(30, 50, 90, 0.16);
+}
+
+.md-typeset h1 {
+  color: var(--md-primary-fg-color);
+}
+
+.md-typeset img {
+  border-radius: 0.45rem;
+}
+
+.md-typeset table:not([class]) {
+  border-radius: 0.45rem;
+  box-shadow: 0 0.15rem 0.5rem rgba(30, 50, 90, 0.08);
+}
+
+.md-typeset table:not([class]) th {
+  background: color-mix(in srgb, var(--md-primary-fg-color) 9%, transparent);
+  font-weight: 700;
+}
+
+.md-typeset .admonition,
+.md-typeset details {
+  border-radius: 0.45rem;
+  box-shadow: 0 0.15rem 0.5rem rgba(30, 50, 90, 0.08);
+}
+
 [data-md-color-scheme="matlab"] img[src$="#only-dark"],
 [data-md-color-scheme="matlab"] img[src$="#gh-dark-mode-only"] {
   display: none; /* Hide dark images in light mode */

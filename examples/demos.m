@@ -33,6 +33,9 @@ tasks = [
     "verify",       "", "verify_quad_shell";
     "verify",       "", "verify_stdBrick";
     "verify",       "", "verify_beam";
+
+    "substruct", "",      "substructure_linear";
+    "substruct", "",      "substructure_nonlinear_dynamic";
 ];
 
 rootDir = "../docs/examples";
@@ -276,7 +279,13 @@ function localPostProcessMarkdown(mdFile)
 
     txt = replace(txt, "\[", "[");
     txt = replace(txt, "\]", "]");
+    txt = replace(txt, "\$", "$");
+    txt = replace(txt, "\\", "\");
     txt = regexprep(txt, '[ \t]+(?=\r?\n)', '');
+
+    % Normalize display equations exported by the Live Editor without
+    % changing ordinary Markdown prose or inline math.
+    txt = localNormalizeDisplayMathBlocks(txt);
 
     % MATLAB Live Editor export may duplicate blank lines inside code fences.
     % Normalize only fenced code blocks so normal Markdown paragraph spacing is
@@ -303,6 +312,41 @@ function localPostProcessMarkdown(mdFile)
 
     cleaner = onCleanup(@() fclose(fid));
     fwrite(fid, txt, "char");
+end
+
+function txt = localNormalizeDisplayMathBlocks(txt)
+    % Live Editor exports display math as "$$", a blank line, the formula,
+    % another blank line, and "$$". It can also add Markdown escapes that are
+    % not appropriate inside TeX math. Compact and repair only these blocks.
+    txt = char(txt);
+    pattern = '(?m)^\$\$[ \t]*\r?\n([\s\S]*?)\r?\n[ \t]*\$\$[ \t]*$';
+    [starts, ends, tokens] = regexp(txt, pattern, "start", "end", "tokens");
+
+    if isempty(starts)
+        return;
+    end
+
+    pieces = cell(numel(starts) * 2 + 1, 1);
+    prevEnd = 0;
+    p = 1;
+
+    for i = 1:numel(starts)
+        pieces{p} = txt(prevEnd + 1 : starts(i) - 1);
+        p = p + 1;
+
+        body = tokens{i}{1};
+        body = regexprep(body, '^(?:[ \t]*\r?\n)+', '');
+        body = regexprep(body, '(?:\r?\n[ \t]*)+$', '');
+        body = strrep(body, '\*', '*');
+        body = strrep(body, '\_', '_');
+
+        pieces{p} = ['$$' newline body newline '$$'];
+        p = p + 1;
+        prevEnd = ends(i);
+    end
+
+    pieces{p} = txt(prevEnd + 1 : end);
+    txt = [pieces{1:p}];
 end
 
 function txt = localNormalizeBlankLinesInCodeFences(txt)
@@ -513,6 +557,10 @@ function [titleStr, introStr] = localFolderMeta(subdir)
         case "verify"
             titleStr = "Verification Examples";
             introStr = "Examples of verification by reliable third-party software.";
+
+        case "substruct"
+            titleStr = "MATLAB Numerical Substructure Analysis";
+            introStr = "A numerical substructure model is built in MATLAB and then connected to the OpenSees domain for analysis.";
 
         otherwise
             titleStr = string(subdir) + " Examples";

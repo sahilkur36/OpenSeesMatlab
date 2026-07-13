@@ -199,6 +199,7 @@ nav:
       - Your First Analysis: "getting_started/quickstart.md"
       - OpenSees Command Interface: "getting_started/opensees.md"
       - Pre- and post-processing and visualization: "getting_started/post.md"
+      - Numerical Substructure Analysis: "getting_started/substructure_analysis.md"
       - Changelog: "getting_started/changelog.md"
 
   - Examples:
@@ -209,6 +210,7 @@ nav:
       - Earthquake Analysis: "examples/earthquake/index.md"
       - Thermal Analysis: "examples/thermal/index.md"
       - Sensitivity Analysis: "examples/sensitivity/index.md"
+      - Numerical Substructure Analysis: "examples/substruct/index.md"
       - Verification: "examples/verify/index.md"
 
   - API Reference:

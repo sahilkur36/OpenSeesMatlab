@@ -35,7 +35,7 @@ classdef PolyscopeApp < handle
             if nargin < 4
                 is2D = false;
             end
-            if obj.initialized_
+            if obj.isInitialized()
                 plotter.polyscope.initialize(obj.ps_, opts, is2D, "postUpdate");
                 return;
             end
@@ -67,11 +67,18 @@ classdef PolyscopeApp < handle
         end
 
         function tf = isInitialized(obj)
-            tf = obj.initialized_;
+            tf = false;
+            if ~obj.initialized_, return; end
+            try
+                tf = logical(obj.ps_.is_initialized());
+            catch
+                % The MEX may already be unloading during MATLAB clear/exit.
+            end
+            if ~tf, obj.initialized_ = false; end
         end
 
         function ensureInit(obj)
-            if ~obj.initialized_
+            if ~obj.isInitialized()
                 obj.init();
             end
         end
@@ -91,9 +98,18 @@ classdef PolyscopeApp < handle
         end
 
         function shutdown(obj)
-            if obj.initialized_
-                obj.ps_.shutdown();
-                obj.initialized_ = false;
+            if ~obj.initialized_, return; end
+            % Clear the local flag first so repeated/re-entrant destruction is
+            % harmless. Polyscope itself is process-global, whereas several
+            % viewer wrappers may each believe they own the initialized state.
+            obj.initialized_ = false;
+            try
+                if obj.ps_.is_initialized()
+                    obj.ps_.shutdown();
+                end
+            catch
+                % Destructors must remain silent if another viewer has already
+                % shut down Polyscope or the MEX is being cleared by MATLAB.
             end
         end
 

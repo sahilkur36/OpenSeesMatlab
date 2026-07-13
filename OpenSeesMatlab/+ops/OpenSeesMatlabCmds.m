@@ -144,6 +144,122 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
             [varargout{1:nargout}] = obj.mexHandle('node', nodeTag, varargin{:});
         end
 
+        function varargout = matlabSubstructure(obj, eleTag, callback, initialState, initialStiffness, interfacePairs, tangentMode)
+            % Create a MATLAB-backed OpenSees substructure Element.
+            %
+            % Syntax
+            % ------
+            %     ops.matlabSubstructure(eleTag, callback, initialState, K0, interfacePairs)
+            %     ops.matlabSubstructure(eleTag, callback, initialState, K0, interfacePairs, tangentMode)
+            %
+            % This command performs callback registration and Element creation
+            % in one operation. The OpenSees model and all interface nodes must
+            % already exist.
+            %
+            % Parameters
+            % ----------
+            % eleTag : positive integer scalar
+            %     OpenSees Element tag and MATLAB callback registry tag.
+            % callback : function_handle
+            %     MATLAB function with signature:
+            %       [response, trialState, status] = callback(action, trial, committedState)
+            % initialState : any MATLAB value
+            %     Initial callback state. Each trial evaluation starts from the
+            %     last state committed by OpenSees.
+            % initialStiffness : real double N-by-N matrix
+            %     Initial interface stiffness K0. It remains separate from the
+            %     current tangent returned by the callback.
+            % interfacePairs : real numeric N-by-2 matrix
+            %     Boundary freedom definition. Every row is [nodeTag, DOF], with
+            %     a one-based OpenSees DOF. Row order defines the order of
+            %     trial.disp, trial.vel, trial.accel, response.force, and the
+            %     rows/columns of response.tangent. N must equal size(K0,1).
+            % tangentMode : "matlab" | "initial", optional
+            %     "matlab" (default) returns the callback's current tangent from
+            %     getTangentStiff(). "initial" always returns K0.
+            %
+            % Callback response
+            % -----------------
+            % response.force   : N-by-1 real double interface resisting force
+            % response.tangent : N-by-N real double current tangent
+            % response.mass    : optional N-by-N mass matrix
+            % response.damping : optional N-by-N damping matrix
+            % status           : numeric scalar; zero means success
+            %
+            % One-node pile-soil example
+            % --------------------------
+            %     K0 = eye(6);
+            %     state0 = createPileSoilState();
+            %     interface = [100 1; 100 2; 100 3; 100 4; 100 5; 100 6];
+            %     ops.matlabSubstructure(5001, @pileSoilModel, state0, K0, interface);
+            %
+            % If MATLAB contains the pile, soil, and fixed far-field reference,
+            % no second fixed OpenSees node is required. If the callback models
+            % only a relative two-ended relation, include both end nodes in
+            % interfacePairs and constrain the reference node when appropriate.
+            %
+            % Notes
+            % -----
+            % The callback must not call the same OpenSees MATLAB MEX recursively.
+            % The Element is local-MEX-only and is not thread-safe.
+
+            arguments
+                obj
+                eleTag (1,1) double {mustBeInteger, mustBePositive}
+                callback (1,1) function_handle
+                initialState
+                initialStiffness (:,:) double {mustBeReal, mustBeNonempty}
+                interfacePairs (:,2) double {mustBeReal, mustBeInteger, mustBePositive}
+                tangentMode (1,1) string {mustBeMember(tangentMode,["matlab","initial"])} = "matlab"
+            end
+
+            nInterface = size(interfacePairs, 1);
+            if size(initialStiffness, 1) ~= size(initialStiffness, 2)
+                error('OpenSeesMatlab:InvalidInitialStiffness', ...
+                    'initialStiffness must be a square matrix.');
+            end
+            if size(initialStiffness, 1) ~= nInterface
+                error('OpenSeesMatlab:InterfaceSizeMismatch', ...
+                    ['size(initialStiffness,1) must equal the number of ', ...
+                     'rows in interfacePairs.']);
+            end
+            if size(unique(interfacePairs, 'rows'), 1) ~= nInterface
+                error('OpenSeesMatlab:DuplicateInterfaceDOF', ...
+                    'interfacePairs cannot contain duplicate [nodeTag, DOF] rows.');
+            end
+
+            [varargout{1:nargout}] = obj.mexHandle('matlabSubstructure', ...
+                eleTag, callback, initialState, initialStiffness, ...
+                interfacePairs, tangentMode);
+        end
+
+        function tf = hasMatlabSubstructure(obj, eleTag)
+            % Check whether a MATLAB substructure callback tag is registered.
+            arguments
+                obj
+                eleTag (1,1) double {mustBeInteger, mustBePositive}
+            end
+            tf = obj.mexHandle('hasMatlabSubstructure', eleTag);
+        end
+
+        function varargout = unregisterMatlabSubstructure(obj, eleTag)
+            % Remove one MATLAB substructure callback registry record.
+            % Call ops.wipe() first if the associated Element is still active.
+            arguments
+                obj
+                eleTag (1,1) double {mustBeInteger, mustBePositive}
+            end
+            [varargout{1:nargout}] = obj.mexHandle( ...
+                'unregisterMatlabSubstructure', eleTag);
+        end
+
+        function varargout = clearMatlabSubstructures(obj)
+            % Remove every MATLAB substructure callback registry record.
+            % This does not wipe the OpenSees Domain; normally call ops.wipe()
+            % before clearing records used by active Elements.
+            [varargout{1:nargout}] = obj.mexHandle('clearMatlabSubstructures');
+        end
+
         function varargout = element(obj, eleType, eleTag, varargin)
             % Define an OpenSees element.
             % Every element has its own type, tag, nodes, and arguments.

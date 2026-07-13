@@ -69,7 +69,9 @@ ops.wipe();
 % Automatically clean up if the script stops because of an error.
 cleanupGuard = onCleanup( ...
     @() cleanupNonlinearDynamicModel(ops));
+```
 
+```matlab
 %% Create nodes and boundary conditions
 %
 %   fixed node 1 ---- nonlinear substructure ---- node 2
@@ -82,7 +84,9 @@ ops.node(1, 0.0);
 ops.node(2, 1.0);
 
 ops.fix(1, 1);
+```
 
+```matlab
 %% Define the interface
 % Each row is:
 %
@@ -104,11 +108,13 @@ ops.matlabSubstructure( ...
     initialState, ...
     K0, ...
     interfacePairs, ...
-    "matlab");
+    "tangentMode", "matlab");
 
 % Do not also assign mass m using ops.mass(). The physical mass is already
 % returned by the MATLAB callback.
+```
 
+```matlab
 %% Create the sinusoidal external load
 % loadValues already contains the value at t = 0. Therefore,
 % "-prependZero" must not be used, or the loading history will be shifted
@@ -130,7 +136,9 @@ ops.pattern( ...
 
 % A unit reference load is multiplied by the Path time-series factor.
 ops.load(2, 1.0);
+```
 
+```matlab
 %% Configure the nonlinear transient analysis
 
 ops.constraints("Plain");
@@ -496,9 +504,9 @@ Callback statistics
   Trial calls                  : 14977
   Total calls                  : 19978
   Committed steps              : 5000
-  Total callback time          : 6.426944e+00 s
-  Mean callback time           : 3.217010e-04 s
-  Maximum callback time        : 3.737100e-03 s
+  Total callback time          : 6.394739e+00 s
+  Mean callback time           : 3.200890e-04 s
+  Maximum callback time        : 1.432300e-03 s
 
 
 Verification status            : PASSED

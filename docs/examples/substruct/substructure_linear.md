@@ -2,7 +2,7 @@
 
 This example demonstrates the complete workflow for a MATLAB\-backed OpenSees substructure.
 
-OpenSees owns:
+**OpenSees owns:**
 
   1. Global nodes and constraints
 
@@ -12,7 +12,7 @@ OpenSees owns:
 
   4. The analysis algorithm
 
-The MATLAB callback owns:
+**The MATLAB callback owns:**
 
   1. The condensed substructure model
 
@@ -28,25 +28,27 @@ The example uses a linear spring and verifies the OpenSees results against the a
 
 Two one\-dimensional interface nodes are connected by a spring:
 
-  fixed node 1 \-\-\-\- MATLAB spring (k) \-\-\-\- node 2 \-\-\-> P
+  **fixed node 1 \-\-\-\- MATLAB spring (k) \-\-\-\- node 2 \-\-\-> P**
 
-Node 1 is fixed. A force P is applied to node 2.
+Node 1 is fixed.
+
+A force P is applied to node 2.
 
 The analytical solution is:
 
-  u2 = P/k
+$$
+  u2 = \frac{P}{k}
+$$
 
 Using the interface order
 
-  [node 1 DOF 1;
+  [node 1   DOF 1;
 
-   node 2 DOF 1]
+   node 2   DOF 1]
 
 the expected internal resisting force is:
 
-  [\-P;
-
-&#160;&#160;&#160;&#160; P]
+  [\-P;  P]
 
 ```matlab
 clc; clear; close all;
@@ -68,6 +70,25 @@ initialState = struct("K", K0);
 %% Create the OpenSees command interface
 
 opsMAT = OpenSeesMatlab();
+```
+
+<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-weight:600;">Output</div>
+<div style="white-space:pre-wrap; font-family:Consolas;">
+============================================================
+  OpenSeesMatlab v3.8.0.2
+  OpenSees MEX Interface for MATLAB
+  Copyright (c) 2026, By Yexiang Yan
+
+
+  Type 'help OpenSeesMatlab' in MATLAB for documentation.
+  Documentation also available at
+  https://openseesmatlab.readthedocs.io/en/latest/
+============================================================
+</div>
+</div>
+
+```matlab
 ops = opsMAT.opensees;
 
 % Remove any model left from an earlier run.
@@ -76,7 +97,9 @@ ops.wipe();
 % If an error stops the script, this guard removes the active Element before
 % clearing its MATLAB callback record.
 cleanupGuard = onCleanup(@() cleanupLinearSubstructure(ops));
+```
 
+```matlab
 %% Create the OpenSees model and interface nodes
 % The model and every node referenced by interfacePairs must exist before
 % matlabSubstructure is called.
@@ -88,7 +111,9 @@ ops.node(2, 1.0);
 
 % Fix the only DOF of node 1.
 ops.fix(1, 1);
+```
 
+```matlab
 %% Define the interface DOFs
 % Every row of interfacePairs is:
 %
@@ -120,15 +145,16 @@ ops.matlabSubstructure( ...
     initialState, ...
     K0, ...
     interfacePairs, ...
-    "matlab");
-
+    "tangentMode", "matlab");
 % The final argument controls which tangent OpenSees uses:
 %
 %   "matlab"  - use response.tangent returned by the callback
 %   "initial" - always use the initial stiffness K0
 %
 % "matlab" is appropriate when the callback supplies the current tangent.
+```
 
+```matlab
 %% Apply the external load
 
 ops.timeSeries("Linear", 1);
@@ -161,7 +187,9 @@ ok = ops.analyze(1);
 if ok ~= 0
     error("Linear substructure analysis failed with code %d.", ok);
 end
+```
 
+```matlab
 %% Read the numerical response
 % eleResponse reads data already stored by the C++ Element. These queries do
 % not invoke the MATLAB callback again.
@@ -182,7 +210,9 @@ initialStiffnessFlat = ops.eleResponse( ...
 
 interfaceDefinition = ops.eleResponse( ...
     eleTag, "interfacePairs");
+```
 
+```matlab
 %% Convert flattened matrices
 % The current MATLAB wrapper can return an OpenSees matrix as a flattened
 % row vector. Convert it back to an N-by-N MATLAB matrix.
@@ -194,7 +224,9 @@ tangent = reshape( ...
 
 initialStiffness = reshape( ...
     initialStiffnessFlat, nInterface, nInterface).';
+```
 
+```matlab
 %% Calculate the analytical solution
 
 uExpected = P / k;
@@ -210,7 +242,9 @@ forceExpected = [
 ];
 
 tangentExpected = K0;
+```
 
+```matlab
 %% Verify displacement, force, and tangent stiffness
 
 displacementError = abs(u2 - uExpected);
@@ -243,7 +277,9 @@ assert(tangentError < tolerance, ...
 
 assert(initialStiffnessError < tolerance, ...
     "Initial stiffness verification failed.");
+```
 
+```matlab
 %% Display the verification results
 
 verification = table( ...
@@ -407,7 +443,7 @@ fprintf("Mean callback time: %.6g seconds\n", meanCallbackTime);
 <div style="font-size:0.85em; color:#87ae73;">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
-Mean callback time: 0.000807625 seconds
+Mean callback time: 0.0012484 seconds
 </div>
 </div>
 
@@ -446,7 +482,9 @@ ops.clearMatlabSubstructures();
 
 % The explicit cleanup succeeded, so remove the automatic cleanup guard.
 clear cleanupGuard
+```
 
+```matlab
 %% MATLAB callback used by the Element
 % The callback signature is:
 %

@@ -144,13 +144,20 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
             [varargout{1:nargout}] = obj.mexHandle('node', nodeTag, varargin{:});
         end
 
-        function varargout = matlabSubstructure(obj, eleTag, callback, initialState, initialStiffness, interfacePairs, tangentMode)
+        function varargout = matlabSubstructure(obj, eleTag, callback, initialState, initialStiffness, interfacePairs, varargin)
             % Create a MATLAB-backed OpenSees substructure Element. This is an additional feature added to OpenSeesMatlab and is not a native OpenSees command.
             %
             % Syntax
             % ------
-            %     ops.matlabSubstructure(eleTag, callback, initialState, K0, interfacePairs)
-            %     ops.matlabSubstructure(eleTag, callback, initialState, K0, interfacePairs, tangentMode)
+            %     ops.matlabSubstructure(eleTag, callback, initialState, ...
+            %         K0, interfacePairs)
+            %     ops.matlabSubstructure(eleTag, callback, initialState, ...
+            %         K0, interfacePairs, "tangentMode", "initial")
+            %
+            % The five inputs through interfacePairs are required positional
+            % arguments. Optional settings use name-value pairs. Option names
+            % are case-insensitive but must be complete. The former trailing
+            % positional tangent mode remains accepted for compatibility.
             %
             % This command performs callback registration and Element creation
             % in one operation. The OpenSees model and all interface nodes must
@@ -160,26 +167,75 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
             % ----------
             % eleTag : positive integer scalar
             %     OpenSees Element tag and MATLAB callback registry tag.
-            % callback : function_handle
+            % callback : function_handle (required positional)
             %     MATLAB function with signature:
             %       [response, trialState, status] = callback(action, trial, committedState)
-            % initialState : any MATLAB value
+            % initialState : any MATLAB value (required positional)
             %     Initial callback state. Each trial evaluation starts from the
             %     last state committed by OpenSees.
-            % initialStiffness : real double N-by-N matrix
+            % initialStiffness : real double N-by-N matrix (required positional)
             %     Initial interface stiffness K0. It remains separate from the
             %     current tangent returned by the callback.
-            % interfacePairs : real numeric N-by-2 matrix
+            % interfacePairs : real numeric N-by-2 matrix (required positional)
             %     Boundary freedom definition. Every row is [nodeTag, DOF], with
             %     a one-based OpenSees DOF. Row order defines the order of
             %     trial.disp, trial.vel, trial.accel, response.force, and the
             %     rows/columns of response.tangent. N must equal size(K0,1).
-            % tangentMode : "matlab" | "initial", optional
+            % "tangentMode" : "matlab" | "initial", optional
             %     "matlab" (default) returns the callback's current tangent from
-            %     getTangentStiff(). "initial" always returns K0.
+            %     getTangentStiff(). "initial" returns the fixed Element initial
+            %     stiffness: response.initialStiffness from init, or K0 if that
+            %     field was omitted. getInitialStiff() is independent of this
+            %     mode. An OpenSees algorithm that explicitly requests initial
+            %     stiffness therefore still gets it in "matlab" mode. The mode
+            %     changes only this Element's stiffness contribution; it does
+            %     not select/restrict the algorithm or integrator, or change
+            %     force, mass, damping, time integration, or state management.
             %
-            % Callback response
-            % -----------------
+            % Callback data ownership
+            % -----------------------
+            % action is a lifecycle request owned by C++.
+            % trial is read-only OpenSees kinematics/context.
+            % committedState is the previously committed trialState, so both
+            % have the same MATLAB type and user-defined fields. MATLAB defines
+            % every field; C++ only stores, passes, commits, and restores the
+            % value without adding fields or interpreting its contents.
+            % response is the current Element response returned to OpenSees.
+            % trialState is candidate MATLAB history, accepted only on commit.
+            % status is scalar: zero is success, nonzero is failure/unsupported.
+            %
+            % trial fields (N is the interface row count)
+            % ------------------------------------------------
+            % disp, vel, accel       : N-by-1 current trial kinematics
+            % committedDisp          : N-by-1 last committed displacement;
+            %                          empty during init
+            % committedForce         : N-by-1 last committed internal force;
+            %                          empty during init, excludes C*v and M*a
+            % time                   : current OpenSees Domain time
+            % dt                     : time - previousCommittedTime
+            % previousCommittedTime  : time at last successful Element commit
+            % loadFactor             : factor of the only load pattern; empty
+            %                          when zero or multiple patterns exist
+            % elementTag             : this Element tag
+            % action                 : copy of the first callback argument
+            % isInitial              : true for init/reverttostart
+            % isNewTime              : time differs from committed time; this
+            %                          does not mean the trial will commit
+            % activeDofCount         : N
+            % interfacePairs         : N-by-2 [nodeTag, oneBasedDOF]
+            % callId                 : trial evaluation counter
+            % committedRevision      : successful Element commit count
+            %
+            % committedState does not automatically contain OpenSees force,
+            % displacement, or load factor. Put MATLAB model history (plastic
+            % variables, damage, internal DOFs, caches) in committedState and
+            % read authoritative OpenSees quantities from trial. Optional trial
+            % context fields always exist; check possibly empty values with
+            % isempty. For a transient pattern, loadFactor is its current value,
+            % not necessarily a static multiplier.
+            %
+            % Callback response fields
+            % ------------------------
             % response.force   : N-by-1 real double interface resisting force
             % response.tangent : N-by-N real double current tangent
             % response.mass    : optional N-by-N mass matrix
@@ -188,6 +244,25 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
             % response.initialMass      : optional N-by-N initial mass
             % response.initialDamping   : optional N-by-N initial damping
             % status           : numeric scalar; zero means success
+            % trialState       : any MATLAB value containing candidate history;
+            %                    after commit it becomes committedState
+            %
+            % Action-specific state lifecycle
+            % -------------------------------
+            % init          : third input is initialState; returned trialState
+            %                 becomes the initial committed MATLAB snapshot
+            % trial         : third input is the last committed MATLAB snapshot;
+            %                 returned trialState remains a candidate
+            % commit        : third input is the accepted trial candidate;
+            %                 returned state may finalize it before commit
+            % revert        : third input is the committed MATLAB snapshot;
+            %                 returned state is ignored and C++ restores locally
+            % reverttostart : third input is initialState; returned state ignored
+            % shutdown      : third input is the last stored committed state;
+            %                 returned state ignored, trial may be empty
+            %
+            % For actions other than init/trial, response is unused and may be
+            % struct(). Callbacks implementing only init/trial remain supported.
             %
             % OpenSees assembles the total resisting force as
             % response.force + response.damping*trial.vel +
@@ -197,8 +272,7 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
             % is added to response.damping by the Element, so the callback
             % must not duplicate that contribution.
             %
-            % The principal trial fields are disp, vel, accel, time, dt, and
-            % elementTag. Each evaluation starts from committedState; return
+            % Each trial evaluation starts from committedState; return
             % only a candidate trialState and let OpenSees commit it. A single
             % analysis step can issue several trial calls at the same time;
             % never advance persistent/global history on each call.
@@ -216,7 +290,8 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
             %     K0 = eye(6);
             %     state0 = createPileSoilState();
             %     interface = [100 1; 100 2; 100 3; 100 4; 100 5; 100 6];
-            %     ops.matlabSubstructure(5001, @pileSoilModel, state0, K0, interface);
+            %     ops.matlabSubstructure(5001, ...
+            %         @pileSoilModel, state0, K0, interface);
             %
             % If MATLAB contains the pile, soil, and fixed far-field reference,
             % no second fixed OpenSees node is required. If the callback models
@@ -237,9 +312,28 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
                 callback (1,1) function_handle
                 initialState
                 initialStiffness (:,:) double {mustBeReal, mustBeNonempty}
-                interfacePairs (:,2) double {mustBeReal, mustBeInteger, mustBePositive}
-                tangentMode (1,1) string {mustBeMember(tangentMode,["matlab","initial"])} = "matlab"
+                interfacePairs (:,2) double {mustBeReal, mustBeNonempty, mustBeFinite, mustBeInteger, mustBePositive}
             end
+
+            arguments (Repeating)
+                varargin
+            end
+
+            % Preserve the former trailing positional tangent mode.
+            if isscalar(varargin)
+                varargin = {"tangentMode", varargin{1}};
+            end
+
+            parser = inputParser;
+            parser.FunctionName = 'ops.matlabSubstructure';
+            parser.CaseSensitive = false;
+            parser.PartialMatching = false;
+            addParameter(parser, 'tangentMode', "matlab", ...
+                @(x) (ischar(x) || (isstring(x) && isscalar(x))) && ...
+                    any(strcmpi(string(x), ["matlab","initial"])));
+            parse(parser, varargin{:});
+
+            tangentMode = lower(string(parser.Results.tangentMode));
 
             nInterface = size(interfacePairs, 1);
             if size(initialStiffness, 1) ~= size(initialStiffness, 2)
@@ -257,8 +351,8 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
             end
 
             [varargout{1:nargout}] = obj.mexHandle('matlabSubstructure', ...
-                eleTag, callback, initialState, initialStiffness, ...
-                interfacePairs, tangentMode);
+                eleTag, callback, initialState, initialStiffness, interfacePairs, ...
+                'tangentMode', tangentMode);
         end
 
         function tf = hasMatlabSubstructure(obj, eleTag)

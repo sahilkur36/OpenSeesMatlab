@@ -145,7 +145,7 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
         end
 
         function varargout = matlabSubstructure(obj, eleTag, callback, initialState, initialStiffness, interfacePairs, tangentMode)
-            % Create a MATLAB-backed OpenSees substructure Element.
+            % Create a MATLAB-backed OpenSees substructure Element. This is an additional feature added to OpenSeesMatlab and is not a native OpenSees command.
             %
             % Syntax
             % ------
@@ -184,7 +184,32 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
             % response.tangent : N-by-N real double current tangent
             % response.mass    : optional N-by-N mass matrix
             % response.damping : optional N-by-N damping matrix
+            % response.initialStiffness : optional N-by-N initial stiffness
+            % response.initialMass      : optional N-by-N initial mass
+            % response.initialDamping   : optional N-by-N initial damping
             % status           : numeric scalar; zero means success
+            %
+            % OpenSees assembles the total resisting force as
+            % response.force + response.damping*trial.vel +
+            % response.mass*trial.accel. Do not include the same C*v or M*a
+            % terms in response.force. UniformExcitation uses the standard
+            % -M*R*groundAcceleration Element load. Assigned Rayleigh damping
+            % is added to response.damping by the Element, so the callback
+            % must not duplicate that contribution.
+            %
+            % The principal trial fields are disp, vel, accel, time, dt, and
+            % elementTag. Each evaluation starts from committedState; return
+            % only a candidate trialState and let OpenSees commit it. A single
+            % analysis step can issue several trial calls at the same time;
+            % never advance persistent/global history on each call.
+            %
+            % For static stiffness-only behavior, omit mass and damping. For
+            % transient behavior, return them only if they belong to this
+            % substructure; do not duplicate the same mass on OpenSees nodes.
+            % Missing trial mass/damping means zero for that trial. K0 is the
+            % fallback initial stiffness, not necessarily the current tangent.
+            % response.tangent should be consistent with response.force for
+            % reliable Newton convergence.
             %
             % One-node pile-soil example
             % --------------------------
@@ -200,8 +225,11 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
             %
             % Notes
             % -----
-            % The callback must not call the same OpenSees MATLAB MEX recursively.
-            % The Element is local-MEX-only and is not thread-safe.
+            %   * This is an additional feature added to OpenSeesMatlab and is not a native OpenSees command.
+            %   * Create the model and every interface node before this command.The callback represents an already-condensed boundary model; the command does not automatically condense a MATLAB FE model.
+            %   * Ground reference, mass, damping, and earthquake excitation must not be represented twice between MATLAB and OpenSees.
+            %   * The callback must not call the same OpenSees MATLAB MEX recursively.
+            %   * The Element is local-MEX-only and is not thread-safe.
 
             arguments
                 obj
@@ -235,6 +263,10 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
 
         function tf = hasMatlabSubstructure(obj, eleTag)
             % Check whether a MATLAB substructure callback tag is registered.
+            %
+            % Notes
+            % -----
+            % This is an additional feature added to OpenSeesMatlab and is not a native OpenSees command.
             arguments
                 obj
                 eleTag (1,1) double {mustBeInteger, mustBePositive}
@@ -245,6 +277,10 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
         function varargout = unregisterMatlabSubstructure(obj, eleTag)
             % Remove one MATLAB substructure callback registry record.
             % Call ops.wipe() first if the associated Element is still active.
+            %
+            % Notes
+            % -----
+            % This is an additional feature added to OpenSeesMatlab and is not a native OpenSees command.
             arguments
                 obj
                 eleTag (1,1) double {mustBeInteger, mustBePositive}
@@ -257,6 +293,10 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
             % Remove every MATLAB substructure callback registry record.
             % This does not wipe the OpenSees Domain; normally call ops.wipe()
             % before clearing records used by active Elements.
+            %
+            % Notes
+            % -----
+            % This is an additional feature added to OpenSeesMatlab and is not a native OpenSees command.
             [varargout{1:nargout}] = obj.mexHandle('clearMatlabSubstructures');
         end
 

@@ -11,7 +11,7 @@ ops = opsMat.opensees;
 ops.wipe();
 ```
 
-`opsMat` owns the toolbox modules. `ops` is only a shorter reference to its `.opensees` command interface.
+[`opsMat`][OpenSeesMatlab] owns the toolbox modules. `ops` is only a shorter reference to its [`.opensees` command interface][ops.OpenSeesMatlabCmds].
 
 ## 2. Define the model
 
@@ -49,7 +49,7 @@ For the interactive Polyscope backend, use:
 opsMat.vis.polyscope.plotModel();
 ```
 
-The regular plot is the simplest verification path. Polyscope is useful when you want an interactive GUI with visibility, display, slicing, and other viewer controls.
+The regular [`plotModel`][plotter.OpenSeesMatlabVis.plotModel] plot is the simplest verification path. The Polyscope [`plotModel`][plotter.OpenSeesMatlabVisPolyscope.plotModel] viewer is useful when you want an interactive GUI with visibility, display, slicing, and other viewer controls.
 
 ## 4. Apply the load
 
@@ -86,7 +86,7 @@ fprintf('Analytical value:      %.6e m\n', uxExpected);
 fprintf('Relative error:        %.3e\n', abs(ux - uxExpected) / uxExpected);
 ```
 
-`nodeDisp` returns a MATLAB scalar here. Larger workflows can store values in arrays, tables, structs, or files using normal MATLAB tools.
+[`nodeDisp`][ops.OpenSeesMatlabCmds.nodeDisp] returns a MATLAB scalar here. Larger workflows can store values in arrays, tables, structs, or files using normal MATLAB tools.
 
 ## 7. Clean up
 
@@ -140,4 +140,3 @@ ops.wipe();
 - Learn MATLAB argument conventions in the [OpenSees command interface](opensees.md).
 - Use an ODB for time histories and response visualization in [Pre/post-processing and visualization](post.md).
 - Browse the [examples](../examples/index.md) for nonlinear, dynamic, structural, and geotechnical models.
-

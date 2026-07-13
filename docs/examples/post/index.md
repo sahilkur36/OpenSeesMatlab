@@ -10,7 +10,7 @@ Examples for additional preprocessing, post-processing, and visualization featur
 
 ## Visualization
 
-- [<span style="color:rgb(213,80,0)">**2D Portal Frame**</span>](./visualization/post_2d_Portal_Frame.md)
+- [<span style="color:rgb(213,80,0)">**Static analysis and visualization of 2D Portal Frame**</span>](./visualization/post_2d_Portal_Frame.md)
 - [<span style="color:rgb(213,80,0)">**Soil\-structure interaction: 2d Portal Frame**</span>](./visualization/post_soil_structure_interaction_2d_portal_frame.md)
 - [<span style="color:rgb(213,80,0)">**Excavation Supported by Cantilevered Sheet Pile Wall**</span>](./visualization/post_excavation.md)
 

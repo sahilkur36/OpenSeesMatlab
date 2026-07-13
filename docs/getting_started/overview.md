@@ -4,7 +4,7 @@ This page explains how OpenSeesMatlab is organized and where each part fits. If 
 
 ## One object, several modules
 
-Start every workflow by creating one top-level object:
+Start every workflow by creating one top-level [`OpenSeesMatlab`][OpenSeesMatlab] object:
 
 ```matlab
 opsMat = OpenSeesMatlab();
@@ -15,13 +15,13 @@ ops = opsMat.opensees;
 
 | Module | Responsibility | Typical calls |
 |---|---|---|
-| `.opensees` | Build and query the OpenSees domain | `model`, `node`, `element`, `analyze`, `nodeDisp` |
-| `.pre` | Prepare data before analysis | units, fiber sections, meshes, mass and load helpers |
-| `.anlys` | Coordinate higher-level analyses | robust analysis stepping and reusable analysis workflows |
-| `.post` | Collect and organize model/results data | `getModelData`, `createODB`, `getNodalResponse` |
-| `.vis` | Plot with MATLAB graphics | `plotModel`, `plotEigen`, `plotDeformation` |
-| `.vis.polyscope` | Explore models/results in an interactive GUI | `plotModel`, `plotEigen`, response viewers |
-| `.utils` | General utilities | example and toolbox helper functions |
+| [`.opensees`][ops.OpenSeesMatlabCmds] | Build and query the OpenSees domain | `model`, `node`, `element`, `analyze`, `nodeDisp` |
+| [`.pre`][pre.OpenSeesMatlabPre] | Prepare data before analysis | units, fiber sections, meshes, mass and load helpers |
+| [`.anlys`][analysis.OpenSeesMatlabAnalysis] | Coordinate higher-level analyses | robust analysis stepping and reusable analysis workflows |
+| [`.post`][post.OpenSeesMatlabPost] | Collect and organize model/results data | `getModelData`, `createODB`, `getNodalResponse` |
+| [`.vis`][plotter.OpenSeesMatlabVis] | Plot with MATLAB graphics | `plotModel`, `plotEigen`, `plotDeformation` |
+| [`.vis.polyscope`][plotter.OpenSeesMatlabVisPolyscope] | Explore models/results in an interactive GUI | `plotModel`, `plotEigen`, response viewers |
+| [`.utils`][utils.OpenSeesMatlabTool] | General utilities | example and toolbox helper functions |
 
 All modules refer to the same underlying OpenSees domain. For example, nodes created with `ops.node` are immediately available to `opsMat.post.getModelData()` and `opsMat.vis.plotModel()`.
 
@@ -87,7 +87,7 @@ Use `ops.recorder(...)` when compatibility with established OpenSees workflows a
 
 ### OpenSeesMatlab ODB
 
-Use `opsMat.post.createODB(...)` when you want structured response retrieval, GUI exploration, or PVD export. Avoid retrieving ODB responses before recording is complete because retrieval closes the corresponding recording workflow.
+Use [`opsMat.post.createODB(...)`][post.OpenSeesMatlabPost.createODB] when you want structured response retrieval, GUI exploration, or PVD export. Avoid retrieving ODB responses before recording is complete because retrieval closes the corresponding recording workflow.
 
 ## Object lifetime and model state
 
@@ -106,4 +106,3 @@ OpenSees commands operate on persistent domain state held by the MEX interface. 
 3. Read the [command interface guide](opensees.md) when translating an OpenSees model.
 4. Read [Pre/post-processing and visualization](post.md) when you need ODBs or response viewers.
 5. Move to the [examples](../examples/index.md) for larger structural, earthquake, and geotechnical workflows.
-

@@ -35,8 +35,8 @@ Parallel pool workers: 12
 
 
   Type 'help OpenSeesMatlab' in MATLAB for documentation.
-  Documentation also available at 
-  https://openseesmatlab.readthedocs.io/en/latest/ 
+  Documentation also available at
+  https://openseesmatlab.readthedocs.io/en/latest/
 ============================================================
 
 
@@ -47,8 +47,8 @@ Parallel pool workers: 12
 
 
   Type 'help OpenSeesMatlab' in MATLAB for documentation.
-  Documentation also available at 
-  https://openseesmatlab.readthedocs.io/en/latest/ 
+  Documentation also available at
+  https://openseesmatlab.readthedocs.io/en/latest/
 ============================================================
 
 
@@ -59,8 +59,8 @@ Parallel pool workers: 12
 
 
   Type 'help OpenSeesMatlab' in MATLAB for documentation.
-  Documentation also available at 
-  https://openseesmatlab.readthedocs.io/en/latest/ 
+  Documentation also available at
+  https://openseesmatlab.readthedocs.io/en/latest/
 ============================================================
 
 
@@ -71,8 +71,8 @@ Parallel pool workers: 12
 
 
   Type 'help OpenSeesMatlab' in MATLAB for documentation.
-  Documentation also available at 
-  https://openseesmatlab.readthedocs.io/en/latest/ 
+  Documentation also available at
+  https://openseesmatlab.readthedocs.io/en/latest/
 ============================================================
 
 
@@ -83,8 +83,8 @@ Parallel pool workers: 12
 
 
   Type 'help OpenSeesMatlab' in MATLAB for documentation.
-  Documentation also available at 
-  https://openseesmatlab.readthedocs.io/en/latest/ 
+  Documentation also available at
+  https://openseesmatlab.readthedocs.io/en/latest/
 ============================================================
 
 
@@ -95,8 +95,8 @@ Parallel pool workers: 12
 
 
   Type 'help OpenSeesMatlab' in MATLAB for documentation.
-  Documentation also available at 
-  https://openseesmatlab.readthedocs.io/en/latest/ 
+  Documentation also available at
+  https://openseesmatlab.readthedocs.io/en/latest/
 ============================================================
 
 
@@ -107,8 +107,8 @@ Parallel pool workers: 12
 
 
   Type 'help OpenSeesMatlab' in MATLAB for documentation.
-  Documentation also available at 
-  https://openseesmatlab.readthedocs.io/en/latest/ 
+  Documentation also available at
+  https://openseesmatlab.readthedocs.io/en/latest/
 ============================================================
 
 
@@ -119,8 +119,8 @@ Parallel pool workers: 12
 
 
   Type 'help OpenSeesMatlab' in MATLAB for documentation.
-  Documentation also available at 
-  https://openseesmatlab.readthedocs.io/en/latest/ 
+  Documentation also available at
+  https://openseesmatlab.readthedocs.io/en/latest/
 ============================================================
 
 
@@ -131,8 +131,8 @@ Parallel pool workers: 12
 
 
   Type 'help OpenSeesMatlab' in MATLAB for documentation.
-  Documentation also available at 
-  https://openseesmatlab.readthedocs.io/en/latest/ 
+  Documentation also available at
+  https://openseesmatlab.readthedocs.io/en/latest/
 ============================================================
 
 
@@ -143,8 +143,8 @@ Parallel pool workers: 12
 
 
   Type 'help OpenSeesMatlab' in MATLAB for documentation.
-  Documentation also available at 
-  https://openseesmatlab.readthedocs.io/en/latest/ 
+  Documentation also available at
+  https://openseesmatlab.readthedocs.io/en/latest/
 ============================================================
 
 
@@ -155,8 +155,8 @@ Parallel pool workers: 12
 
 
   Type 'help OpenSeesMatlab' in MATLAB for documentation.
-  Documentation also available at 
-  https://openseesmatlab.readthedocs.io/en/latest/ 
+  Documentation also available at
+  https://openseesmatlab.readthedocs.io/en/latest/
 ============================================================
 
 
@@ -167,8 +167,8 @@ Parallel pool workers: 12
 
 
   Type 'help OpenSeesMatlab' in MATLAB for documentation.
-  Documentation also available at 
-  https://openseesmatlab.readthedocs.io/en/latest/ 
+  Documentation also available at
+  https://openseesmatlab.readthedocs.io/en/latest/
 ============================================================
 
 
@@ -180,15 +180,15 @@ Speedup (serial/parallel): 2.633
     ______    _____    __    _______    ________    _______    ____________
 
 
-       1      0.01     24       2        100.42      true           ""     
-       2      0.01     26       2        108.23      true           ""     
-       3      0.01     28       2        116.04      true           ""     
-       4      0.01     30       2        123.85      true           ""     
-       5      0.01     32       2        131.66      true           ""     
-       6      0.01     34       2        139.47      true           ""     
-       7      0.01     36       2        147.28      true           ""     
-       8      0.01     38       2        155.09      true           ""     
-       9      0.01     40       2        162.91      true           ""     
+       1      0.01     24       2        100.42      true           ""
+       2      0.01     26       2        108.23      true           ""
+       3      0.01     28       2        116.04      true           ""
+       4      0.01     30       2        123.85      true           ""
+       5      0.01     32       2        131.66      true           ""
+       6      0.01     34       2        139.47      true           ""
+       7      0.01     36       2        147.28      true           ""
+       8      0.01     38       2        155.09      true           ""
+       9      0.01     40       2        162.91      true           ""
       10      0.01     42       2        170.72      true           ""
 </div>
 </div>
@@ -203,21 +203,17 @@ function [resultsSerial, resultsParallel] = demo_pushover_parfor_alpha_sy()
 % Parallel pushover study for a 2D three-bar truss model.
 %
 
-
     %% Parameter sets
     alphaList = 0.01:0.01:0.12;
     sYList    = 24:2:48;
-
 
     nAlpha = numel(alphaList);
     nSY    = numel(sYList);
     nCases = nAlpha * nSY;
 
-
     fprintf('Total number of cases: %d\n', nCases);
     fprintf('alpha count: %d\n', nAlpha);
     fprintf('sY count: %d\n', nSY);
-
 
     %% Generate parameter combinations
     caseTable = zeros(nCases, 3);   % [caseID, alpha, sY]
@@ -229,36 +225,30 @@ function [resultsSerial, resultsParallel] = demo_pushover_parfor_alpha_sy()
         end
     end
 
-
     %% Preallocate result containers
     resultsSerial   = preallocateResults(nCases);
     resultsParallel = preallocateResults(nCases);
-
 
     %% ---------------- Serial run ----------------
     fprintf('\nRunning serial computation...\n');
     tSerial = tic;
 
-
     for icase = 1:nCases
         resultsSerial(icase) = runSinglePushoverCase(caseTable(icase, :));
     end
 
-
     timeSerial = toc(tSerial);
     fprintf('Serial elapsed time: %.6f s\n', timeSerial);
-
 
     %% ---------------- Parallel run ----------------
     if license('test', 'Distrib_Computing_Toolbox')
         fprintf('\nRunning parallel computation...\n');
 
-
         pc = parcluster('local');
         nWorkers = 12;
         pc.NumWorkers = nWorkers;
         saveProfile(pc);
-        
+
         pool = gcp('nocreate');
         if isempty(pool)
             pool = parpool('local', nWorkers);
@@ -267,32 +257,25 @@ function [resultsSerial, resultsParallel] = demo_pushover_parfor_alpha_sy()
             pool = parpool('local', nWorkers);
         end
 
-
         fprintf('Requested workers: %d\n', 12);
         fprintf('Actual parallel workers used: %d\n', pool.NumWorkers);
 
-
         fprintf('Parallel pool workers: %d\n', pool.NumWorkers);
 
-
         tParallel = tic;
-
 
         parfor icase = 1:nCases
             resultsParallel(icase) = runSinglePushoverCase(caseTable(icase, :));
         end
 
-
         timeParallel = toc(tParallel);
         fprintf('Parallel elapsed time: %.6f s\n', timeParallel);
-
 
         fprintf('Speedup (serial/parallel): %.3f\n\n\n', timeSerial / timeParallel);
     else
         warning('Parallel Computing Toolbox not found. Parallel run is skipped.');
         timeParallel = NaN;
     end
-
 
     %% Show summary table for parallel results if available, otherwise serial
     if all(arrayfun(@(x) ~isempty(x.CaseID), resultsParallel))
@@ -301,29 +284,24 @@ function [resultsSerial, resultsParallel] = demo_pushover_parfor_alpha_sy()
         resultsToShow = resultsSerial;
     end
 
-
     T = struct2table(resultsToShow);
     nShow = min(10, height(T));
     disp(T(1:nShow, {'CaseID','alpha','sY','maxDisp','maxForce','success','errorMessage'}))
 
-
     %% Plot pushover curves for varying sY at fixed alpha
     alphaFixed = 0.05;
     cmap = parula(nSY);
-
 
     figure('Color', 'w', 'Name', sprintf('Pushover Curves - alpha = %.3g', alphaFixed));
     hold on;
     grid on;
     box on;
 
-
     for is = 1:nSY
         for icase = 1:nCases
             if resultsToShow(icase).success && ...
                abs(resultsToShow(icase).alpha - alphaFixed) < 1e-12 && ...
                abs(resultsToShow(icase).sY    - sYList(is)) < 1e-12
-
 
                 plot(resultsToShow(icase).disp, resultsToShow(icase).baseForce, ...
                     'LineWidth', 1.5, ...
@@ -334,24 +312,20 @@ function [resultsSerial, resultsParallel] = demo_pushover_parfor_alpha_sy()
         end
     end
 
-
     xlabel('Node 4 displacement');
     ylabel('Load factor \times P_x');
     xlim([0 3]);
-    title(sprintf('Pushover Curves (fixed \\alpha = %.3g)', alphaFixed));
+    title(sprintf('Pushover Curves (fixed \alpha = %.3g)', alphaFixed));
     legend('Location', 'best');
-
 
     %% Plot pushover curves for varying alpha at fixed sY
     sYFixed = 36.0;
     cmap = parula(nAlpha);
 
-
     figure('Color', 'w', 'Name', sprintf('Pushover Curves - sY = %.3g', sYFixed));
     hold on;
     grid on;
     box on;
-
 
     for ia = 1:nAlpha
         for icase = 1:nCases
@@ -359,16 +333,14 @@ function [resultsSerial, resultsParallel] = demo_pushover_parfor_alpha_sy()
                abs(resultsToShow(icase).sY    - sYFixed) < 1e-12 && ...
                abs(resultsToShow(icase).alpha - alphaList(ia)) < 1e-12
 
-
                 plot(resultsToShow(icase).disp, resultsToShow(icase).baseForce, ...
                     'LineWidth', 1.5, ...
                     'Color', cmap(ia, :), ...
-                    'DisplayName', sprintf('\\alpha = %.3g', resultsToShow(icase).alpha));
+                    'DisplayName', sprintf('\alpha = %.3g', resultsToShow(icase).alpha));
                 break;
             end
         end
     end
-
 
     xlabel('Node 4 displacement');
     ylabel('Load factor \times P_x');
@@ -377,10 +349,8 @@ function [resultsSerial, resultsParallel] = demo_pushover_parfor_alpha_sy()
     legend('Location', 'best');
 end
 
-
 function results = preallocateResults(nCases)
 %PREALLOCATERESULTS Preallocate result struct array.
-
 
     results(nCases, 1) = struct( ...
         'CaseID', [], ...
@@ -395,18 +365,15 @@ function results = preallocateResults(nCases)
     );
 end
 
-
 ```
 
 ```matlab
 function out = runSinglePushoverCase(caseRow)
 %RUNSINGLEPUSHOVERCASE Run one pushover analysis for one parameter set.
 
-
     caseID = caseRow(1);
     alpha  = caseRow(2);
     sY     = caseRow(3);
-
 
     out = struct( ...
         'CaseID', caseID, ...
@@ -420,12 +387,10 @@ function out = runSinglePushoverCase(caseRow)
         'errorMessage', "" ...
     );
 
-
     try
         %% Create independent OpenSeesMatlab object
         opsMAT = OpenSeesMatlab();
         ops = opsMAT.opensees;
-
 
         %% Model parameters
         A      = 4.0;
@@ -434,38 +399,31 @@ function out = runSinglePushoverCase(caseRow)
         Px     = 160.0;
         Py     = 0.0;
 
-
         %% Build model
         ops.wipe();
         ops.model("basic", "-ndm", 2, "-ndf", 2);
-
 
         ops.node(1, 0.0,   0.0);
         ops.node(2, 72.0,  0.0);
         ops.node(3, 168.0, 0.0);
         ops.node(4, 48.0, 144.0);
 
-
         ops.fix(1, 1, 1);
         ops.fix(2, 1, 1);
         ops.fix(3, 1, 1);
-
 
         % Hardening material
         % H = alpha/(1-alpha) * E
         ops.uniaxialMaterial("Hardening", 1, E, sY, 0.0, alpha / (1 - alpha) * E);
 
-
         ops.element("Truss", 1, 1, 4, A, 1);
         ops.element("Truss", 2, 2, 4, A, 1);
         ops.element("Truss", 3, 3, 4, A, 1);
-
 
         %% Load pattern
         ops.timeSeries("Linear", 1);
         ops.pattern("Plain", 1, 1);
         ops.load(4, Px, Py);
-
 
         %% Analysis settings
         ops.system("ProfileSPD");
@@ -476,11 +434,9 @@ function out = runSinglePushoverCase(caseRow)
         ops.test("NormUnbalance", 1e-8, 10, 0);
         ops.analysis("Static");
 
-
         %% Run pushover
         data = zeros(Nsteps + 1, 2);
         data(1, :) = [0.0, 0.0];
-
 
         for j = 1:Nsteps
             ok = ops.analyze(1);
@@ -488,11 +444,9 @@ function out = runSinglePushoverCase(caseRow)
                 error("Analysis failed at step %d.", j);
             end
 
-
             data(j + 1, 1) = ops.nodeDisp(4, 1);
             data(j + 1, 2) = ops.getLoadFactor(1) * Px;
         end
-
 
         %% Store results
         out.disp      = data(:, 1);
@@ -500,7 +454,6 @@ function out = runSinglePushoverCase(caseRow)
         out.maxDisp   = max(abs(data(:, 1)));
         out.maxForce  = max(abs(data(:, 2)));
         out.success   = true;
-
 
     catch ME
         out.success = false;

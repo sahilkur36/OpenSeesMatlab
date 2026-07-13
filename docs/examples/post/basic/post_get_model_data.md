@@ -2,6 +2,10 @@
 
 This live script is written as a guided walkthrough for a post\-processing workflow. It focuses on retrieving, organizing, and visualizing model or response data after an OpenSees analysis. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 
+```matlab
+clc; clear; close all;
+```
+
 ## Model Data
 
 First, instantiate the OpenSeesMatlab interface class. This class provides native OpenSees commands, as well as additional visualization, pre/post\-processing, and utility methods.
@@ -61,18 +65,14 @@ Finally, we can print the information for each field.
 ```matlab
 S = modelData;
 
-
 stack = {{'S', S}};
-
 
 while ~isempty(stack)
     item = stack{end};
     stack(end) = [];
 
-
     name = item{1};
     val  = item{2};
-
 
     if isstruct(val)
         fns = fieldnames(val);
@@ -204,18 +204,14 @@ axis off
 ```matlab
 S = eigenData;
 
-
 stack = {{'S', S}};
-
 
 while ~isempty(stack)
     item = stack{end};
     stack(end) = [];
 
-
     name = item{1};
     val  = item{2};
-
 
     if isstruct(val)
         fns = fieldnames(val);

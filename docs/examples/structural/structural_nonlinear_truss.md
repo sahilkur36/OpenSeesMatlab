@@ -7,7 +7,6 @@ First, instantiate the OpenSeesMatlab interface class. This class provides nativ
 ```matlab
 clc; clear;
 
-
 opsMAT = OpenSeesMatlab();
 ops = opsMAT.opensees;
 ```
@@ -20,17 +19,15 @@ This section creates the finite\-element idealization used by the rest of the ex
 ops.wipe();
 ops.model("basic", "-ndm", 2, '-ndf', 2);
 
-
 % variables
 A = 4.0;
 E = 29000.0;
 alpha = 0.05;
 sY = 36.0;
-udisp = 2.5; 
+udisp = 2.5;
 Nsteps = 1000;
 Px = 160.0;
 Py = 0.0;
-
 
 % create nodes
 ops.node(1, 0.0, 0.0);
@@ -38,30 +35,24 @@ ops.node(2, 72.0, 0.0);
 ops.node(3, 168.0, 0.0);
 ops.node(4, 48.0, 144.0);
 
-
 % set boundary condition
 ops.fix(1, 1, 1);
 ops.fix(2, 1, 1);
 ops.fix(3, 1, 1);
 
-
 % define materials
 ops.uniaxialMaterial('Hardening', 1, E, sY, 0.0, alpha / (1 - alpha) * E);
-
 
 % define elements
 ops.element('Truss', 1, 1, 4, A, 1);
 ops.element('Truss', 2, 2, 4, A, 1);
 ops.element('Truss', 3, 3, 4, A, 1);
 
-
 % create TimeSeries
 ops.timeSeries('Linear', 1);
 
-
 % create a plain load pattern
 ops.pattern('Plain', 1, 1);
-
 
 % Create the nodal load
 ops.load(4, Px, Py);
@@ -94,7 +85,6 @@ This section configures and runs the analysis. The solver, constraints, converge
 
 ```matlab
 data = zeros(Nsteps + 1, 2);
-
 
 for j = 1:Nsteps
     ops.analyze(1);

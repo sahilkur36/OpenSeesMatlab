@@ -22,7 +22,7 @@ This is a topic guide rather than a first tutorial. New users should begin with 
 
 ## Initialization
 
-All pre/post-processing features are accessed through the `OpenSeesMatlab` interface. Create an instance and obtain the OpenSees command handle:
+All pre/post-processing features are accessed through the [`OpenSeesMatlab`][OpenSeesMatlab] interface. Create an instance and obtain the OpenSees command handle:
 
 ```matlab
 opsMAT = OpenSeesMatlab();
@@ -33,11 +33,11 @@ The `opsMAT` object provides the following main namespaces:
 
 | Namespace | Purpose |
 |-----------|---------|
-| `opsMAT.opensees` | OpenSees-compatible modelling and analysis commands |
-| `opsMAT.pre` | Preprocessing helpers (sections, loads, units, etc.) |
-| `opsMAT.anlys` | Higher-level analysis workflows and helpers |
-| `opsMAT.post` | Post-processing (ODB creation, saved model/eigen data, response retrieval) |
-| `opsMAT.vis` | Visualization (model, eigen modes, deformation, response plots, GUIs) |
+| [`opsMAT.opensees`][ops.OpenSeesMatlabCmds] | OpenSees-compatible modelling and analysis commands |
+| [`opsMAT.pre`][pre.OpenSeesMatlabPre] | Preprocessing helpers (sections, loads, units, etc.) |
+| [`opsMAT.anlys`][analysis.OpenSeesMatlabAnalysis] | Higher-level analysis workflows and helpers |
+| [`opsMAT.post`][post.OpenSeesMatlabPost] | Post-processing (ODB creation, saved model/eigen data, response retrieval) |
+| [`opsMAT.vis`][plotter.OpenSeesMatlabVis] | Visualization (model, eigen modes, deformation, response plots, GUIs) |
 
 ---
 
@@ -96,7 +96,7 @@ OpenSeesMatlab uses an **ODB (Output Database)** system to record analysis resul
 For optimal performance, OpenSeesMatlab implements a custom `recorder` object in C++ internally.
 Note that `odbTag` is important — it is used to distinguish between different analysis cases.
 
-Create an ODB before analysis:
+Create an [`ODB`][post.ODB] before analysis with [`createODB`][post.OpenSeesMatlabPost.createODB]:
 
 ```matlab
 % Create ODB with optional beam interpolation
@@ -129,7 +129,7 @@ Typically, they return a nested struct (or a struct array if the model data chan
 
     Once these functions are called, the ODB corresponding to `odbTag` will stop recording. Therefore, it is recommended to read the results only after the analysis is complete.
 
-### Nodal Responses
+### [Nodal Responses][post.OpenSeesMatlabPost.getNodalResponse]
 
 ```matlab
 nodeResp = opsMAT.post.getNodalResponse("myODB");
@@ -144,7 +144,7 @@ plot(nodeResp.time, nodeResp.disp.ux(:, idx));
 %   nodeResp.vel, nodeResp.accel, nodeResp.reaction
 ```
 
-### Element Responses
+### [Element Responses][post.OpenSeesMatlabPost.getElementResponse]
 
 ```matlab
 % Frame element responses
@@ -160,7 +160,7 @@ eleResp = opsMAT.post.getElementResponse("myODB", eleType="Shell");
 
 ## Visualization of Analysis Results
 
-### Nodal Response Visualization
+### [Nodal Response Visualization][plotter.OpenSeesMatlabVis.plotNodalResponse]
 
 ```matlab
 nodeResp = opsMAT.post.getNodalResponse("myODB");
@@ -175,7 +175,7 @@ opsMAT.vis.plotNodalResponse(nodeResp, stepIdx="absMax", respType="disp", respCo
 opsMAT.vis.polyscope.plotNodalResponse(nodeResp);
 ```
 
-### Frame Response Diagrams
+### [Frame Response Diagrams][plotter.OpenSeesMatlabVis.plotFrameResponse]
 
 ```matlab
 frameResp = opsMAT.post.getElementResponse("myODB", eleType="Frame");
@@ -318,12 +318,12 @@ The MATLAB GUI functions wrap the regular `.vis` plotters. A response GUI can se
 
 | Function | Input | Use |
 |---|---|---|
-| `opsMAT.vis.plotModelGUI()` | Current OpenSees model | Inspect model geometry, labels, supports, loads, and display styles |
-| `opsMAT.vis.plotEigenGUI(eigenData)` | Eigen data | Select a mode and configure a static mode-shape plot |
-| `opsMAT.vis.plotNodalResponseGUI(nodeResp)` | Nodal response | Select a step, response field/component, deformation, vectors, and colors |
-| `opsMAT.vis.plotFrameResponseGUI(frameResp)` | Frame response | Select a step and inspect section, basic, or local frame diagrams |
-| `opsMAT.vis.plotShellResponseGUI(shellResp)` | Shell response | Inspect shell force, deformation, stress, or strain fields |
-| `opsMAT.vis.plotContinuumResponseGUI(respData)` | Plane or solid response | Inspect continuum stress, strain, and related scalar fields |
+| [`opsMAT.vis.plotModelGUI()`][plotter.OpenSeesMatlabVis.plotModelGUI] | Current OpenSees model | Inspect model geometry, labels, supports, loads, and display styles |
+| [`opsMAT.vis.plotEigenGUI(eigenData)`][plotter.OpenSeesMatlabVis.plotEigenGUI] | Eigen data | Select a mode and configure a static mode-shape plot |
+| [`opsMAT.vis.plotNodalResponseGUI(nodeResp)`][plotter.OpenSeesMatlabVis.plotNodalResponseGUI] | Nodal response | Select a step, response field/component, deformation, vectors, and colors |
+| [`opsMAT.vis.plotFrameResponseGUI(frameResp)`][plotter.OpenSeesMatlabVis.plotFrameResponseGUI] | Frame response | Select a step and inspect section, basic, or local frame diagrams |
+| [`opsMAT.vis.plotShellResponseGUI(shellResp)`][plotter.OpenSeesMatlabVis.plotShellResponseGUI] | Shell response | Inspect shell force, deformation, stress, or strain fields |
+| [`opsMAT.vis.plotContinuumResponseGUI(respData)`][plotter.OpenSeesMatlabVis.plotContinuumResponseGUI] | Plane or solid response | Inspect continuum stress, strain, and related scalar fields |
 
 ```matlab
 modelApp = opsMAT.vis.plotModelGUI();
@@ -339,16 +339,21 @@ Common MATLAB GUI controls include step and view selectors, colormap selection, 
 ### Polyscope GUI: Static and Animated Visualization
 
 The Polyscope functions open a dedicated interactive viewer with ImGui controls. Response viewers can browse individual steps and animate the response history; the eigen viewer can animate mode shapes. Viewer options include visibility and style controls, deformation scale, colormaps and scalar ranges, camera views, axes overlays, SSAA, and slice planes where applicable.
+See [`OpenSeesMatlabVisPolyscope`][plotter.OpenSeesMatlabVisPolyscope] for more details.
+
+[:fontawesome-brands-github: Polyscope Github](https://github.com/nmwsharp/polyscope)
+
+[:fontawesome-brands-readme: Polyscope Document](https://polyscope.run/py/)
 
 | Function | Input | Use |
 |---|---|---|
-| `opsMAT.vis.polyscope.plotModel()` | Current OpenSees model | Interactive model geometry and display inspection |
-| `opsMAT.vis.polyscope.plotEigen()` | Current model | Collect and display the first mode |
-| `opsMAT.vis.polyscope.plotEigen(eigenData)` | Eigen data | Select, inspect, and animate mode shapes |
-| `opsMAT.vis.polyscope.plotNodalResponse(nodeResp)` | Nodal response | Display and animate nodal fields, deformation, vectors, and histories |
-| `opsMAT.vis.polyscope.plotFrameResponse(frameResp)` | Frame response | Display and animate frame response diagrams |
-| `opsMAT.vis.polyscope.plotShellResponse(shellResp)` | Shell response | Display and animate shell response fields |
-| `opsMAT.vis.polyscope.plotContinuumResponse(respData)` | Plane or solid response | Display and animate continuum response fields |
+| [`opsMAT.vis.polyscope.plotModel()`][plotter.OpenSeesMatlabVisPolyscope.plotModel] | Current OpenSees model | Interactive model geometry and display inspection |
+| [`opsMAT.vis.polyscope.plotEigen()`][plotter.OpenSeesMatlabVisPolyscope.plotEigen] | Current model | Collect and display the first mode |
+| [`opsMAT.vis.polyscope.plotEigen(eigenData)`][plotter.OpenSeesMatlabVisPolyscope.plotEigen] | Eigen data | Select, inspect, and animate mode shapes |
+| [`opsMAT.vis.polyscope.plotNodalResponse(nodeResp)`][plotter.OpenSeesMatlabVisPolyscope.plotNodalResponse] | Nodal response | Display and animate nodal fields, deformation, vectors, and histories |
+| [`opsMAT.vis.polyscope.plotFrameResponse(frameResp)`][plotter.OpenSeesMatlabVisPolyscope.plotFrameResponse] | Frame response | Display and animate frame response diagrams |
+| [`opsMAT.vis.polyscope.plotShellResponse(shellResp)`][plotter.OpenSeesMatlabVisPolyscope.plotShellResponse] | Shell response | Display and animate shell response fields |
+| [`opsMAT.vis.polyscope.plotContinuumResponse(respData)`][plotter.OpenSeesMatlabVisPolyscope.plotContinuumResponse] | Plane or solid response | Display and animate continuum response fields |
 
 `plotFrameResp` is retained as an alias of `plotFrameResponse`; use the full `plotFrameResponse` name in new scripts.
 

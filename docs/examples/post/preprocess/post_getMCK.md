@@ -9,7 +9,6 @@ This live script is written as a guided walkthrough for a post\-processing workf
 ```matlab
 clc; clear;
 
-
 opsMAT = OpenSeesMatlab();
 ops = opsMAT.opensees;
 ```
@@ -22,7 +21,6 @@ This section creates the finite\-element idealization used by the rest of the ex
 ops.wipe()
 ops.model("basic", "-ndm", 2, "-ndf", 3)
 
-
 % Define the model nodes
 ops.node(1, 0.0, 0.0)
 ops.node(2, 2.0, 0.0)
@@ -31,15 +29,12 @@ ops.node(4, 0.0, 2.0)
 ops.node(5, 2.0, 2.0)
 ops.node(6, 2.0, 2.0)
 
-
 % Constrain the nodes
 ops.rigidLink("beam", 3, 4)  % Rigid link between nodes 3 and 4
 ops.equalDOF(5, 6, 1, 2, 3)  % Equal DOF between nodes 5 and 6
 
-
 ops.fix(1, 1, 1, 1)
 ops.fix(2, 1, 1, 1)
-
 
 % Assign the node masses
 ops.mass(1, 1.0, 1.0, 0.0)
@@ -49,10 +44,8 @@ ops.mass(4, 1.0, 1.0, 0.0)
 ops.mass(5, 10.0, 10.0, 1e-3)
 ops.mass(6, 10.0, 10.0, 1e-3)
 
-
 % Define the elements
 ops.geomTransf("Linear", 1)
-
 
 % element('elasticBeamColumn', eleTag, *eleNodes, Area, E_mod, Iz, transfTag, <'-mass', mass>)
 Area = 1.0;
@@ -77,7 +70,7 @@ display(node_loads);
 <div style="font-size:0.85em; color:#87ae73;">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
-node_loads = 
+node_loads =
   Map with properties:
 
 
@@ -115,13 +108,11 @@ opsMAT.vis.plotModel(opts=opts);
 ```matlab
 node_mass = opsMAT.pre.getNodeMass();
 
-
 ks = keys(node_mass);
 vs = values(node_mass);
 for i = 1:numel(ks)
     fprintf('Key: ');
     disp(ks{i});
-
 
     fprintf('Value: ');
     disp(vs{i});
@@ -131,29 +122,29 @@ end
 <div style="font-size:0.85em; color:#87ae73;">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
-Key: 
+Key:
      1
-Value: 
+Value:
      2     2     0
-Key: 
+Key:
      2
-Value: 
+Value:
      2     2     0
-Key: 
+Key:
      3
-Value: 
+Value:
      2     2     0
-Key: 
+Key:
      4
-Value: 
+Value:
      2     2     0
-Key: 
+Key:
      5
-Value: 
+Value:
    11.0000   11.0000    0.0010
-Key: 
+Key:
      6
-Value: 
+Value:
    11.0000   11.0000    0.0010
 </div>
 </div>
@@ -166,7 +157,6 @@ Value:
 constraints_args = {"Penalty", 1e10, 1e10};  % This affects the dimensions of the matrix
 system_args = {"FullGeneral"}; % Full matrix system must be used
 numberer_args = {"RCM"};  % It affects the topology of the matrix and the order of dof.
-
 
 M = opsMAT.pre.getMCK("m", constraintsArgs=constraints_args, systemArgs=system_args, numbererArgs=numberer_args);
 K = opsMAT.pre.getMCK("k", constraintsArgs=constraints_args, systemArgs=system_args, numbererArgs=numberer_args);
@@ -206,15 +196,15 @@ M.Labels  % nodeTag-dof
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 ans = 18x1 cell
-'2-0'        
-'2-1'        
-'2-2'        
-'5-3'        
-'5-4'        
-'5-5'        
-'6-6'        
-'6-7'        
-'6-8'        
+'2-0'
+'2-1'
+'2-2'
+'5-3'
+'5-4'
+'5-5'
+'6-6'
+'6-7'
+'6-8'
 '4-9'
 </div>
 </div>
@@ -226,13 +216,11 @@ axis equal tight;
 colormap(parula);   % turbo, jet ...
 colorbar;
 
-
 xticks(1:numel(M.Labels));
 yticks(1:numel(M.Labels));
 xticklabels(M.Labels);
 xtickangle(90);
 yticklabels(M.Labels);
-
 
 title('Mass Matrix Visualization');
 ```
@@ -248,10 +236,8 @@ constraints_args = {"Transformation"};  % This affects the dimensions of the mat
 system_args = {"FullGeneral"};  % Full matrix system must be used
 numberer_args = {"Plain"};  % It affects the topology of the matrix and the order of dof.
 
-
 M = opsMAT.pre.getMCK("m", constraintsArgs=constraints_args, systemArgs=system_args, numbererArgs=numberer_args);
 K = opsMAT.pre.getMCK("k", constraintsArgs=constraints_args, systemArgs=system_args, numbererArgs=numberer_args);
-
 
 figure;
 imagesc(K.Data);
@@ -259,13 +245,11 @@ axis equal tight;
 colormap(parula);   % turbo, jet ...
 colorbar;
 
-
 xticks(1:numel(K.Labels));
 yticks(1:numel(K.Labels));
 xticklabels(K.Labels);
 xtickangle(90);
 yticklabels(K.Labels);
-
 
 title('Stiffness Matrix Visualization');
 ```

@@ -9,7 +9,6 @@ This live script is written as a guided walkthrough for a post\-processing workf
 ```matlab
 clc; clear;
 
-
 opsMAT = OpenSeesMatlab();
 ops = opsMAT.opensees;
 ```
@@ -20,7 +19,6 @@ This section configures and runs the analysis. The solver, constraints, converge
 
 ```matlab
 FEModel(ops);
-
 
 figure;
 opsMAT.vis.plotModel();
@@ -48,7 +46,6 @@ maxU = 45.0;  % Max displacement
 ok = 0;
 currentDisp = 0;
 
-
 FEModel(ops);
 gravityAnalysis(ops);
 pushoverLoad(ops);
@@ -65,7 +62,7 @@ opsMAT.anlys.smartAnalyze.configure(...
     testIterTimesMore=[50, 100], ...
     tryAlterAlgoTypes=true, ...  % try different algorithms
     algoTypes=[40, 10, 20, 30], ... % algorithm types to try
-    tryRelaxStep=true, ...  % 
+    tryRelaxStep=true, ...  %
     minStep=1e-6, ... % minimum step size for substepping
     debugMode=true, ... % False for progress bar, True for debug info
     printPer=50, ... % print every 100 steps
@@ -86,7 +83,6 @@ opsMAT.anlys.smartAnalyze.configure(...
 
 ```matlab
 
-
 node=3; dof=1; seg=dU;
 while ok == 0 && currentDisp < maxU
     %  Perform the analysis one step at a time
@@ -103,7 +99,7 @@ end
 [OpenSeesMatlab::SmartAnalyze] progress 150 steps. Time: 0.175 s. ✅
 [OpenSeesMatlab::SmartAnalyze] progress 200 steps. Time: 0.201 s. ✅
 [OpenSeesMatlab::SmartAnalyze] progress 250 steps. Time: 0.233 s. ✅
-[OpenSees] WARNING: CTestEnergyIncr::test() - failed to converge 
+[OpenSees] WARNING: CTestEnergyIncr::test() - failed to converge
 [OpenSees] after: 10 iterations
 [OpenSees]  current EnergyIncr: 5.80578e-06 (max: 1e-10)     Norm deltaX: 0.00017573, Norm deltaR: 0.672724
 [OpenSees] AcceleratedNewton::solveCurrentStep() -The ConvergenceTest object failed in test()
@@ -113,7 +109,7 @@ end
 [OpenSeesMatlab::SmartAnalyze] progress 300 steps. Time: 0.278 s. ✅
 [OpenSeesMatlab::SmartAnalyze] progress 350 steps. Time: 0.317 s. ✅
 [OpenSeesMatlab::SmartAnalyze] progress 400 steps. Time: 0.347 s. ✅
-[OpenSees] WARNING: CTestEnergyIncr::test() - failed to converge 
+[OpenSees] WARNING: CTestEnergyIncr::test() - failed to converge
 [OpenSees] after: 10 iterations
 [OpenSees]  current EnergyIncr: 2.70125e-05 (max: 1e-10)     Norm deltaX: 0.000819596, Norm deltaR: 0.253889
 [OpenSees] AcceleratedNewton::solveCurrentStep() -The ConvergenceTest object failed in test()
@@ -130,17 +126,13 @@ lastNorms   = [history.lastNorm].';
 stepIndices = [history.stepIndex].';
 okFlags     = [history.ok].';
 
-
 figure; hold on;
-
 
 % Plot as scatter dots to see every point clearly
 semilogy(stepIndices, lastNorms,  'Color', 'blue');
 
-
 % Tolerance line
 yline(1e-10, 'r--', 'LineWidth', 1.5);
-
 
 xlabel('Step index');
 ylabel('Last norm (log scale)');
@@ -158,7 +150,6 @@ FEModel(ops);
 gravityAnalysis(ops);
 pushoverLoad(ops);
 
-
 opsMAT.anlys.smartAnalyze.initialize();  % please make sure reset!
 opsMAT.anlys.smartAnalyze.configure(...
     analysis="Static",...
@@ -169,7 +160,7 @@ opsMAT.anlys.smartAnalyze.configure(...
     testIterTimesMore=[50, 100], ...
     tryAlterAlgoTypes=true, ...  % try different algorithms
     algoTypes=[40, 10, 20, 30], ... % algorithm types to try
-    tryRelaxStep=true, ...  % 
+    tryRelaxStep=true, ...  %
     minStep=1e-6, ... % minimum step size for substepping
     debugMode=true, ... % False for progress bar, True for debug info
     printPer=50 ... % print every 100 steps
@@ -192,10 +183,8 @@ H = 20.0;  % Reference lateral load
 segs = opsMAT.anlys.smartAnalyze.staticStepSplit(maxU, dU);
 data = zeros(numel(segs) + 1, 2);
 
-
 for i = 1:numel(segs)
     opsMAT.anlys.smartAnalyze.staticAnalyze(node, dof, segs(i));
-
 
     data(i + 1, 1) = ops.nodeDisp(4, 1);
     data(i + 1, 2) = ops.getLoadFactor(2) * H;
@@ -210,14 +199,14 @@ end
 [OpenSeesMatlab::SmartAnalyze] progress 33.333 % (150/450). Time: 0.140 s. ✅
 [OpenSeesMatlab::SmartAnalyze] progress 44.444 % (200/450). Time: 0.170 s. ✅
 [OpenSeesMatlab::SmartAnalyze] progress 55.556 % (250/450). Time: 0.207 s. ✅
-[OpenSees] WARNING: CTestNormDispIncr::test() - failed to converge 
+[OpenSees] WARNING: CTestNormDispIncr::test() - failed to converge
 [OpenSees] after: 10 iterations  current Norm: 0.000359096 (max: 1e-08, Norm deltaR: 0.195182)
 [OpenSees] AcceleratedNewton::solveCurrentStep() -The ConvergenceTest object failed in test()
 [OpenSees] StaticAnalysis::analyze() - the Algorithm failed at step: 0 with domain at load factor 2.89483
 [OpenSees] OpenSees &gt; analyze failed, returned: -3 error flag
 [OpenSeesMatlab::SmartAnalyze] Adding test times to 50. ✳️
 [OpenSeesMatlab::SmartAnalyze] progress 66.667 % (300/450). Time: 0.263 s. ✅
-[OpenSees] WARNING: CTestNormDispIncr::test() - failed to converge 
+[OpenSees] WARNING: CTestNormDispIncr::test() - failed to converge
 [OpenSees] after: 10 iterations  current Norm: 3.45018e-08 (max: 1e-08, Norm deltaR: 0.00026513)
 [OpenSees] AcceleratedNewton::solveCurrentStep() -The ConvergenceTest object failed in test()
 [OpenSees] StaticAnalysis::analyze() - the Algorithm failed at step: 0 with domain at load factor 2.30484
@@ -225,7 +214,7 @@ end
 [OpenSeesMatlab::SmartAnalyze] Adding test times to 50. ✳️
 [OpenSeesMatlab::SmartAnalyze] progress 77.778 % (350/450). Time: 0.307 s. ✅
 [OpenSeesMatlab::SmartAnalyze] progress 88.889 % (400/450). Time: 0.342 s. ✅
-[OpenSees] WARNING: CTestNormDispIncr::test() - failed to converge 
+[OpenSees] WARNING: CTestNormDispIncr::test() - failed to converge
 [OpenSees] after: 10 iterations  current Norm: 0.000819595 (max: 1e-08, Norm deltaR: 0.25389)
 [OpenSees] AcceleratedNewton::solveCurrentStep() -The ConvergenceTest object failed in test()
 [OpenSees] StaticAnalysis::analyze() - the Algorithm failed at step: 0 with domain at load factor 1.64367
@@ -259,15 +248,12 @@ function FEModel(ops)
     ops.fix(1, 1, 1, 1, 1, 1, 1);
     ops.fix(2, 1, 1, 1, 1, 1, 1);
 
-
     ops.uniaxialMaterial("Concrete01", 1, -6.0, -0.004, -5.0, -0.014);
     ops.uniaxialMaterial("Concrete01", 2, -5.0, -0.002, 0.0, -0.006);
-
 
     fy = 60.0;
     E = 30000.0;
     ops.uniaxialMaterial("Steel01", 3, fy, E, 0.01);
-
 
     % Define cross-section for nonlinear columns
     % ------------------------------------------
@@ -278,7 +264,6 @@ function FEModel(ops)
     % some variables derived from the parameters
     y1 = colDepth / 2.0;
     z1 = colWidth / 2.0;
-
 
     ops.section("Fiber", 1, "-GJ", 1000000);
     ops.patch("rect", 1, 10, 10, cover - y1, cover - z1, y1 - cover, z1 - cover);
@@ -292,7 +277,6 @@ function FEModel(ops)
     ops.layer("straight", 3, 2, As, 0.0, z1 - cover, 0.0, cover - z1);
     ops.layer("straight", 3, 5, As, cover - y1, z1 - cover, cover - y1, cover - z1);
 
-
     % Define column elements
     % ----------------------
     ops.geomTransf("PDelta", 1, -1, 0, 0);
@@ -303,7 +287,6 @@ function FEModel(ops)
     eleType = "forceBeamColumn";
     ops.element(eleType, 1, 1, 3, 1, 1);
     ops.element(eleType, 2, 2, 4, 1, 1);
-
 
     % Define beam elment
     % -----------------------------
@@ -317,17 +300,14 @@ function gravityAnalysis(ops)
     %  a parameter for the axial load
     P = 180.0;  % 10% of axial capacity of columns
 
-
     % Create a Plain load pattern with a Linear TimeSeries
     ops.timeSeries("Linear", 1);
     ops.pattern("Plain", 1, 1);
-
 
     % Create nodal loads at nodes 3 & 4
     %    nd  FX,  FY, MZ
     ops.load(3, 0.0, 0.0, -P, 0.0, 0.0, 0.0);
     ops.load(4, 0.0, 0.0, -P, 0.0, 0.0, 0.0);
-
 
     % Start of analysis generation
     % ------------------------------

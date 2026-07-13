@@ -9,7 +9,6 @@ This live script is written as a guided walkthrough for a verification benchmark
 ```matlab
 clc; clear;
 
-
 opsMAT = OpenSeesMatlab();
 ops = opsMAT.opensees;
 ```
@@ -17,7 +16,6 @@ ops = opsMAT.opensees;
 ```matlab
 ops.wipe();
 ops.model('basic', '-ndm', 2, '-ndf', 3);
-
 
 %% -----------------------------
 %  Geometry and material
@@ -29,10 +27,8 @@ A  = 50.650;        % in^2
 Iz = 7892.0;        % in^4  (major bending inertia)
 c  = 15.0;          % in     (distance from neutral axis to extreme fiber)
 
-
 L  = 120.0;         % each segment length, in
 w  = 10000/12;      % lb/in
-
 
 %% -----------------------------
 %  Nodes
@@ -43,7 +39,6 @@ ops.node(3, 240.0, 0.0);
 ops.node(4, 360.0, 0.0);
 ops.node(5, 480.0, 0.0);
 
-
 %% -----------------------------
 %  Boundary conditions
 %  Same restraint intent as the reference example
@@ -51,25 +46,21 @@ ops.node(5, 480.0, 0.0);
 ops.fix(2, 1, 1, 0);   % UX, UY fixed
 ops.fix(4, 0, 1, 0);   % UY fixed
 
-
 %% -----------------------------
 %  Transformation and elements
 %% -----------------------------
 ops.geomTransf('Linear', 1);
-
 
 ops.element('elasticBeamColumn', 1, 1, 2, A, E, Iz, 1);
 ops.element('elasticBeamColumn', 2, 2, 3, A, E, Iz, 1);
 ops.element('elasticBeamColumn', 3, 3, 4, A, E, Iz, 1);
 ops.element('elasticBeamColumn', 4, 4, 5, A, E, Iz, 1);
 
-
 %% -----------------------------
 %  Loads: distributed loads on the two overhangs
 %% -----------------------------
 ops.timeSeries('Linear', 1);
 ops.pattern('Plain', 1, 1);
-
 
 % 2D beamUniform: Wy along local y
 % downward load => negative
@@ -82,7 +73,6 @@ opts = opsMAT.vis.defaultPlotModelOptions;
 opts.nodes.showLabels = true;
 opts.elements.showLabels = true;
 opts.loads.showElement = true;
-
 
 opsMAT.vis.plotModel(opts=opts);
 ```
@@ -133,16 +123,13 @@ ODB.close();
 ```matlab
 nodeResp = opsMAT.post.getNodalResponse("myODB");
 
-
 nodeTags = nodeResp.nodeTags;
 idx = nodeTags == 3;
 dispN3 = nodeResp.disp.uy(:, idx);  % nsteps * 1
 uy_mid = max(dispN3(:));
 
-
 deflection_target = 0.182;     % in
 deflection_ratio = abs(uy_mid) / deflection_target;
-
 
 fprintf('Deflection (in)     %12.6f %20.6f %12.6f\n', deflection_target, uy_mid, deflection_ratio);
 ```
@@ -164,19 +151,15 @@ axis off
 ```matlab
 frameResp = opsMAT.post.getElementResponse("myODB", eleType="Frame");
 
-
 eleTags = frameResp.eleTags;
 idxE2 = eleTags == 2;
-
 
 secFo = frameResp.sectionForces.Mz(:, idxE2, end);  % last section, ele-2
 M_mid = max(abs(secFo(:)));
 sigma_max = M_mid * c / Iz;
 
-
 stress_target     = 11400.0;   % psi
 stress_ratio     = sigma_max / stress_target;
-
 
 fprintf('Stress (psi)        %12.6f %20.6f %12.6f\n', ...
     stress_target, sigma_max, stress_ratio);
@@ -192,7 +175,6 @@ Stress (psi)        11400.000000         11403.953371     1.000347
 ```matlab
 opts = opsMAT.vis.defaultPlotFrameResponseOptions;
 opts.style = "wireframe";
-
 
 opsMAT.vis.plotFrameResponse(frameResp, ...
     stepIdx="absMax", respType="sectionForces", respComponent="Mz",...

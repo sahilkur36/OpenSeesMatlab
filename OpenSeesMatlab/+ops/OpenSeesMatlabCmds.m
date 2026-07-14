@@ -1597,20 +1597,25 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
             % Parameters
             % ----------
             % systemType : str
-            %   The system type. One of {'BandGen', 'BandSPD', 'Diagonal', 'ProfileSPD', 'SuperLU', 'UmfPack', 'FullGeneral', 'SparseSYM'}
+            %   The system type. CuDSS variants use the optional GPU extension.
             % systemArgs : varargin
             %   Additional arguments for the system.
             arguments
                 obj
                 systemType {mustBeTextScalar, mustBeMember(systemType, ["BandGeneral", "BandGEN", "BandGen", "BandSPD", "Diagonal","MPIDiagonal", "SProfileSPD", ...
                  "ProfileSPD", "ParallelProfileSPD", "PFEM", "SparseGeneral", "SuperLU", "SparseGEN", ...
-                 "SparseSPD", "SparseSYM", "UmfPack", "Umfpack", "FullGeneral", "Petsc", "Mumps", "Itpack"])}
+                 "SparseSPD", "SparseSYM", "UmfPack", "Umfpack", "FullGeneral", "Petsc", "Mumps", "Itpack", ...
+                 "CuDSS", "CuDSSGeneral", "CuDSSSymmetric", "CuDSSSPD"])}
             end
             arguments (Repeating)
                 systemArgs
             end
 
-            [varargout{1:nargout}] = obj.mexHandle('system', systemType, systemArgs{:});
+            if any(strcmp(string(systemType), ["CuDSS", "CuDSSGeneral", "CuDSSSymmetric", "CuDSSSPD"]))
+                [varargout{1:nargout}] = obj.mexHandle('extensionSystem', systemType, systemArgs{:});
+            else
+                [varargout{1:nargout}] = obj.mexHandle('system', systemType, systemArgs{:});
+            end
         end
 
         function varargout = test(obj, testType, testArgs)

@@ -17,11 +17,12 @@ dist/
 *.pyc
 *.asv
 *.hdf5
-# *.ini
+*.ini
 *.mpco
 .DS_Store
 
 .openseesmatlab.output/
+.cache/
 paraview_output/
 release/
 site/

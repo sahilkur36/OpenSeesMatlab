@@ -31,7 +31,7 @@ If cuDSS is installed in its standard directory, automatic discovery is usually
 enough. Otherwise, set the installation directory before creating the solver:
 
 ```matlab
-% This is usually not necessary because CUDA environment variables are set automatically during installation. 
+% This is usually not necessary because CUDA environment variables are set automatically during installation.
 % If you have CUDA V12.6 installed:
 % setenv("CUDA_PATH_V12_6", ...
 %     "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6");

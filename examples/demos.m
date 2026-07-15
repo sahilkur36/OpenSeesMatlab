@@ -592,7 +592,7 @@ function titleStr = localSubgroupTitle(category, subgroup)
                 otherwise
                     titleStr = localPrettyTitle(subgroup);
             end
-         
+
         case "extension"
             switch char(subgroup)
                 case "substruct"

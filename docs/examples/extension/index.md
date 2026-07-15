@@ -10,4 +10,3 @@ OpenSeesMatlab extends a range of functionalities, including *numerical substruc
 ## Solver of equations for linear systems
 
 - [<span style="color:rgb(213,80,0)">**cuDSS plane\-element solver comparison**</span>](./system/extension_gpu_CuDSS_test.md)
-

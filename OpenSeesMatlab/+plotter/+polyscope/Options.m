@@ -23,6 +23,8 @@ classdef Options
             opts.polyscope.showNodes = false;
             opts.polyscope.showFixed = true;
             opts.polyscope.showMPConstraint = true;
+            opts.elements.showWireframeOnFaces = false;
+            opts.outline.show = false;
             opts.polyscope.showScreenAxes = true;
             opts.polyscope.screenAxesSize = 78;
             opts.polyscope.useScreenAxesGizmo = true;
@@ -64,6 +66,7 @@ classdef Options
             opts.polyscope.onscreenColorbarLocation = [];  % empty = auto, placed near top center
             opts.polyscope.onscreenColorbarSize = 1.0;  % multiplier for the native colorbar size
             opts.polyscope.colorbarTitle = '';  % custom title for the onscreen colorbar
+            opts.unstructured.showEdges = false;
             opts.slice = struct();
             opts.slice.show = false;
             opts.slice.name = 'Slice plane';
@@ -95,6 +98,7 @@ classdef Options
             opts.polyscope.vectorColor      = [0.85 0.33 0.10];
             opts.polyscope.vectorLength     = 0.05;  % relative
             opts.polyscope.vectorRadius     = 0.001; % relative
+            opts.surf.showEdges = false;
             opts.animation = struct('play', false, 'fps', [], ...
                                     'loop', true, 'pingpong', false, ...
                                     'updateColors', true, 'updateVectors', false);
@@ -131,6 +135,7 @@ classdef Options
                                     'updateColors', true);
             opts.color.climMode = 'step';
             opts.nodes = struct('show', false);
+            opts.surf.showEdges = false;
             opts.slice = struct();
             opts.slice.show = false;
             opts.slice.name = 'Slice plane';
@@ -168,7 +173,8 @@ classdef Options
                                     'updateColors', true);
             opts.stepIdx = 'absmax';
             opts.color.climMode = 'current';
-            opts.surf.show = true;
+            opts.surf.show = false;
+            opts.showZeroLine = false;
             opts.showMaxMinLabel = 'none';
             opts.slice = struct();
             opts.slice.show = false;

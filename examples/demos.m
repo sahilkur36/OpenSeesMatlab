@@ -18,15 +18,16 @@ tasks = [
     "post", "analysis",      "post_Smart_Analysis";
     "post", "analysis",      "post_mphi_analysis";
 
-    "structural",   "", "structural_nonlinear_truss";
-    "structural",   "", "structural_steel_frame2d";
-    "structural",   "", "structural_parfor_truss";
-    "earthquake",   "", "earthquake_frame3D_transient";
-    "earthquake",   "", "earthquake_RC_FRAME_EQ1";
-    "geotechnical", "", "geotechnical_PM4Sand";
-    "geotechnical", "", "geotechnical_PressureDependMultiYield6";
-    "thermal",      "", "thermal_restrained_beam_under_thermal_expansion";
-    "sensitivity",  "", "sensitivity_sensitivity_analysis";
+    "opscmds",  "structural",  "structural_nonlinear_truss";
+    "opscmds",  "structural",  "structural_steel_frame2d";
+    "opscmds",  "structural",  "structural_parfor_truss";
+    "opscmds",  "earthquake",  "earthquake_frame3D_transient";
+    "opscmds",  "earthquake",  "earthquake_RC_FRAME_EQ1";
+    "opscmds",  "geotechnical", "geotechnical_PM4Sand";
+    "opscmds",  "geotechnical", "geotechnical_PressureDependMultiYield6";
+    "opscmds",  "thermal",      "thermal_restrained_beam_under_thermal_expansion";
+    "opscmds",  "sensitivity",  "sensitivity_sensitivity_analysis";
+
     "verify",       "", "verify_Bracket";
     "verify",       "", "verify_stress_concentration_plate";
     "verify",       "", "verify_quad_beam";
@@ -97,6 +98,7 @@ parfor i = 1:size(tasks, 1)
 
     mlxFile = name + ".mlx";
     outFile = fullfile(outDir, name + ".md");
+    mFile   = fullfile(outDir, name + ".m");
 
     if localNeedExport(mlxFile, outFile, forceRebuild)
         export(mlxFile, outFile, ...
@@ -104,16 +106,23 @@ parfor i = 1:size(tasks, 1)
             EmbedImages=true, ...
             AcceptHTML=true);
 
-        localPostProcessMarkdown(outFile);
-
         fprintf("Exported: %s -> %s\n", mlxFile, outFile);
     else
-        % The exporter may already be up to date while the post-processing
-        % rules in this script have changed. Re-run the inexpensive Markdown
-        % normalization so existing files receive the latest fixes as well.
-        localPostProcessMarkdown(outFile);
         fprintf("Updated : %s\n", outFile);
     end
+
+    % Export a plain MATLAB script beside the Markdown file. Check it
+    % independently so an existing/up-to-date Markdown file does not prevent
+    % a missing or stale .m download from being generated.
+    if localNeedExport(mlxFile, mFile, forceRebuild)
+        export(mlxFile, mFile, Format="m");
+        fprintf("Exported: %s -> %s\n", mlxFile, mFile);
+    end
+
+    % The exporter may already be up to date while the post-processing rules
+    % in this script have changed. Always run the inexpensive normalization,
+    % including insertion of the script download link.
+    localPostProcessMarkdown(outFile, name + ".m");
 end
 
 % =========================================================================
@@ -275,14 +284,37 @@ function t = localFolderLatestDatenum(folder)
     end
 end
 
-function localPostProcessMarkdown(mdFile)
+function localPostProcessMarkdown(mdFile, mFileName)
     txt = fileread(mdFile);
+
+    % Keep exactly one download link at the very beginning of the page. The
+    % relative link works because the Markdown and MATLAB files are exported
+    % to the same directory.
+    downloadMarker = '<!-- matlab-script-download -->';
+    downloadPattern = ['(?m)^' regexptranslate('escape', downloadMarker) ...
+        '\r?\n[^\r\n]*\r?\n(?:\r?\n)?'];
+    txt = regexprep(txt, downloadPattern, '');
+    downloadBlock = sprintf([ ...
+        '%s\n' ...
+        '[:material-download: Download MATLAB script](./%s)' ...
+        '{ .md-button .md-button--primary }\n\n'], ...
+        downloadMarker, char(mFileName));
+    txt = [downloadBlock char(txt)];
 
     txt = replace(txt, "\[", "[");
     txt = replace(txt, "\]", "]");
     txt = replace(txt, "\$", "$");
     txt = replace(txt, "\\", "\");
     txt = regexprep(txt, '[ \t]+(?=\r?\n)', '');
+
+    % Replace colors explicitly embedded by the Live Editor with the theme's
+    % primary color. Match only the CSS color property (not background-color)
+    % so the result adapts automatically to the active light/dark palette.
+    explicitColorPattern = ['(?i)(?<![-\w])color\s*:\s*' ...
+        '(?:#[0-9a-f]{3,8}\b|' ...
+        'rgba?\([^)]*\)|hsla?\([^)]*\))'];
+    txt = regexprep(txt, explicitColorPattern, ...
+        'color:var(--md-primary-fg-color)');
 
     % Normalize display equations exported by the Live Editor without
     % changing ordinary Markdown prose or inline math.
@@ -489,7 +521,7 @@ function out = localFormatOutputBlock(content)
     content = replace(content, ">", "&gt;");
 
     out = [
-        '<div style="font-size:0.85em; color:#87ae73;">' newline ...
+        '<div style="font-size:0.85em; color:var(--md-primary-fg-color);">' newline ...
         '<div style="font-weight:600;">Output</div>' newline ...
         '<div style="white-space:pre-wrap; font-family:Consolas;">' newline ...
         content newline ...
@@ -535,25 +567,9 @@ function [titleStr, introStr] = localFolderMeta(subdir)
             titleStr = "Pre, Post-processing and Visualization Examples";
             introStr = "Examples for additional preprocessing, post-processing, and visualization features provided by ``OpenSeesMatlab``.";
 
-        case "structural"
-            titleStr = "Structural Examples";
-            introStr = "Examples of structural modeling and analysis.";
-
-        case "earthquake"
-            titleStr = "Earthquake Examples";
-            introStr = "Examples of seismic and dynamic analysis.";
-
-        case "geotechnical"
-            titleStr = "Geotechnical Examples";
-            introStr = "Examples involving soil models and soil-structure interaction.";
-
-        case "thermal"
-            titleStr = "Thermal Examples";
-            introStr = "Examples of thermal and thermo-mechanical analysis.";
-
-        case "sensitivity"
-            titleStr = "Sensitivity Examples";
-            introStr = "Examples of sensitivity and parameter analysis.";
+        case "opscmds"
+            titleStr = "OpenSees command examples";
+            introStr = "These examples demonstrate how to use the encapsulated OpenSees module for modeling and analysis.";
 
         case "verify"
             titleStr = "Verification Examples";
@@ -601,6 +617,24 @@ function titleStr = localSubgroupTitle(category, subgroup)
                     titleStr = "Solver of equations for linear systems";
                 otherwise
                     titleStr = localPrettyTitle(subgroup);
+            end
+
+        case "opscmds"
+            switch char(subgroup)
+                case "structural"
+                    titleStr = "Structural Examples";
+
+                case "earthquake"
+                    titleStr = "Earthquake Examples";
+
+                case "geotechnical"
+                    titleStr = "Geotechnical Examples";
+
+                case "thermal"
+                    titleStr = "Thermal Examples";
+
+                case "sensitivity"
+                    titleStr = "Sensitivity Examples";
             end
             
         otherwise

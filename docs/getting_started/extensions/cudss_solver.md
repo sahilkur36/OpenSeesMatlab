@@ -69,7 +69,6 @@ ops.numberer("RCM");
 ops.system("CuDSS", ...
     "-cudaMajor", "auto", ...
     "-device", "auto", ...
-    "-refinement", 0, ...
     "-verbose");
 
 ops.test("NormDispIncr", 1.0e-8, 20);
@@ -86,6 +85,21 @@ loaded runtime and selected device, for example:
 CuDSS: loaded CUDA 12 and cuDSS 0.8 at runtime
 CuDSS: selected GPU 0 (compute capability 8.6)
 ```
+
+The default `-refinement` value is `0`. OpenSeesMatlab reuses the cuDSS
+reordering and symbolic analysis while the equation graph is unchanged, uses
+refactorization for later changed tangent matrices, and skips the matrix upload
+and factorization when only the right-hand side changes.
+
+For troubleshooting, add `-diagnostics`:
+
+```matlab
+ops.system("CuDSS", "-diagnostics", "-verbose");
+```
+
+Diagnostic mode synchronizes and queries device-side information after every
+cuDSS phase. It is useful for locating asynchronous GPU errors but adds overhead,
+so do not enable it for normal timing or production analysis.
 
 To select a specific installation and GPU:
 
@@ -131,7 +145,8 @@ If cuDSS cannot be selected:
 2. Confirm that CUDA, cuBLAS, and cuDSS use the same CUDA major version.
 3. Pass `-runtimePath` and `-cudaMajor` explicitly.
 4. Use `-verbose` to display the selected runtime and GPU.
-5. Confirm that MATLAB is loading the GPU-enabled MEX with:
+5. Add `-diagnostics` to report asynchronous device-side phase errors.
+6. Confirm that MATLAB is loading the GPU-enabled MEX with:
 
 ```matlab
 which OpenSeesMATLAB -all

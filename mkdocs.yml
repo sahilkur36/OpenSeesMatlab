@@ -57,15 +57,15 @@ theme:
     - media: "(prefers-color-scheme: light)"
       scheme: default
       primary: indigo
-      # accent: deep orange
+      accent: indigo
       toggle:
         icon: material/weather-sunny
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: indigo
+      primary: lime
       # accent: amber
-      accent: deep orange
+      accent: lime
       toggle:
         icon: material/weather-night
         name: Switch to system preference
@@ -205,12 +205,8 @@ nav:
   - Examples:
       - "examples/index.md"
       - Pre, Post-processing and Visualization: "examples/post/index.md"
-      - Structural Analysis: "examples/structural/index.md"
-      - Geotechnical Analysis: "examples/geotechnical/index.md"
-      - Earthquake Analysis: "examples/earthquake/index.md"
-      - Thermal Analysis: "examples/thermal/index.md"
-      - Sensitivity Analysis: "examples/sensitivity/index.md"
-      - Extended functionality by OpenSeesMatlab: "examples/extension/index.md"
+      - OpenSees command examples: "examples/opscmds/index.md"
+      - Extended OpenSees commands by OpenSeesMatlab: "examples/extension/index.md"
       - Verification: "examples/verify/index.md"
 
   - API Reference:

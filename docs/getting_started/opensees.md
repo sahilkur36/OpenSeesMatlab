@@ -60,7 +60,7 @@ For details, please refer to their official documentation, You can call it in th
 
 ## Example
 
-The following is an example of <span style="color:rgb(213,80,0)">**Nolinear Truss Pushover Analysis**</span>:
+The following is an example of <span style="color:var(--md-primary-fg-color)">**Nolinear Truss Pushover Analysis**</span>:
 
 First, instantiate the OpenSeesMatlab interface class. This class provides native OpenSees commands, as well as additional visualization, pre/post\-processing, and utility methods.
 

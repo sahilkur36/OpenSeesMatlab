@@ -1,4 +1,7 @@
-# <span style="color:rgb(213,80,0)">**Static analysis and visualization of 2D Portal Frame**</span>
+<!-- matlab-script-download -->
+[:material-download: Download MATLAB script](./post_2d_Portal_Frame.m){ .md-button .md-button--primary }
+
+# <span style="color:var(--md-primary-fg-color)">**Static analysis and visualization of 2D Portal Frame**</span>
 
 This live script is written as a guided walkthrough for a post\-processing workflow. It focuses on retrieving, organizing, and visualizing model or response data after an OpenSees analysis. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 
@@ -75,7 +78,7 @@ opts.loads.scale = 1.2;
 opsMAT.vis.plotModel(opts=opts);
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Model summary
@@ -98,7 +101,7 @@ This section configures and runs the analysis. The solver, constraints, converge
 ODB = opsMAT.post.createODB("myODB", interpolateBeamDisp=11);
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Output file: .openseesmatlab.output\Responses-myODB.odb\output.h5
@@ -222,7 +225,7 @@ opsMAT.vis.plotFrameResponseGUI(eleResp);
 opsMAT.vis.polyscope.plotModel();
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Backend: openGL3_glfw -- Loaded openGL version: 3.3.0 NVIDIA 561.09
@@ -245,7 +248,7 @@ opsMAT.vis.polyscope.plotNodalResponse(nodeResp);
 opsMAT.vis.polyscope.plotFrameResponse(eleResp);
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Backend: openGL3_glfw -- Loaded openGL version: 3.3.0 NVIDIA 561.09

@@ -1,4 +1,7 @@
-# <span style="color:rgb(213,80,0)">**Beam stresses and deflections (Beam\-Column)**</span>
+<!-- matlab-script-download -->
+[:material-download: Download MATLAB script](./verify_beam.m){ .md-button .md-button--primary }
+
+# <span style="color:var(--md-primary-fg-color)">**Beam stresses and deflections (Beam\-Column)**</span>
 
 This live script is written as a guided walkthrough for a verification benchmark. It compares a known structural response with the result produced by the OpenSeesMatlab workflow. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 
@@ -77,7 +80,7 @@ opts.loads.showElement = true;
 opsMAT.vis.plotModel(opts=opts);
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Model summary
@@ -108,7 +111,7 @@ ops.analysis('Static');
 ODB = opsMAT.post.createODB("myODB", interpolateBeamDisp=9);  % create ODB, 6 points in interpolateBeamDisp
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Output file: .openseesmatlab.output\Responses-myODB.odb\output.h5
@@ -134,7 +137,7 @@ deflection_ratio = abs(uy_mid) / deflection_target;
 fprintf('Deflection (in)     %12.6f %20.6f %12.6f\n', deflection_target, uy_mid, deflection_ratio);
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Deflection (in)         0.182000             0.182463     1.002545
@@ -165,7 +168,7 @@ fprintf('Stress (psi)        %12.6f %20.6f %12.6f\n', ...
     stress_target, sigma_max, stress_ratio);
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Stress (psi)        11400.000000         11403.953371     1.000347

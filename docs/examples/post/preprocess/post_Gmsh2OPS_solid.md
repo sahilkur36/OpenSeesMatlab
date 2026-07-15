@@ -1,4 +1,7 @@
-# <span style="color:rgb(213,80,0)">**Read a GMSH model by physical groups**</span>
+<!-- matlab-script-download -->
+[:material-download: Download MATLAB script](./post_Gmsh2OPS_solid.m){ .md-button .md-button--primary }
+
+# <span style="color:var(--md-primary-fg-color)">**Read a GMSH model by physical groups**</span>
 
 This live script is written as a guided walkthrough for a post\-processing workflow. It focuses on retrieving, organizing, and visualizing model or response data after an OpenSees analysis. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 
@@ -21,7 +24,7 @@ g2o = opsMAT.pre.Gmsh2OPS;
 g2o.readGmshFile('utils/t15.msh');
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Info:: 5 Physical Names.
@@ -55,7 +58,7 @@ physicalGroups = g2o.getPhysicalGroups();
 disp(physicalGroups.keys());
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 {'Boundary'}    {'Load'}    {'Volume'}
@@ -97,7 +100,7 @@ boundary_dim_tags = g2o.getBoundaryDimTags(DimEntityTags=[2, 18], IncludeSelf=tr
 disp(boundary_dim_tags);
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 0     1
@@ -116,7 +119,7 @@ disp(boundary_dim_tags);
 disp(physicalGroups("Boundary"));
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 0     1
@@ -135,7 +138,7 @@ disp(physicalGroups("Boundary"));
 opsMAT.vis.plotModel();
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Model summary
@@ -179,7 +182,7 @@ load_ele_tags = g2o.createElementCmds(...
     PhysicalGroupNames="Load");
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSees] TriSurfaceLoad element - Written: J. A. Abell (UANDES). Inspired by the makers of SurfaceLoad

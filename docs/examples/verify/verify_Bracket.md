@@ -1,4 +1,7 @@
-# <span style="color:rgb(213,80,0)">**Deflection Analysis of Bracket**</span>
+<!-- matlab-script-download -->
+[:material-download: Download MATLAB script](./verify_Bracket.m){ .md-button .md-button--primary }
+
+# <span style="color:var(--md-primary-fg-color)">**Deflection Analysis of Bracket**</span>
 
 This live script is written as a guided walkthrough for a verification benchmark. It compares a known structural response with the result produced by the OpenSeesMatlab workflow. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 
@@ -14,7 +17,7 @@ The following commands carry out this step of the workflow. Run this cell after 
 clc; clear;
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab]  [EXCEPTION] Polyscope has not been initialized
@@ -61,7 +64,7 @@ minUzPDE = min(result.Displacement.uz);
 fprintf("Maximal deflection in the z-direction is %g meters.",minUzPDE)
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Maximal deflection in the z-direction is -1.44604e-05 meters.
@@ -95,7 +98,7 @@ maxVonMisesStressPDE = max(result.VonMisesStress);
 fprintf("Maximal VonMisesStress is %g Pa.", maxVonMisesStressPDE)
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Maximal VonMisesStress is 1.03705e+06 Pa.
@@ -233,7 +236,7 @@ ops.analysis('Static');
 ODB = opsMAT.post.createODB("myODB");  % create ODB
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Output file: .openseesmatlab.output\Responses-myODB.odb\output.h5
@@ -253,7 +256,7 @@ opts.loads.showNodal=true;
 opsMAT.vis.plotModel(opts=opts);
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Model summary
@@ -278,7 +281,7 @@ fprintf("Maximal deflection in the z-direction:\n" + ...
         minUz, minUzPDE);
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Maximal deflection in the z-direction:
@@ -310,7 +313,7 @@ fprintf("Maximal Von Mises stress:\n" + ...
         maxVonMisesStress, maxVonMisesStressPDE);
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Maximal Von Mises stress:
@@ -342,7 +345,7 @@ view(az, el);
 opsMAT.vis.polyscope.plotModel();
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Backend: openGL3_glfw -- Loaded openGL version: 3.3.0 NVIDIA 561.09
@@ -355,7 +358,7 @@ opsMAT.vis.polyscope.plotNodalResponse(nodeResp);
 opsMAT.vis.polyscope.plotContinuumResponse(solidResp);
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Backend: openGL3_glfw -- Loaded openGL version: 3.3.0 NVIDIA 561.09

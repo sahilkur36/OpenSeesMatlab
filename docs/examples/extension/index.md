@@ -4,9 +4,9 @@ OpenSeesMatlab extends a range of functionalities, including *numerical substruc
 
 ## MATLAB Numerical Substructure Analysis
 
-- [<span style="color:rgb(213,80,0)">**Linear MATLAB Substructure: Static Analysis and Verification**</span>](./substruct/extension_substructure_linear.md)
-- [<span style="color:rgb(213,80,0)">**Nonlinear Dynamic MATLAB Substructure**</span>](./substruct/extension_substructure_nonlinear_dynamic.md)
+- [<span style="color:var(--md-primary-fg-color)">**Linear MATLAB Substructure: Static Analysis and Verification**</span>](./substruct/extension_substructure_linear.md)
+- [<span style="color:var(--md-primary-fg-color)">**Nonlinear Dynamic MATLAB Substructure**</span>](./substruct/extension_substructure_nonlinear_dynamic.md)
 
 ## Solver of equations for linear systems
 
-- [<span style="color:rgb(213,80,0)">**cuDSS plane\-element solver comparison**</span>](./system/extension_gpu_CuDSS_test.md)
+- [<span style="color:var(--md-primary-fg-color)">**cuDSS plane\-element solver comparison**</span>](./system/extension_gpu_CuDSS_test.md)

@@ -1,4 +1,7 @@
-# <span style="color:rgb(213,80,0)">**3D Solid Cantilever Beam (Brick element)**</span>
+<!-- matlab-script-download -->
+[:material-download: Download MATLAB script](./verify_stdBrick.m){ .md-button .md-button--primary }
+
+# <span style="color:var(--md-primary-fg-color)">**3D Solid Cantilever Beam (Brick element)**</span>
 
 This live script is written as a guided walkthrough for a verification benchmark. It compares a known structural response with the result produced by the OpenSeesMatlab workflow. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 
@@ -10,7 +13,7 @@ A rectangular beam of length \( L \), width \( b \), and height \( h \) is fixed
 clear; clc;
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab]  [EXCEPTION] Polyscope has not been initialized
@@ -120,7 +123,7 @@ opts.loads.showNodal = true;
 opsMAT.vis.plotModel(opts=opts);
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Model summary
@@ -139,7 +142,7 @@ grid off
 opsMAT.vis.polyscope.plotModel();
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Backend: openGL3_glfw -- Loaded openGL version: 3.3.0 NVIDIA 561.09
@@ -165,7 +168,7 @@ ops.analysis('Static');
 ODB = opsMAT.post.createODB("myODB", projectGaussToNodes="extrapolate");  % create ODB
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Output file: .openseesmatlab.output\Responses-myODB.odb\output.h5
@@ -208,7 +211,7 @@ fprintf("Maximal deflection in the z-direction:\n" + ...
         w_fe, -w_theory);
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Maximal deflection in the z-direction:
@@ -243,7 +246,7 @@ fprintf("Maximal sxx stress:\n" + ...
         sxx_fe, sigma_theory);
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Maximal sxx stress:
@@ -265,7 +268,7 @@ opsMAT.vis.plotContinuumResponseGUI(solidResp);
 opsMAT.vis.polyscope.plotNodalResponse(nodeResp);
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Backend: openGL3_glfw -- Loaded openGL version: 3.3.0 NVIDIA 561.09

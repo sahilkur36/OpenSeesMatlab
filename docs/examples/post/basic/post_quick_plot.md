@@ -1,4 +1,7 @@
-# <span style="color:rgb(213,80,0)">**Quick Model and Eigen Visualization**</span>
+<!-- matlab-script-download -->
+[:material-download: Download MATLAB script](./post_quick_plot.m){ .md-button .md-button--primary }
+
+# <span style="color:var(--md-primary-fg-color)">**Quick Model and Eigen Visualization**</span>
 
 This live script is written as a guided walkthrough for a post\-processing workflow. It focuses on retrieving, organizing, and visualizing model or response data after an OpenSees analysis. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 
@@ -33,7 +36,7 @@ We can visualize the model using the `plotModel` function in the `vis` attribute
 opsMAT.vis.plotModel();
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Model summary
@@ -52,7 +55,7 @@ modelData = opsMAT.post.getModelData();
 disp(modelData)
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Nodes: [1x1 struct]
@@ -82,7 +85,7 @@ opts.nodes.showLabels = true;
 opsMAT.vis.plotModel(opts=opts);
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Model summary
@@ -114,7 +117,7 @@ opsMAT.vis.plotModelGUI();
 opsMAT.vis.polyscope.plotModel();
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Backend: openGL3_glfw -- Loaded openGL version: 3.3.0 NVIDIA 561.09
@@ -136,7 +139,7 @@ tag = 1;
 opsMAT.post.saveEigenData(tag, 10, solver='-genBandArpack');  % save
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSees] Using DomainModalProperties - Developed by: Massimo Petracca, Guido Camata, ASDEA Software Technology
@@ -148,7 +151,7 @@ eigenData = opsMAT.post.getEigenData(odbTag=tag);  % get
 disp(eigenData)
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 EigenVectors: [1x1 struct]
@@ -219,7 +222,7 @@ opsMAT.vis.plotEigenGUI(eigenData);
 opsMAT.vis.polyscope.plotEigen(eigenData);
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Backend: openGL3_glfw -- Loaded openGL version: 3.3.0 NVIDIA 561.09

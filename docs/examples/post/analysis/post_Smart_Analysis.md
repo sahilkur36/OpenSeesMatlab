@@ -1,4 +1,7 @@
-# <span style="color:rgb(213,80,0)">**Smart Analysis**</span>
+<!-- matlab-script-download -->
+[:material-download: Download MATLAB script](./post_Smart_Analysis.m){ .md-button .md-button--primary }
+
+# <span style="color:var(--md-primary-fg-color)">**Smart Analysis**</span>
 
 This live script is written as a guided walkthrough for a post\-processing workflow. It focuses on retrieving, organizing, and visualizing model or response data after an OpenSees analysis. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 
@@ -24,7 +27,7 @@ figure;
 opsMAT.vis.plotModel();
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Model summary
@@ -70,7 +73,7 @@ opsMAT.anlys.smartAnalyze.configure(...
 );
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab::SmartAnalyze] Configuration:
@@ -91,7 +94,7 @@ while ok == 0 && currentDisp < maxU
 end
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab::SmartAnalyze] progress 50 steps. Time: 0.112 s. ✅
@@ -167,7 +170,7 @@ opsMAT.anlys.smartAnalyze.configure(...
 );
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab::SmartAnalyze] Configuration:
@@ -191,7 +194,7 @@ for i = 1:numel(segs)
 end
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab::SmartAnalyze] progress 11.111 % (50/450). Time: 0.067 s. ✅

@@ -1,4 +1,7 @@
-# <span style="color:rgb(213,80,0)">**Quickly apply gravity loads and obtain mass and stiffness matrices**</span>
+<!-- matlab-script-download -->
+[:material-download: Download MATLAB script](./post_getMCK.m){ .md-button .md-button--primary }
+
+# <span style="color:var(--md-primary-fg-color)">**Quickly apply gravity loads and obtain mass and stiffness matrices**</span>
 
 This live script is written as a guided walkthrough for a post\-processing workflow. It focuses on retrieving, organizing, and visualizing model or response data after an OpenSees analysis. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 
@@ -67,7 +70,7 @@ node_loads = opsMAT.pre.createGravityLoad(direction="Y", factor=-9.81);  % Creat
 display(node_loads);
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 node_loads =
@@ -87,7 +90,7 @@ opts.loads.showNodal = true;
 opsMAT.vis.plotModel(opts=opts);
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Model summary
@@ -119,7 +122,7 @@ for i = 1:numel(ks)
 end
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Key:
@@ -163,7 +166,7 @@ K = opsMAT.pre.getMCK("k", constraintsArgs=constraints_args, systemArgs=system_a
 M.Data
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 ans = 18x18
@@ -192,7 +195,7 @@ ans = 18x18
 M.Labels  % nodeTag-dof
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 ans = 18x1 cell

@@ -1,4 +1,7 @@
-# <span style="color:rgb(213,80,0)">**Soil\-structure interaction: 2d Portal Frame**</span>
+<!-- matlab-script-download -->
+[:material-download: Download MATLAB script](./post_soil_structure_interaction_2d_portal_frame.m){ .md-button .md-button--primary }
+
+# <span style="color:var(--md-primary-fg-color)">**Soil\-structure interaction: 2d Portal Frame**</span>
 
 This live script is written as a guided walkthrough for a post\-processing workflow. It focuses on retrieving, organizing, and visualizing model or response data after an OpenSees analysis. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 
@@ -10,7 +13,7 @@ This example originates from the GitHub repository maintained by Professor Quan 
 clc; clear; close all;
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab]  [EXCEPTION] Polyscope has not been initialized
@@ -534,7 +537,7 @@ opts.nodes.showLabels = true;
 opsm.vis.plotModel(opts=opts);
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Model summary
@@ -557,7 +560,7 @@ OpenSeesMatlab creates a **new recorder object** in C++ for post\-processing dat
 ODB = opsm.post.createODB("myODB", interpolateBeamDisp=11, flushEvery=20);   % ODB
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Output file: .openseesmatlab.output\Responses-myODB.odb\output.h5
@@ -599,7 +602,7 @@ ops.analysis('Static');
 ops.analyze(3);   % Automatically write data to the ODB.
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSees] CTestNormDispIncr::test() - iteration: 6 current Norm: 2.68477e-11 (max: 1e-06, Norm deltaR: 9.20992e-11)
@@ -612,7 +615,7 @@ ops.analyze(3);   % Automatically write data to the ODB.
 fprintf('Soil gravity nonlinear analysis completed.\n');
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Soil gravity nonlinear analysis completed.
@@ -652,7 +655,7 @@ elapsedTime = toc;
 fprintf('Completed time: %.6f seconds.\n', elapsedTime);
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Completed time: 20.025198 seconds.
@@ -679,7 +682,7 @@ If you want to demonstrate animations or other features in Paraview, run the fol
 opsm.post.writeResponsePVD("myODB");
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 nodal:         2404 steps -&gt; paraview_output/pv_nodal/pv_nodal.pvd

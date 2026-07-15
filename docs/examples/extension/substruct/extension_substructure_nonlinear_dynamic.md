@@ -1,4 +1,7 @@
-# <span style="color:rgb(213,80,0)">**Nonlinear Dynamic MATLAB Substructure**</span>
+<!-- matlab-script-download -->
+[:material-download: Download MATLAB script](./extension_substructure_nonlinear_dynamic.m){ .md-button .md-button--primary }
+
+# <span style="color:var(--md-primary-fg-color)">**Nonlinear Dynamic MATLAB Substructure**</span>
 
 This example demonstrates a nonlinear dynamic MATLAB substructure under sinusoidal loading.
 
@@ -462,7 +465,7 @@ report = sprintf( ...
 fprintf("%s", report);
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 ============================================================

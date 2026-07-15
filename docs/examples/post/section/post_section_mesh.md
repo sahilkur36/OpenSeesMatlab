@@ -1,4 +1,7 @@
-# <span style="color:rgb(213,80,0)">**Fiber section mesh generation**</span>
+<!-- matlab-script-download -->
+[:material-download: Download MATLAB script](./post_section_mesh.m){ .md-button .md-button--primary }
+
+# <span style="color:var(--md-primary-fg-color)">**Fiber section mesh generation**</span>
 
 This live script is written as a guided walkthrough for a post\-processing workflow. It focuses on retrieving, organizing, and visualizing model or response data after an OpenSees analysis. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 
@@ -17,7 +20,7 @@ fs     = opsmat.pre.fiberSectionMesh;
 disp(fs);
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 FiberSectionMesh with properties:
@@ -54,7 +57,7 @@ sec1 = fs.new(parts, secTag=1);       % no rebars; secTag = 1
 sec1.mesh();
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Meshing complete: 146 fiber cells generated.
@@ -67,7 +70,7 @@ sectionProps = sec1.sectionProps;
 sec1.printProps();
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 ========== Cross-Section Properties ==========
@@ -99,7 +102,7 @@ opsmat.pre.setSectionGeometryRecorder(true);
 sec1.build();  % Write to OpenSees domain
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 build: section Fiber 1 written to ops (146 solid fibers, GJ = 1e+12).
@@ -247,7 +250,7 @@ sec2 = fs.new(parts, rebars=rebars, secTag=2);
 sec2.mesh();
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Meshing complete: 1268 fiber cells generated.
@@ -260,7 +263,7 @@ sectionProps = sec2.sectionProps;
 sec2.printProps();
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 ========== Cross-Section Properties ==========
@@ -292,7 +295,7 @@ opsmat.pre.setSectionGeometryRecorder(true);
 sec2.build();
 ```
 
-<div style="font-size:0.85em; color:#87ae73;">
+<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 build: section Fiber 2 written to ops (1268 solid fibers, 84 rebar fibers, GJ = 1e+12).

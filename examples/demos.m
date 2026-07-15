@@ -34,8 +34,9 @@ tasks = [
     "verify",       "", "verify_stdBrick";
     "verify",       "", "verify_beam";
 
-    "substruct", "",      "substructure_linear";
-    "substruct", "",      "substructure_nonlinear_dynamic";
+    "extension", "substruct",      "extension_substructure_linear";
+    "extension", "substruct",      "extension_substructure_nonlinear_dynamic";
+    "extension", "system",         "extension_gpu_CuDSS_test";
 ];
 
 rootDir = "../docs/examples";
@@ -558,9 +559,9 @@ function [titleStr, introStr] = localFolderMeta(subdir)
             titleStr = "Verification Examples";
             introStr = "Examples of verification by reliable third-party software.";
 
-        case "substruct"
-            titleStr = "MATLAB Numerical Substructure Analysis";
-            introStr = "A numerical substructure model is built in MATLAB and then connected to the OpenSees domain for analysis.";
+        case "extension"
+            titleStr = "Extended functionality by OpenSeesMatlab";
+            introStr = "OpenSeesMatlab extends a range of functionalities, including *numerical substructure analysis* and a *GPU-based linear equation solver*.";
 
         otherwise
             titleStr = string(subdir) + " Examples";
@@ -591,7 +592,17 @@ function titleStr = localSubgroupTitle(category, subgroup)
                 otherwise
                     titleStr = localPrettyTitle(subgroup);
             end
-
+         
+        case "extension"
+            switch char(subgroup)
+                case "substruct"
+                    titleStr = "MATLAB Numerical Substructure Analysis";
+                case "system"
+                    titleStr = "Solver of equations for linear systems";
+                otherwise
+                    titleStr = localPrettyTitle(subgroup);
+            end
+            
         otherwise
             titleStr = localPrettyTitle(subgroup);
     end

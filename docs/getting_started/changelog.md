@@ -3,6 +3,7 @@
 ## v3.8.0.2
 
 - Add MATLAB numerical substructure analysis through ``ops.matlabSubstructure``. A MATLAB callback can provide the resisting force, current tangent, mass and damping matrices for an OpenSees Element while OpenSees manages the global analysis. Support arbitrary substructure interfaces defined by ``[nodeTag, DOF]`` pairs, including a single condensed interface node or multiple physical end nodes.
+- Add the optional NVIDIA cuDSS sparse direct solver through ``ops.system("CuDSS")``. The GPU backend is loaded on demand, supports automatic CUDA and GPU discovery, and does not affect CPU solvers on systems without CUDA or cuDSS.
 - Add ``post.transformResponseStruct`` to convert model-update response struct arrays from ``getNodalResponse`` and ``getElementResponse`` into one scalar struct, merging ``time``, ``nodeTags`` and ``eleTags`` while padding missing response data with ``NaN``.
 - Add ``ops.updateMaterials`` as a MATLAB wrapper for the OpenSees ``UpdateMaterials`` command.
 - Add support for ``Link`` element response queries in ``post.getElementResponse``.

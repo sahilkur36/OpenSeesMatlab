@@ -19,7 +19,7 @@ Choose the path that matches what you want to do:
 | Build and analyze a first model | [Your first analysis](getting_started/quickstart.md) |
 | Translate OpenSees or OpenSeesPy commands | [OpenSees command interface](getting_started/opensees.md) |
 | Record, retrieve, and visualize results | [Pre/post-processing and visualization](getting_started/post.md) |
-| Couple an OpenSees model to a MATLAB substructure | [MATLAB substructure analysis](getting_started/substructure_analysis.md) |
+| Use OpenSeesMatlab-specific functionality | [Extensions](getting_started/extensions.md) |
 | See complete engineering examples | [Examples](examples/index.md) |
 
 !!! tip "New to both OpenSees and OpenSeesMatlab?"

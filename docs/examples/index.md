@@ -11,4 +11,4 @@ This section collects the example documentation for ``OpenSeesMatlab``. The exam
 - [Thermal Examples](./thermal/index.md) — Examples of thermal and thermo-mechanical analysis.
 - [Sensitivity Examples](./sensitivity/index.md) — Examples of sensitivity and parameter analysis.
 - [Verification Examples](./verify/index.md) — Examples of verification by reliable third-party software.
-- [MATLAB Numerical Substructure Analysis](./substruct/index.md) — A numerical substructure model is built in MATLAB and then connected to the OpenSees domain for analysis.
+- [Extended functionality by OpenSeesMatlab](./extension/index.md) — OpenSeesMatlab extends a range of functionalities, including *numerical substructure analysis* and a *GPU-based linear equation solver*.

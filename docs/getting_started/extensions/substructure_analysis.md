@@ -624,4 +624,4 @@ The Element does not select the analysis algorithm or integrator. Configure
 
 ## Examples
 
-[Numerical Substructure Analysis](../examples/substruct/index.md)
+[Extensions Examples](../../examples/extension/index.md)

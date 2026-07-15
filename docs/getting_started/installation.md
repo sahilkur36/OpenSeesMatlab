@@ -7,12 +7,10 @@ OpenSeesMatlab is currently distributed as a MATLAB toolbox for Windows. MATLAB 
 1. Download a release from [GitHub](https://github.com/yexiang92/OpenSeesMatlab/releases) or [Gitee (China)](https://gitee.com/yexiang-yan/opensees-interface-for-matlab/releases).
 2. Extract the release to a directory where you have write permission.
 3. In MATLAB, change to that directory and run:
-
    ```matlab
    cd('path_to_openseesmatlab_directory');
    installOpenSeesMatlab;
    ```
-
 4. Restart MATLAB if the installer requests it.
 
 The MATLAB File Exchange package is not yet available.

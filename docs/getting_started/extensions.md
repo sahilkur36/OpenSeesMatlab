@@ -11,7 +11,7 @@ OpenSees domain to a numerical sub-model evaluated by a MATLAB callback.
 OpenSees owns the global model and analysis, while MATLAB returns the interface
 force, tangent stiffness, and optional mass and damping matrices.
 
-[Read the MATLAB substructure guide](extensions/substructure_analysis.md){ .md-button }
+[Read the MATLAB substructure guide](extensions/substructure_analysis.md){ .md-button .md-button--primary }
 
 Use this extension when a component or condensed sub-model is easier to
 implement in MATLAB but must participate in an ordinary OpenSees static or
@@ -23,7 +23,7 @@ The optional cuDSS backend solves sparse linear systems on a supported NVIDIA
 GPU. It is selected through `ops.system("CuDSS", ...)` and is most useful for
 large systems or analyses that repeatedly factorize tangent matrices.
 
-[Read the cuDSS configuration and usage guide](extensions/cudss_solver.md){ .md-button }
+[Read the cuDSS configuration and usage guide](extensions/cudss_solver.md){ .md-button .md-button--primary }
 
 CPU solvers remain available without CUDA or cuDSS. The GPU runtime is loaded
 only when a cuDSS system is explicitly selected.

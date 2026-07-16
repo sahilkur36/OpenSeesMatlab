@@ -1369,6 +1369,15 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
         function varargout = uniaxialMaterial(obj, matType, matTag, matArgs)
             % This command is used to construct a UniaxialMaterial object which represents uniaxial stress-strain (or force-deformation) relationships.
             %
+            % MATLAB extension syntax
+            % -----------------------
+            %   ops.uniaxialMaterial("MatlabUniaxialMaterial", matTag, ...
+            %       callback, initialState, initialTangent)
+            %
+            % MatlabUniaxialMaterial is routed internally to the MEX
+            % extensionMaterial dispatcher. Native OpenSees material types
+            % continue to use the upstream uniaxialMaterial command.
+            %
             % See also
             % ---------
             %   - [uniaxialMaterial commands (Python)](https://openseespydoc.readthedocs.io/en/latest/src/uniaxialMaterial.html)
@@ -1393,7 +1402,17 @@ classdef OpenSeesMatlabCmds < ops.OpenSeesMatlabBase
                 matArgs
             end
 
-            [varargout{1:nargout}] = obj.mexHandle('uniaxialMaterial', matType, matTag, matArgs{:});
+            if strcmpi(string(matType), "MatlabUniaxialMaterial")
+                % MATLAB-aware materials need direct MATLAB arrays/function
+                % handles, so the wrapper routes them to the internal MEX
+                % extension dispatcher while preserving the standard public
+                % uniaxialMaterial API.
+                [varargout{1:nargout}] = obj.mexHandle( ...
+                    'extensionMaterial', matType, matTag, matArgs{:});
+            else
+                [varargout{1:nargout}] = obj.mexHandle( ...
+                    'uniaxialMaterial', matType, matTag, matArgs{:});
+            end
         end
 
         function varargout = nDMaterial(obj, matType, matTag, matArgs)

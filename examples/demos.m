@@ -38,6 +38,8 @@ tasks = [
     "extension", "substruct",      "extension_substructure_linear";
     "extension", "substruct",      "extension_substructure_nonlinear_dynamic";
     "extension", "system",         "extension_gpu_CuDSS_test";
+    "extension", "material",       "extension_MatlabUniaxialMaterial_linear";
+    "extension", "material",       "extension_MatlabUniaxialMaterial_nonlinear";
 ];
 
 rootDir = "../docs/examples";
@@ -222,7 +224,7 @@ introText = ['This section collects the example documentation for ``OpenSeesMatl
              'and post-processing.' newline newline];
 
 fprintf(fid, "%s", introText);
-fprintf(fid, "## Categories\n\n");
+fprintf(fid, "**Categories**\n\n");
 
 for i = 1:numel(categories)
     category = categories(i);
@@ -314,7 +316,7 @@ function localPostProcessMarkdown(mdFile, mFileName)
         '(?:#[0-9a-f]{3,8}\b|' ...
         'rgba?\([^)]*\)|hsla?\([^)]*\))'];
     txt = regexprep(txt, explicitColorPattern, ...
-        'color:var(--md-primary-fg-color)');
+        'color:var(--md-accent-fg-color)');
 
     % Normalize display equations exported by the Live Editor without
     % changing ordinary Markdown prose or inline math.
@@ -521,7 +523,7 @@ function out = localFormatOutputBlock(content)
     content = replace(content, ">", "&gt;");
 
     out = [
-        '<div style="font-size:0.85em; color:var(--md-primary-fg-color);">' newline ...
+        '<div style="font-size:0.85em; color:var(--md-accent-fg-color);">' newline ...
         '<div style="font-weight:600;">Output</div>' newline ...
         '<div style="white-space:pre-wrap; font-family:Consolas;">' newline ...
         content newline ...
@@ -615,6 +617,8 @@ function titleStr = localSubgroupTitle(category, subgroup)
                     titleStr = "MATLAB Numerical Substructure Analysis";
                 case "system"
                     titleStr = "Solver of equations for linear systems";
+                case "material"
+                    titleStr = "Connecting MATLAB's custom materials to the OpenSees domain";
                 otherwise
                     titleStr = localPrettyTitle(subgroup);
             end

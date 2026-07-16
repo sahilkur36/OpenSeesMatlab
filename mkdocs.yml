@@ -56,16 +56,15 @@ theme:
         name: Switch to light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: indigo
+      # primary: indigo
       accent: indigo
       toggle:
         icon: material/weather-sunny
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: lime
-      # accent: amber
-      accent: lime
+      # primary: lime
+      # accent: light blue
       toggle:
         icon: material/weather-night
         name: Switch to system preference

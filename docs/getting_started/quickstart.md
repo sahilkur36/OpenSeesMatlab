@@ -2,7 +2,7 @@
 
 This tutorial builds a two-dimensional elastic truss, applies a static load, solves it in one step, and reads the displacement into MATLAB. It is intentionally small so that the complete OpenSeesMatlab workflow is visible in one place.
 
-## 1. Create the interface
+## Create the interface
 
 ```matlab
 opsMat = OpenSeesMatlab();
@@ -13,7 +13,7 @@ ops.wipe();
 
 [`opsMat`][OpenSeesMatlab] owns the toolbox modules. `ops` is only a shorter reference to its [`.opensees` command interface][ops.OpenSeesMatlabCmds].
 
-## 2. Define the model
+## Define the model
 
 The model has two translational degrees of freedom per node. SI units are used consistently in this tutorial.
 
@@ -37,7 +37,7 @@ ops.element('Truss', 1, 1, 2, A, 1);
 
 The vertical degree of freedom at node 2 is restrained because a horizontal truss alone provides no vertical stiffness.
 
-## 3. Inspect the model
+## Inspect the model
 
 ```matlab
 opsMat.vis.plotModel();
@@ -51,7 +51,7 @@ opsMat.vis.polyscope.plotModel();
 
 The regular [`plotModel`][plotter.OpenSeesMatlabVis.plotModel] plot is the simplest verification path. The Polyscope [`plotModel`][plotter.OpenSeesMatlabVisPolyscope.plotModel] viewer is useful when you want an interactive GUI with visibility, display, slicing, and other viewer controls.
 
-## 4. Apply the load
+## Apply the load
 
 ```matlab
 ops.timeSeries('Linear', 1);
@@ -59,7 +59,7 @@ ops.pattern('Plain', 1, 1);
 ops.load(2, P, 0.0);
 ```
 
-## 5. Configure and run a static analysis
+## Configure and run a static analysis
 
 ```matlab
 ops.system('BandSPD');
@@ -75,7 +75,7 @@ assert(ok == 0, 'OpenSees analysis did not converge.');
 
 OpenSees returns `0` when the requested analysis completes successfully. Always check the return code in scripts that will run unattended.
 
-## 6. Read and verify the result
+## Read and verify the result
 
 ```matlab
 ux = ops.nodeDisp(2, 1);
@@ -88,7 +88,7 @@ fprintf('Relative error:        %.3e\n', abs(ux - uxExpected) / uxExpected);
 
 [`nodeDisp`][ops.OpenSeesMatlabCmds.nodeDisp] returns a MATLAB scalar here. Larger workflows can store values in arrays, tables, structs, or files using normal MATLAB tools.
 
-## 7. Clean up
+## Clean up
 
 ```matlab
 ops.wipe();

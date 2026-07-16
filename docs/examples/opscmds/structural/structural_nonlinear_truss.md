@@ -1,7 +1,7 @@
 <!-- matlab-script-download -->
 [:material-download: Download MATLAB script](./structural_nonlinear_truss.m){ .md-button .md-button--primary }
 
-# <span style="color:var(--md-primary-fg-color)">**Nonlinear Truss Pushover Analysis**</span>
+# <span style="color:var(--md-accent-fg-color)">**Nonlinear Truss Pushover Analysis**</span>
 
 This live script is written as a guided walkthrough for a structural\-analysis example. It walks from model definition to analysis setup and then to response checks or plots. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 
@@ -104,7 +104,7 @@ This section creates the finite\-element idealization used by the rest of the ex
 opsMAT.vis.plotModel();
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Model summary

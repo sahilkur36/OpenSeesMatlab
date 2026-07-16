@@ -1,7 +1,7 @@
 <!-- matlab-script-download -->
 [:material-download: Download MATLAB script](./post_excavation.m){ .md-button .md-button--primary }
 
-# <span style="color:var(--md-primary-fg-color)">**Excavation Supported by Cantilevered Sheet Pile Wall**</span>
+# <span style="color:var(--md-accent-fg-color)">**Excavation Supported by Cantilevered Sheet Pile Wall**</span>
 
 This live script is written as a guided walkthrough for a post\-processing workflow. It focuses on retrieving, organizing, and visualizing model or response data after an OpenSees analysis. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 
@@ -13,7 +13,7 @@ Note that this model has a bug: it crashes when ``ops.wipe()`` is run again afte
 clc; clear; close all;
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab]  [EXCEPTION] Polyscope has not been initialized
@@ -32,7 +32,7 @@ Execute modeling function:
 excavationFEM(ops);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSees] InitialStateAnalysisWrapper nDmaterial - Written: C.McGann, P.Arduino, P.Mackenzie-Helnwein, U.Washington
@@ -51,7 +51,7 @@ opts.nodes.showLabels = false;
 opsMAT.vis.plotModel(opts=opts);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Model summary
@@ -72,7 +72,7 @@ Create output database (ODB) file. Since some elements and nodes will be removed
 ODB = opsMAT.post.createODB("myODB");
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Output file: .openseesmatlab.output\Responses-myODB.odb\output.h5
@@ -93,7 +93,7 @@ ops.analysis("Static");
 ops.InitialStateAnalysis("on");
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSees] InitialStateAnalysis ON
@@ -121,7 +121,7 @@ ops.analyze(4);
 ops.InitialStateAnalysis("off");
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSees] InitialStateAnalysis OFF
@@ -166,7 +166,7 @@ ops.analyze(4);
 disp("Lift 1 removed")
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Lift 1 removed
@@ -195,7 +195,7 @@ ops.analyze(4);
 disp("Lift 2 removed")
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Lift 2 removed
@@ -225,7 +225,7 @@ ops.analyze(4);
 disp("Lift 3 removed")
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Lift 3 removed
@@ -255,7 +255,7 @@ ops.analyze(4);
 disp("Lift 4 removed")
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Lift 4 removed
@@ -285,7 +285,7 @@ ops.analyze(4);
 disp("Lift 5 removed")
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Lift 5 removed
@@ -315,7 +315,7 @@ ops.analyze(4);
 disp("Lift 6 removed")
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Lift 6 removed
@@ -345,7 +345,7 @@ ops.analyze(4);
 disp("Lift 7 removed")
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Lift 7 removed
@@ -375,7 +375,7 @@ ops.analyze(4);
 disp("Lift 8 removed")
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Lift 8 removed
@@ -405,7 +405,7 @@ ops.analyze(4);
 disp("Lift 9 removed")
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Lift 9 removed
@@ -435,7 +435,7 @@ ops.analyze(4);
 disp("Lift 10 removed")
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Lift 10 removed
@@ -501,7 +501,7 @@ It can also be exported to `pvd` file, and vis by paraview:
 opsMAT.post.writeResponsePVD("myODB");
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 nodal:         49 steps -&gt; paraview_output/pv_nodal/pv_nodal.pvd
@@ -532,7 +532,7 @@ disp_sel = nodeResp2.disp.ux(:, idx);
 disp(disp_sel.');  % Data at non-existent time steps will be filled with NAN.
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 0   -0.0000   -0.0000   -0.0000   -0.0000   -0.0000   -0.0000   -0.0000   -0.0000    0.0002    0.0002    0.0002    0.0002    0.0006    0.0006    0.0006    0.0006    0.0010    0.0010    0.0010    0.0010    0.0015    0.0015    0.0015    0.0015    0.0022    0.0022    0.0022    0.0022       NaN       NaN       NaN       NaN       NaN       NaN       NaN       NaN       NaN       NaN       NaN       NaN       NaN       NaN       NaN       NaN       NaN       NaN       NaN       NaN

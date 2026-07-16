@@ -1,7 +1,7 @@
 <!-- matlab-script-download -->
 [:material-download: Download MATLAB script](./verify_stress_concentration_plate.m){ .md-button .md-button--primary }
 
-# <span style="color:var(--md-primary-fg-color)">**Stress Concentration in Plate with Circular Hole**</span>
+# <span style="color:var(--md-accent-fg-color)">**Stress Concentration in Plate with Circular Hole**</span>
 
 This live script is written as a guided walkthrough for a verification benchmark. It compares a known structural response with the result produced by the OpenSeesMatlab workflow. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 
@@ -254,7 +254,7 @@ ops.analysis('Static');
 ODB = opsMAT.post.createODB("myODB");  % create ODB
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Output file: .openseesmatlab.output\Responses-myODB.odb\output.h5
@@ -274,7 +274,7 @@ opts.loads.showNodal=true;
 opsMAT.vis.plotModel(opts=opts);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Model summary
@@ -295,7 +295,7 @@ fprintf("Maximal deflection in the x-direction:\n" + ...
         maxUx, maxUxPDE);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Maximal deflection in the x-direction:
@@ -329,7 +329,7 @@ fprintf("Maximal Sxx stress:\n" + ...
         maxSxx, maxSxxPDE);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Maximal Sxx stress:
@@ -347,7 +347,7 @@ fprintf("Maximal Von Mises stress:\n" + ...
         maxVonMisesStress, maxVonMisesStressPDE);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Maximal Von Mises stress:

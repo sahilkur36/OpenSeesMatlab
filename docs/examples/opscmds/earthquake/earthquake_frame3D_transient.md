@@ -1,7 +1,7 @@
 <!-- matlab-script-download -->
 [:material-download: Download MATLAB script](./earthquake_frame3D_transient.m){ .md-button .md-button--primary }
 
-# <span style="color:var(--md-primary-fg-color)">**3D Nonlinear beam\-column elements Gravity load analysis followed by transient analysis**</span>
+# <span style="color:var(--md-accent-fg-color)">**3D Nonlinear beam\-column elements Gravity load analysis followed by transient analysis**</span>
 
 This live script is written as a guided walkthrough for a dynamic earthquake\-analysis workflow. It builds the model, applies loading and ground motion records, runs the analysis, and reviews the response. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 
@@ -194,7 +194,7 @@ This section creates the finite\-element idealization used by the rest of the ex
 opsMat.vis.plotModel();
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Model summary
@@ -286,7 +286,7 @@ ops.analyze(npts, dt);
 fprintf("Analysis Done!")
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Analysis Done!

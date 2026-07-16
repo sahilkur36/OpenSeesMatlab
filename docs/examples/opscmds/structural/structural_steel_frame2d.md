@@ -1,7 +1,7 @@
 <!-- matlab-script-download -->
 [:material-download: Download MATLAB script](./structural_steel_frame2d.m){ .md-button .md-button--primary }
 
-# <span style="color:var(--md-primary-fg-color)">**2D Reinforced Concrete Frame Pushover Analysis**</span>
+# <span style="color:var(--md-accent-fg-color)">**2D Reinforced Concrete Frame Pushover Analysis**</span>
 
 This live script is written as a guided walkthrough for a structural\-analysis example. It walks from model definition to analysis setup and then to response checks or plots. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 
@@ -265,7 +265,7 @@ opts.loads.scale = 1.5;
 opsMat.vis.plotModel(opts=opts);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Model summary
@@ -286,7 +286,7 @@ eigenData = opsMat.post.getEigenData(numModes=2, solver='-genBandArpack');
 disp(eigenData)
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 ModeTags: [2x1 double]
@@ -331,7 +331,7 @@ ops.loadConst('-time', 0.0);
 disp('Gravity analysis complete');
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Gravity analysis complete
@@ -352,7 +352,7 @@ This section configures and runs the analysis. The solver, constraints, converge
 disp('<<<< Running Pushover Analysis >>>>');
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 &lt;&lt;&lt;&lt; Running Pushover Analysis &gt;&gt;&gt;&gt;

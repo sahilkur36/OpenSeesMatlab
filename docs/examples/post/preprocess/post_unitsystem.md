@@ -1,7 +1,7 @@
 <!-- matlab-script-download -->
 [:material-download: Download MATLAB script](./post_unitsystem.m){ .md-button .md-button--primary }
 
-# <span style="color:var(--md-primary-fg-color)">**Automatic Unit System Conversion**</span>
+# <span style="color:var(--md-accent-fg-color)">**Automatic Unit System Conversion**</span>
 
 This live script is written as a guided walkthrough for a post\-processing workflow. It focuses on retrieving, organizing, and visualizing model or response data after an OpenSees analysis. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 
@@ -29,7 +29,7 @@ fprintf("Length: %g %g %g %g %g %g\n", ...
     UNIT.mm, UNIT.mm2, UNIT.cm, UNIT.m, UNIT.inch, UNIT.ft);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Length: 0.001 1e-06 0.01 1 0.0254 0.3048
@@ -42,7 +42,7 @@ fprintf("Force: %g %g %g %g %g\n", ...
     UNIT.N, UNIT.kN, UNIT.lbf, UNIT.kip, UNIT("kN/mm"));
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Force: 0.001 1 0.00444822 4.44822 1000
@@ -55,7 +55,7 @@ fprintf("Stress: %g %g %g %g %g %g\n", ...
     UNIT.MPa, UNIT.kPa, UNIT.Pa, UNIT.psi, UNIT.ksi, UNIT("N/mm2"));
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Stress: 1000 1 0.001 6.89476 6894.76 1000
@@ -68,7 +68,7 @@ fprintf("Mass: %g %g %g %g\n", ...
     UNIT.g, UNIT.kg, UNIT.ton, UNIT.slug);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Mass: 1e-06 0.001 1 0.0145939
@@ -79,7 +79,7 @@ Mass: 1e-06 0.001 1 0.0145939
 disp(UNIT)
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 &lt;UnitSystem: length="m", force="kn", time="sec"&gt;
@@ -119,7 +119,7 @@ freq = [f1; f2; f3];
 disp(freq);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 7.0536    8.2893
@@ -142,7 +142,7 @@ fprintf(['Displacement at node 4: ', ...
          char(length_unit1), char(length_unit3), u1(end) / u3(end));
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Displacement at node 4: cm/m = 100, m/ft = 0.3048
@@ -157,7 +157,7 @@ fprintf('Reaction at node 2: %s/%s = %g, %s/%s = %g\n', ...
     char(force_unit3), char(force_unit1), forces3(end) / forces1(end));
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Reaction at node 2: N/kN = 1000, lbf/kN = 224.809

@@ -1,7 +1,7 @@
 <!-- matlab-script-download -->
 [:material-download: Download MATLAB script](./verify_quad_beam.m){ .md-button .md-button--primary }
 
-# <span style="color:var(--md-primary-fg-color)">**Laterally loaded tapered support structure (Quad plane element)**</span>
+# <span style="color:var(--md-accent-fg-color)">**Laterally loaded tapered support structure (Quad plane element)**</span>
 
 This live script is written as a guided walkthrough for a verification benchmark. It compares a known structural response with the result produced by the OpenSeesMatlab workflow. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 
@@ -105,7 +105,7 @@ opts.loads.showNodal = true;
 opsMAT.vis.plotModel(opts=opts);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Model summary
@@ -139,7 +139,7 @@ ops.analysis('Static');
 ODB = opsMAT.post.createODB("myODB", projectGaussToNodes="extrapolate");  % create ODB
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Output file: .openseesmatlab.output\Responses-myODB.odb\output.h5
@@ -240,7 +240,7 @@ fprintf([ ...
     'end sigma_x', target_end, mapdl182_end, fixed_end_stress_osp, fixed_end_stress_osp / target_end);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 ---------------- OpenSeesMatlab vs Reference ----------------

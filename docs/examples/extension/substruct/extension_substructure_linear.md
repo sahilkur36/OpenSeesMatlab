@@ -1,7 +1,7 @@
 <!-- matlab-script-download -->
 [:material-download: Download MATLAB script](./extension_substructure_linear.m){ .md-button .md-button--primary }
 
-# <span style="color:var(--md-primary-fg-color)">**Linear MATLAB Substructure: Static Analysis and Verification**</span>
+# <span style="color:var(--md-accent-fg-color)">**Linear MATLAB Substructure: Static Analysis and Verification**</span>
 
 This example demonstrates the complete workflow for a MATLAB\-backed OpenSees substructure.
 
@@ -75,7 +75,7 @@ initialState = struct("K", K0);
 opsMAT = OpenSeesMatlab();
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 ============================================================
@@ -303,7 +303,7 @@ verification = table( ...
 disp("Interface definition returned by the Element:");
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Interface definition returned by the Element:
@@ -314,7 +314,7 @@ Interface definition returned by the Element:
 disp(interfaceDefinition);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 1     1     2     1
@@ -325,7 +325,7 @@ disp(interfaceDefinition);
 disp("Interface displacement:");
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Interface displacement:
@@ -336,7 +336,7 @@ Interface displacement:
 disp(interfaceDisp(:));
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 1.0e-03 *
@@ -351,7 +351,7 @@ disp(interfaceDisp(:));
 disp("Interface resisting force:");
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Interface resisting force:
@@ -362,7 +362,7 @@ Interface resisting force:
 disp(interfaceForce(:));
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 -1
@@ -374,7 +374,7 @@ disp(interfaceForce(:));
 disp("Current tangent stiffness:");
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Current tangent stiffness:
@@ -385,7 +385,7 @@ Current tangent stiffness:
 disp(tangent);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 1000       -1000
@@ -410,7 +410,7 @@ meanCallbackTime = ops.eleResponse( ...
 fprintf("Verification passed.\n");
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Verification passed.
@@ -421,7 +421,7 @@ Verification passed.
 fprintf("Trial callback calls: %g\n", trialCalls);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Trial callback calls: 2
@@ -432,7 +432,7 @@ Trial callback calls: 2
 fprintf("Total callback calls: %g\n", totalCalls);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Total callback calls: 4
@@ -443,7 +443,7 @@ Total callback calls: 4
 fprintf("Mean callback time: %.6g seconds\n", meanCallbackTime);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Mean callback time: 0.0012484 seconds

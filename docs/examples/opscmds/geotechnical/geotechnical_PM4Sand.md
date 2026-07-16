@@ -1,7 +1,7 @@
 <!-- matlab-script-download -->
 [:material-download: Download MATLAB script](./geotechnical_PM4Sand.m){ .md-button .md-button--primary }
 
-# <span style="color:var(--md-primary-fg-color)">**PM4Sand model undrained cyclic simple shear element**</span>
+# <span style="color:var(--md-accent-fg-color)">**PM4Sand model undrained cyclic simple shear element**</span>
 
 This live script is written as a guided walkthrough for a geotechnical material or element example. It shows how the soil model is defined, loaded, and checked through selected response quantities. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 
@@ -117,7 +117,7 @@ ops.nDMaterial('PM4Sand', 1, Dr, G0, hpo, rho, P_atm, h0, e_max, e_min, ...
     Q, R, m_par, F_sed, p_sed);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSees] PM4Sand nDmaterial - Written: L.Chen, P.Arduino, U.Washington
@@ -131,7 +131,7 @@ ops.nDMaterial('PM4Sand', 1, Dr, G0, hpo, rho, P_atm, h0, e_max, e_min, ...
 ops.element('SSPquadUP', 1, 1, 2, 3, 4, 1, 1.0, 2.2e6, 1.0, perm, perm, e_ini, 1.0e-5);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSees] SSPquadUP element - Written: C.McGann, P.Arduino, P.Mackenzie-Helnwein, U.Washington
@@ -154,7 +154,7 @@ opts.loads.scale = 0.001;
 opsmat.vis.plotModel(opts=opts);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Model summary
@@ -196,7 +196,7 @@ b = ops.eleResponse(1, 'stress');  % [sigmaxx, sigmayy, sigmaxy]
 fprintf('shear stress is %.6f\n', b(3));
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 shear stress is -0.000000
@@ -217,7 +217,7 @@ for i = 1:4
 end
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Node ID 1
@@ -233,7 +233,7 @@ b = ops.eleResponse(1, 'stress');
 fprintf('shear stress is %.6f\n', b(3));
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 shear stress is 0.000000
@@ -244,7 +244,7 @@ shear stress is 0.000000
 fprintf('Drainage is closed\n');
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Drainage is closed
@@ -262,7 +262,7 @@ ops.updateMaterialStage('-material', 1, '-stage', 1);
 ops.setParameter('-val', 0, '-ele', 1, 'FirstCall', '1');
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSees] 1 initialize
@@ -276,7 +276,7 @@ b = ops.eleResponse(1, 'stress');
 fprintf('shear stress is %.6f\n', b(3));
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 shear stress is 0.000000
@@ -287,7 +287,7 @@ shear stress is 0.000000
 fprintf('finished update fixties\n');
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 finished update fixties
@@ -305,7 +305,7 @@ numCycle    = 0.25;
 fprintf('Current Number of Cycle: %.2f\n', numCycle);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Current Number of Cycle: 0.25
@@ -406,7 +406,7 @@ while numCycle <= Cycle_max
 end
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Current Number of Cycle: 1.25
@@ -430,7 +430,7 @@ run_time = toc;
 fprintf('Analysis is done!\nComputation time is %.2f seconds\n', run_time);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Analysis is done!

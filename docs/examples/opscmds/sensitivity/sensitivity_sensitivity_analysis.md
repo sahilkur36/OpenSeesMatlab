@@ -1,7 +1,7 @@
 <!-- matlab-script-download -->
 [:material-download: Download MATLAB script](./sensitivity_sensitivity_analysis.m){ .md-button .md-button--primary }
 
-# <span style="color:var(--md-primary-fg-color)">**Two storey steel moment frame with W\-sections for displacement\-controlled sensitivity analysis**</span>
+# <span style="color:var(--md-accent-fg-color)">**Two storey steel moment frame with W\-sections for displacement\-controlled sensitivity analysis**</span>
 
 This live script is written as a guided walkthrough for a sensitivity\-analysis example. It shows how design parameters are connected to response quantities so that gradients can be evaluated. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 
@@ -81,7 +81,7 @@ figure;
 opsMAT.vis.plotModel();
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Model summary
@@ -103,7 +103,7 @@ paramTags = ops.getParamTags();
 pushover_output = run_sensitivity_pushover_analysis(5, [1, 2], 1, (1/25) * inch, max_disp, paramTags, false, ops);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Analysis elapsed time is 0.377 seconds.

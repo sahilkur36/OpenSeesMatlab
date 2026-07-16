@@ -1,7 +1,7 @@
 <!-- matlab-script-download -->
 [:material-download: Download MATLAB script](./earthquake_RC_FRAME_EQ1.m){ .md-button .md-button--primary }
 
-# <span style="color:var(--md-primary-fg-color)">**Reinforced Concrete Frame Earthquake Analysis**</span>
+# <span style="color:var(--md-accent-fg-color)">**Reinforced Concrete Frame Earthquake Analysis**</span>
 
 This live script is written as a guided walkthrough for a dynamic earthquake\-analysis workflow. It builds the model, applies loading and ground motion records, runs the analysis, and reviews the response. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 
@@ -134,7 +134,7 @@ paras.loads.scale = 5e-4;
 opsMAT.vis.plotModel(opts=paras);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Model summary
@@ -188,7 +188,7 @@ ops.analysis('Static');
 ops.analyze(10);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSees] CTestNormDispIncr::test() - iteration: 1 current Norm: 0.00254558 (max: 1e-12, Norm R: 0.0507128)
@@ -265,7 +265,7 @@ else
 end
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Passed!
@@ -348,7 +348,7 @@ eigenValues = ops.eigen(numEigen);
 disp('eigen values at start of transient:')
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 eigen values at start of transient:
@@ -359,7 +359,7 @@ eigen values at start of transient:
 disp(eigenValues)
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 1.0e+04 *
@@ -407,7 +407,7 @@ eigenValues = ops.eigen(numEigen);
 disp('eigen values at end of transient:')
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 eigen values at end of transient:
@@ -418,7 +418,7 @@ eigen values at end of transient:
 disp(eigenValues)
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 1.0e+04 *

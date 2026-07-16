@@ -1,7 +1,7 @@
 <!-- matlab-script-download -->
 [:material-download: Download MATLAB script](./post_get_resp_odb.m){ .md-button .md-button--primary }
 
-# <span style="color:var(--md-primary-fg-color)">**Analysis results retrieval, saving and visualization**</span>
+# <span style="color:var(--md-accent-fg-color)">**Analysis results retrieval, saving and visualization**</span>
 
 This live script is written as a guided walkthrough for a post\-processing workflow. It focuses on retrieving, organizing, and visualizing model or response data after an OpenSees analysis. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 
@@ -13,7 +13,7 @@ clc; clear; close all;
 opsMAT = OpenSeesMatlab();
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 ============================================================
@@ -223,7 +223,7 @@ This section creates the finite\-element idealization used by the rest of the ex
 opsMAT.vis.plotModel();
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Model summary
@@ -324,7 +324,7 @@ tic;
 ODB = opsMAT.post.createODB("myODB", interpolateBeamDisp=7);  % Create ODB
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Output file: .openseesmatlab.output\Responses-myODB.odb\output.h5
@@ -338,7 +338,7 @@ elapsedTime = toc;
 fprintf('Elapsed time for analysis %.2f sec\n', elapsedTime);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Elapsed time for analysis 3.87 sec
@@ -351,7 +351,7 @@ ops.wipe();
 fprintf("Analysis Done!")
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Analysis Done!
@@ -404,7 +404,7 @@ eleTags = eleResp.eleTags;
 disp(fieldnames(sectionForces));
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 {'My'}
@@ -467,7 +467,7 @@ opsMAT.vis.plotFrameResponse(frameResp, stepIdx="absMax", respType="sectionForce
 opsMAT.vis.polyscope.plotNodalResponse(nodeResp);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSeesMatlab] Backend: openGL3_glfw -- Loaded openGL version: 3.3.0 NVIDIA 561.09

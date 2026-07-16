@@ -1,7 +1,7 @@
 <!-- matlab-script-download -->
 [:material-download: Download MATLAB script](./thermal_restrained_beam_under_thermal_expansion.m){ .md-button .md-button--primary }
 
-# <span style="color:var(--md-primary-fg-color)">**Restrained beam under thermal expansion**</span>
+# <span style="color:var(--md-accent-fg-color)">**Restrained beam under thermal expansion**</span>
 
 This live script is written as a guided walkthrough for a thermal\-loading example. It shows how restrained thermal expansion is represented and how the resulting forces and deformations are interpreted. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 

@@ -4,9 +4,14 @@ OpenSeesMatlab extends a range of functionalities, including *numerical substruc
 
 ## MATLAB Numerical Substructure Analysis
 
-- [<span style="color:var(--md-primary-fg-color)">**Linear MATLAB Substructure: Static Analysis and Verification**</span>](./substruct/extension_substructure_linear.md)
-- [<span style="color:var(--md-primary-fg-color)">**Nonlinear Dynamic MATLAB Substructure**</span>](./substruct/extension_substructure_nonlinear_dynamic.md)
+- [<span style="color:var(--md-accent-fg-color)">**Linear MATLAB Substructure: Static Analysis and Verification**</span>](./substruct/extension_substructure_linear.md)
+- [<span style="color:var(--md-accent-fg-color)">**Nonlinear Dynamic MATLAB Substructure**</span>](./substruct/extension_substructure_nonlinear_dynamic.md)
 
 ## Solver of equations for linear systems
 
-- [<span style="color:var(--md-primary-fg-color)">**cuDSS plane\-element solver comparison**</span>](./system/extension_gpu_CuDSS_test.md)
+- [<span style="color:var(--md-accent-fg-color)">**cuDSS plane\-element solver comparison**</span>](./system/extension_gpu_CuDSS_test.md)
+
+## Connecting MATLAB's custom materials to the OpenSees domain
+
+- [<span style="color:var(--md-accent-fg-color)">**Linear MATLAB Material in a Cyclic Zero\-Length Pushover**</span>](./material/extension_MatlabUniaxialMaterial_linear.md)
+- [<span style="color:var(--md-accent-fg-color)">**History\-Dependent MATLAB Material in a Cyclic Pushover**</span>](./material/extension_MatlabUniaxialMaterial_nonlinear.md)

@@ -1,7 +1,7 @@
 <!-- matlab-script-download -->
 [:material-download: Download MATLAB script](./geotechnical_PressureDependMultiYield6.m){ .md-button .md-button--primary }
 
-# <span style="color:var(--md-primary-fg-color)">**Dry single BbarBrick element with pressure dependent material**</span>
+# <span style="color:var(--md-accent-fg-color)">**Dry single BbarBrick element with pressure dependent material**</span>
 
 This live script is written as a guided walkthrough for a geotechnical material or element example. It shows how the soil model is defined, loaded, and checked through selected response quantities. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 
@@ -99,7 +99,7 @@ ops.analysis('Static');
 ops.analyze(2);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSees] CTestNormDispIncr::test() - iteration: 2 current Norm: 1.6125e-20 (max: 1e-10, Norm deltaR: 1.16573e-15)
@@ -116,7 +116,7 @@ ops.updateMaterials('-material', solid1, 'bulkModulus', G1 * 2 / 3);
 ops.analyze(2);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSees] CTestNormDispIncr::test() - iteration: 1 current Norm: 2.84257e-20 (max: 1e-10, Norm deltaR: 2.44804e-14)
@@ -204,7 +204,7 @@ startT = tic;
 ops.analyze(numSteps, dt, dt / 64, dt, 15);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 [OpenSees] 80
@@ -221,7 +221,7 @@ elapsedTime = toc(startT);
 fprintf('Execution time: %.6f seconds.\n', elapsedTime);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Execution time: 0.410077 seconds.

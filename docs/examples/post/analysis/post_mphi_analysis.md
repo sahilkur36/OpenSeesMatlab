@@ -1,7 +1,7 @@
 <!-- matlab-script-download -->
 [:material-download: Download MATLAB script](./post_mphi_analysis.m){ .md-button .md-button--primary }
 
-# <span style="color:var(--md-primary-fg-color)">**Moment\-Curvature Analysis of a Reinforced Concrete Column Section**</span>
+# <span style="color:var(--md-accent-fg-color)">**Moment\-Curvature Analysis of a Reinforced Concrete Column Section**</span>
 
 This live script is written as a guided walkthrough for a post\-processing workflow. It focuses on retrieving, organizing, and visualizing model or response data after an OpenSees analysis. Read the text cells first, then run each code cell in order so that the variables, model state, and recorded results are available for the later sections.
 
@@ -24,7 +24,7 @@ opsMC = opsMAT.anlys.MomentCurvature;  % Get MomentCurvature instance
 disp(opsMC);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 MomentCurvature with properties:
@@ -225,7 +225,7 @@ for k = 1:numel(N_cases)
 end
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Case 1: N = 0
@@ -264,7 +264,7 @@ Yield and ultimate curvature for each case:
 fprintf('\n--- Limit-state identification ---\n');
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 --- Limit-state identification ---
@@ -276,7 +276,7 @@ fprintf('%-18s  %-10s %-12s  %-10s %-12s  %-8s\n', ...
     'Case', 'phi_y[1/m]', 'My[kN.m]', 'phi_u[1/m]', 'Mu[kN.m]', 'mu_phi');
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Case                phi_y[1/m] My[kN.m]      phi_u[1/m] Mu[kN.m]      mu_phi
@@ -325,7 +325,7 @@ for k = 1:numel(N_cases)
 end
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 Warning: matTag 1 strain -0.016 not reached; last step used.
@@ -387,7 +387,7 @@ for k = 1:numel(N_cases)
 end
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 N = 0                   0.0096        347.5
@@ -452,7 +452,7 @@ mc_nmm.buildNMM( ...
     'useParallel',    false);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 buildNMM: capacityMode=strain,  21 levels x 2 = 42 analyses.
@@ -512,7 +512,7 @@ mc_cyc.analyze( ...
     'smartAnalyze',   true);
 ```
 
-<div style="font-size:0.85em; color:var(--md-primary-fg-color);">
+<div style="font-size:0.85em; color:var(--md-accent-fg-color);">
 <div style="font-weight:600;">Output</div>
 <div style="white-space:pre-wrap; font-family:Consolas;">
 MomentCurvature: analysis complete.

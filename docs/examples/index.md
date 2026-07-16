@@ -2,7 +2,7 @@
 
 This section collects the example documentation for ``OpenSeesMatlab``. The examples are grouped by topic so that users can quickly find representative workflows for preprocessing, structural analysis, earthquake simulation, geotechnical modeling, thermal analysis, sensitivity analysis, verification, and post-processing.
 
-## Categories
+**Categories**
 
 - [Pre, Post-processing and Visualization Examples](./post/index.md) — Examples for additional preprocessing, post-processing, and visualization features provided by ``OpenSeesMatlab``.
 - [OpenSees command examples](./opscmds/index.md) — These examples demonstrate how to use the encapsulated OpenSees module for modeling and analysis.

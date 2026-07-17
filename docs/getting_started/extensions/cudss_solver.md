@@ -30,19 +30,33 @@ used when it was compiled.
 If cuDSS is installed in its standard directory, automatic discovery is usually
 enough. Otherwise, set the installation directory before creating the solver:
 
-```matlab
-% This is usually not necessary because CUDA environment variables are set automatically during installation.
-% If you have CUDA V12.6 installed:
-% setenv("CUDA_PATH_V12_6", ...
-%     "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6");
+The paths may also be supplied directly to `ops.system` with `-cudaPath` and
+`-cudssPath`. This is useful when several CUDA or cuDSS versions are installed.
 
-% Set the following CUDSS environment variables.
-setenv("OPENSEES_CUDSS_ROOT", ...
-    "C:\Program Files\NVIDIA cuDSS\v0.8");
+For custom or Conda layouts, specify the two DLL directories independently.
+Each value may be either the directory that directly contains the DLLs or an
+installation root containing `bin` or `Library\bin`:
+
+```matlab
+% for cuda v12.6, for example
+cudssPath = "C:\Program Files\NVIDIA cuDSS\v0.8\bin\12";
+cudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\bin"
+
+% for cuda 13.1, for example
+cudssPath = "C:\Program Files\NVIDIA cuDSS\v0.8\bin\13";
+cudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.1\bin"
+
+ops.system("CuDSS", ...
+    "-cudaPath", cudaPath, ...   % cudart64_*.dll, cublas64_*.dll, cublasLt64_*.dll
+    "-cudssPath", cudssPath, ...  % cudss64_0.dll
+    "-verbose");
 ```
 
-The path may also be supplied directly to `ops.system` with `-runtimePath`.
-This is useful when several CUDA or cuDSS versions are installed.
+If neither path is supplied, the loader searches the CUDA environment variables,
+the cuDSS environment variables, standard installation directories, and the
+normal Windows DLL search path automatically. A supplied path may be either an
+installation root or the DLL directory itself; the loader also checks `bin`,
+`Library\bin`, and the cuDSS version-specific `bin\12` or `bin\13` directory.
 
 !!! warning
 
@@ -67,8 +81,8 @@ ops.constraints("Transformation");
 ops.numberer("RCM");
 
 ops.system("CuDSS", ...
-    "-cudaMajor", "auto", ...
-    "-device", "auto", ...
+    "-cudaPath", cudaPath, ...
+    "-cudssPath", cudssPath, ...
     "-verbose");
 
 ops.test("NormDispIncr", 1.0e-8, 20);
@@ -106,9 +120,20 @@ To select a specific installation and GPU:
 ```matlab
 ops.system("CuDSS", ...
     "-cudaMajor", 12, ...
-    "-runtimePath", "C:\Program Files\NVIDIA cuDSS\v0.8", ...
+    "-cudaPath", "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6", ...
+    "-cudssPath", "C:\Program Files\NVIDIA cuDSS\v0.8", ...
     "-device", 0, ...
     "-refinement", 0);
+```
+
+The CUDA and cuDSS DLLs may also be kept in different directories:
+
+```matlab
+ops.system("CuDSS", ...
+    "-cudaMajor", 12, ...
+    "-cudaPath", "D:\runtimes\cuda12", ...
+    "-cudssPath", "D:\runtimes\cudss08", ...
+    "-device", 0);
 ```
 
 ## Choosing the matrix type
@@ -143,7 +168,7 @@ If cuDSS cannot be selected:
 
 1. Run `nvidia-smi` and confirm that Windows can see the GPU.
 2. Confirm that CUDA, cuBLAS, and cuDSS use the same CUDA major version.
-3. Pass `-runtimePath` and `-cudaMajor` explicitly.
+3. Pass `-cudaPath`, `-cudssPath`, and `-cudaMajor` explicitly.
 4. Use `-verbose` to display the selected runtime and GPU.
 5. Add `-diagnostics` to report asynchronous device-side phase errors.
 6. Confirm that MATLAB is loading the GPU-enabled MEX with:

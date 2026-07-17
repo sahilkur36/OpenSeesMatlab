@@ -21,8 +21,10 @@ tasks = [
     "opscmds",  "structural",  "structural_nonlinear_truss";
     "opscmds",  "structural",  "structural_steel_frame2d";
     "opscmds",  "structural",  "structural_parfor_truss";
+    "opscmds",  "earthquake",  "earthquake_NLSMRF";
     "opscmds",  "earthquake",  "earthquake_frame3D_transient";
     "opscmds",  "earthquake",  "earthquake_RC_FRAME_EQ1";
+    "opscmds",  "earthquake",  "earthquake_Two_Story_Steel_MRF";
     "opscmds",  "geotechnical", "geotechnical_PM4Sand";
     "opscmds",  "geotechnical", "geotechnical_PressureDependMultiYield6";
     "opscmds",  "thermal",      "thermal_restrained_beam_under_thermal_expansion";
@@ -44,6 +46,8 @@ tasks = [
 
 rootDir = "../docs/examples";
 forceRebuild = false;
+% Set false to export examples serially without starting a parallel pool.
+useParallel = false;
 
 if ~exist(rootDir, "dir")
     mkdir(rootDir);
@@ -87,45 +91,7 @@ end
 % =========================================================================
 % Export .mlx files to Markdown
 % =========================================================================
-parfor i = 1:size(tasks, 1)
-    category = tasks(i, 1);
-    subgroup = tasks(i, 2);
-    name     = tasks(i, 3);
-
-    if strlength(subgroup) > 0
-        outDir = fullfile(rootDir, category, subgroup);
-    else
-        outDir = fullfile(rootDir, category);
-    end
-
-    mlxFile = name + ".mlx";
-    outFile = fullfile(outDir, name + ".md");
-    mFile   = fullfile(outDir, name + ".m");
-
-    if localNeedExport(mlxFile, outFile, forceRebuild)
-        export(mlxFile, outFile, ...
-            Format="markdown", ...
-            EmbedImages=true, ...
-            AcceptHTML=true);
-
-        fprintf("Exported: %s -> %s\n", mlxFile, outFile);
-    else
-        fprintf("Updated : %s\n", outFile);
-    end
-
-    % Export a plain MATLAB script beside the Markdown file. Check it
-    % independently so an existing/up-to-date Markdown file does not prevent
-    % a missing or stale .m download from being generated.
-    if localNeedExport(mlxFile, mFile, forceRebuild)
-        export(mlxFile, mFile, Format="m");
-        fprintf("Exported: %s -> %s\n", mlxFile, mFile);
-    end
-
-    % The exporter may already be up to date while the post-processing rules
-    % in this script have changed. Always run the inexpensive normalization,
-    % including insertion of the script download link.
-    localPostProcessMarkdown(outFile, name + ".m");
-end
+localExportTasks(tasks, rootDir, forceRebuild, useParallel);
 
 % =========================================================================
 % Generate index.md for each category
@@ -242,6 +208,57 @@ end
 % =========================================================================
 % Helper functions
 % =========================================================================
+function localExportTasks(tasks, rootDir, forceRebuild, useParallel)
+    if useParallel
+        parfor i = 1:size(tasks, 1)
+            localExportTask(tasks(i, :), rootDir, forceRebuild);
+        end
+    else
+        for i = 1:size(tasks, 1)
+            localExportTask(tasks(i, :), rootDir, forceRebuild);
+        end
+    end
+end
+
+function localExportTask(task, rootDir, forceRebuild)
+    category = task(1);
+    subgroup = task(2);
+    name = task(3);
+
+    if strlength(subgroup) > 0
+        outDir = fullfile(rootDir, category, subgroup);
+    else
+        outDir = fullfile(rootDir, category);
+    end
+
+    mlxFile = name + ".mlx";
+    outFile = fullfile(outDir, name + ".md");
+    mFile = fullfile(outDir, name + ".m");
+
+    if localNeedExport(mlxFile, outFile, forceRebuild)
+        export(mlxFile, outFile, ...
+            Format="markdown", ...
+            EmbedImages=true, ...
+            AcceptHTML=true);
+        fprintf("Exported: %s -> %s\n", mlxFile, outFile);
+    else
+        fprintf("Updated : %s\n", outFile);
+    end
+
+    % Export a plain MATLAB script beside the Markdown file. Check it
+    % independently so an existing/up-to-date Markdown file does not prevent
+    % a missing or stale .m download from being generated.
+    if localNeedExport(mlxFile, mFile, forceRebuild)
+        export(mlxFile, mFile, Format="m");
+        fprintf("Exported: %s -> %s\n", mlxFile, mFile);
+    end
+
+    % The exporter may already be up to date while the post-processing rules
+    % in this script have changed. Always run the inexpensive normalization,
+    % including insertion of the script download link.
+    localPostProcessMarkdown(outFile, name + ".m");
+end
+
 function tf = localNeedExport(mlxFile, mdFile, forceRebuild)
     if forceRebuild
         tf = true;
@@ -307,6 +324,7 @@ function localPostProcessMarkdown(mdFile, mFileName)
     txt = replace(txt, "\]", "]");
     txt = replace(txt, "\$", "$");
     txt = replace(txt, "\\", "\");
+    txt = replace(txt, "\*", "*");
     txt = regexprep(txt, '[ \t]+(?=\r?\n)', '');
 
     % Replace colors explicitly embedded by the Live Editor with the theme's

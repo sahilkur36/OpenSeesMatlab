@@ -1,4 +1,4 @@
-%% *History-Dependent MATLAB Material in a Cyclic Pushover*
+%% *History-Dependent Nonlinear MATLAB Material in a Cyclic Pushover*
 % 
 % 
 % This notebook places a one-dimensional elastoplastic MATLAB material inside 
@@ -18,21 +18,9 @@
 % 
 % The yield function and plastic multiplier are
 % 
+% $f=|\sigma_{predictor}|-(F_y+H\alpha)$
 % 
-% 
-% $$
-% 
-% f=\|\sigma_{predictor}\|-(F_y+H\alpha)
-% 
-% $$
-% 
-% 
-% 
-% $$
-% 
-% \Delta\gamma=\frac{f}{E+H}
-% 
-% $$
+% $\Delta\gamma=\frac{f}{E+H}$
 % 
 % 
 % 
@@ -64,7 +52,6 @@ targetDisplacement = buildCyclicProtocol( ...
 figure("Color", "w");
 plot(targetDisplacement);
 % Build the zero-length structural model
-% 
 
 ops.model("basic", "-ndm", 1, "-ndf", 1);
 ops.node(1, 0.0);

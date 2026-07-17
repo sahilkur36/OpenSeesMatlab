@@ -1,4 +1,4 @@
-%% *Linear MATLAB Material in a Cyclic Zero-Length Pushover*
+%% *Linear MATLAB Material*
 % 
 % 
 % This notebook-style example places a callback-backed linear material inside 
@@ -12,9 +12,7 @@
 % 
 % ```text
 % 
-% fixed node 1 ---- zeroLength + MATLAB material ---- node 2
-% 
-% --> u(t)
+% fixed node 1 ---- zeroLength + MATLAB material ---- node 2 
 % 
 % ```
 % 

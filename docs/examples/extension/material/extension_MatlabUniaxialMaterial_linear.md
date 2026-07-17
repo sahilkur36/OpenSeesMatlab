@@ -1,7 +1,7 @@
 <!-- matlab-script-download -->
 [:material-download: Download MATLAB script](./extension_MatlabUniaxialMaterial_linear.m){ .md-button .md-button--primary }
 
-# <span style="color:var(--md-accent-fg-color)">**Linear MATLAB Material in a Cyclic Zero\-Length Pushover**</span>
+# <span style="color:var(--md-accent-fg-color)">**Linear MATLAB Material**</span>
 
 This notebook\-style example places a callback\-backed linear material inside a regular OpenSees zeroLength element.
 
@@ -12,8 +12,6 @@ The model is deliberately small, but it uses the complete OpenSees analysis stac
 ```text
 
   fixed node 1 ---- zeroLength + MATLAB material ---- node 2
-
-&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160; --> u(t)
 
 ```
 

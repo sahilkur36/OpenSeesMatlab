@@ -289,7 +289,7 @@ ops.mass(3, m, m, 0.0);
 ops.mass(4, m, m, 0.0);
 ```
 
-[elcentro.txt](../utils/elcentro.txt)
+[elcentro.txt](../../utils/elcentro.txt)
 
 ```matlab
 

@@ -220,9 +220,9 @@ for i = [5, 6, 7, 8, 10, 11, 12, 13, 15, 16, 17, 18]
     ops.load(i, 0.0, 0.0, -p, 0.0, 0.0, 0.0);
 end
 %% 
-% [tabasFN.txt](../utils/tabasFN.txt)   
+% [tabasFN.txt](../../utils/tabasFN.txt)   
 % 
-% [tabasFP.txt](../utils/tabasFP.txt)
+% [tabasFP.txt](../../utils/tabasFP.txt)
 
 % set rayleigh damping factors
 ops.rayleigh(0.0, 0.0, 0.0, 0.0018);

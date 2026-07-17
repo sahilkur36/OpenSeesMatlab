@@ -13,5 +13,6 @@ OpenSeesMatlab extends a range of functionalities, including *numerical substruc
 
 ## Connecting MATLAB's custom materials to the OpenSees domain
 
-- [<span style="color:var(--md-accent-fg-color)">**Linear MATLAB Material in a Cyclic Zero\-Length Pushover**</span>](./material/extension_MatlabUniaxialMaterial_linear.md)
-- [<span style="color:var(--md-accent-fg-color)">**History\-Dependent MATLAB Material in a Cyclic Pushover**</span>](./material/extension_MatlabUniaxialMaterial_nonlinear.md)
+- [<span style="color:var(--md-accent-fg-color)">**Linear MATLAB Material**</span>](./material/extension_MatlabUniaxialMaterial_linear.md)
+- [<span style="color:var(--md-accent-fg-color)">**History\-Dependent Nonlinear MATLAB Material in a Cyclic Pushover**</span>](./material/extension_MatlabUniaxialMaterial_nonlinear.md)
+

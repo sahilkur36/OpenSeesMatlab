@@ -57,26 +57,15 @@ close all;
 % 
 % 
 
-RuntimePath = "C:\Program Files\NVIDIA cuDSS\v0.8";          % Example: "C:\Program Files\NVIDIA cuDSS\v0.8"
-CudaMajor = "auto";       % "auto", "12", or "13"
-GpuDevice = "auto";       % "auto" or a zero-based device index
-MexDirectory = "";
-% Leave MexDirectory empty to use the MEX shipped in +ops/derived. For local
-% development it may point to a build output such as build-cudss/.../Release.
+% for cuda v12.6, for example
+cudssPath = "C:\Program Files\NVIDIA cuDSS\v0.8\bin\12";
+cudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\bin";
 
-if strlength(RuntimePath) > 0
-    setenv("OPENSEES_CUDSS_ROOT",RuntimePath);
-end
-
-if strlength(MexDirectory) > 0
-    opsMat = OpenSeesMatlab(mexDir=MexDirectory);
-else
-    opsMat = OpenSeesMatlab();
-end
+opsMat = OpenSeesMatlab();
 ops = opsMat.opensees;
 % Benchmark definition
 
-RequestedDOFs = [100 500 1000 2000 5000 10000 20000 50000 100000];
+RequestedDOFs = [100 500 1000 2000 5000 10000 20000 50000 100000 500000];
 TargetDOFs = sort(unique(RequestedDOFs,"stable"));
 Solvers = ["CuDSS" "CuDSSSPD" "UmfPack" "SuperLU" "SparseSPD" "BandSPD" "ProfileSPD" "BandGeneral"];
 NumberOfLoadSteps = 3;
@@ -85,7 +74,7 @@ NumberOfLoadSteps = 3;
 % CUDSS_STATUS_IR_FAILED for the 100000-DOF case with a very strict 1e-12
 % refinement tolerance, while its direct double-precision solution agrees
 % with UmfPack to approximately 1e-12 or better.
-CuDSSOptions = {"-cudaMajor",CudaMajor,"-device",GpuDevice};
+CuDSSOptions = {"-cudaPath", cudaPath, "-cudssPath", cudssPath, "-verbose"};
 
 %% Optional cuDSS initialization measurement
 % CUDA context and cuDSS runtime initialization occur only on the first GPU
@@ -116,12 +105,14 @@ end
 rows = cell(0,1);
 for targetDOF = TargetDOFs
     for solver = Solvers
-        if solver == "CuDSS" && ~CuDSSAvailable
-            rows{end+1,1} = failedRow(targetDOF,solver,"cuDSS runtime unavailable"); %#ok<SAGROW>
+        
+        if ismember(targetDOF, [500000, 1000000]) && ~ismember(solver, ["CuDSS", "CuDSSSPD", "UmfPack"])
+            fprintf("Skipping target %d DOF with %s...\n", targetDOF, solver);
             continue;
         end
 
-        if solver == "CuDSSSPD" && ~CuDSSAvailable
+
+        if ismember(solver, ["CuDSS", "CuDSSSPD"])  && ~CuDSSAvailable
             rows{end+1,1} = failedRow(targetDOF,solver,"cuDSS runtime unavailable"); %#ok<SAGROW>
             continue;
         end

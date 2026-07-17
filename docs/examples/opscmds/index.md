@@ -10,8 +10,10 @@ These examples demonstrate how to use the encapsulated OpenSees module for model
 
 ## Earthquake Examples
 
+- [<span style="color:var(--md-accent-fg-color)">**Nonlinear seismic response of a moment resisting frame**</span>](./earthquake/earthquake_NLSMRF.md)
 - [<span style="color:var(--md-accent-fg-color)">**3D Nonlinear beam\-column elements Gravity load analysis followed by transient analysis**</span>](./earthquake/earthquake_frame3D_transient.md)
 - [<span style="color:var(--md-accent-fg-color)">**Reinforced Concrete Frame Earthquake Analysis**</span>](./earthquake/earthquake_RC_FRAME_EQ1.md)
+- [<span style="color:var(--md-accent-fg-color)">**Two\-story steel MRF in OpenSeesMatlab style**</span>](./earthquake/earthquake_Two_Story_Steel_MRF.md)
 
 ## Geotechnical Examples
 

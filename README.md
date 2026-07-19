@@ -3,9 +3,8 @@
 [![Documentation Status](https://readthedocs.org/projects/OpenSeesMatlab/badge/?version=latest)](https://openseesmatlab.readthedocs.io/en/latest/)
 [![MATLAB Tests](https://github.com/yexiang92/OpenSeesMatlab/actions/workflows/matlab-tests.yml/badge.svg)](https://github.com/yexiang92/OpenSeesMatlab/actions/workflows/matlab-tests.yml)
 [![GitHub stars](https://img.shields.io/github/stars/yexiang92/OpenSeesMatlab?style=social)](https://github.com/yexiang92/OpenSeesMatlab)
-<!-- [![GitHub License](https://img.shields.io/github/license/yexiang92/OpenSeesMatlab?style=flat)](https://img.shields.io/github/license/yexiang92/OpenSeesMatlab?style=flat) -->
 
-OpenSeesMatlab wraps the OpenSees engine in a native MATLAB interface for
+OpenSeesMatlab wraps the [OpenSees engine](https://github.com/OpenSees/OpenSees) in a native MATLAB interface for
 structural analysis and simulation. It provides integrated modeling, analysis,
 post-processing, and visualization tools for research and engineering
 applications in structural, earthquake, and geotechnical engineering.
@@ -38,13 +37,13 @@ OpenSeesMatlab leverages MATLAB's C++ mex interface to encapsulate the [OpenSees
 After installation, explore and run example models in the `examples/` directory
 (use it as the MATLAB working directory):
 
-- Open any `.mlx` file in `examples/` with MATLAB Live Editor, e.g.:
-  - `examples/earthquake_NLSMRF.mlx`
-  - `examples/earthquake_Two_Story_Steel_MRF.mlx`
-  - `examples/earthquake_frame3D_transient.mlx`
-  - `examples/structural_nonlinear_truss.mlx`
-  - `examples/geotechnical_PM4Sand.mlx`
-  - `examples/post_2d_Portal_Frame.mlx`
+- Open any `.m` file in `examples/` with MATLAB Live Editor, e.g.:
+  - `examples/earthquake_NLSMRF.m`
+  - `examples/earthquake_Two_Story_Steel_MRF.m`
+  - `examples/earthquake_frame3D_transient.m`
+  - `examples/structural_nonlinear_truss.m`
+  - `examples/geotechnical_PM4Sand.m`
+  - `examples/post_2d_Portal_Frame.m`
 - Click "Run" in MATLAB to execute and interact with the example.
 
 The generated scripts and illustrated walkthroughs are also available in the
